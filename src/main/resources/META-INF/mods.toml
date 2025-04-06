@@ -29,20 +29,20 @@ side = "BOTH"
 [[dependencies."${mod_id}"]]
 modId = "geckolib"
 mandatory = true
-versionRange = "[4.7,"
+versionRange = "[4.7,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "jei"
 mandatory = false
-versionRange = "[0,"
+versionRange = "[0,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "oculus"
 mandatory = false
-versionRange = "[1.7.0,"
+versionRange = "[1.7.0,)"
 ordering = "NONE"
 side = "BOTH"
