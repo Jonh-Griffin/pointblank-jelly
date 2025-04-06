@@ -1,0 +1,108 @@
+{
+    "name": "rhino",
+    "type": "Gun",
+    "maxAmmoCapacity": 6,
+    "compatibleAmmo": ["ammo357","ammocreative"],
+    "damage": 6.5,
+    "rpm": 500,
+    "fireSound": "rhino",
+    "animationType": "pistol",
+    "fireModes": ["SINGLE"],
+    "prepareFireCooldownDuration": 70,
+    "compatibleAttachments": [
+    ],
+    "compatibleAttachmentGroups": [
+        "smg_muzzle",
+        "deagle_sights",
+        "rhino_skins"
+    ],
+    "gunRecoilInitialAmplitude" : 0.6,
+    "shakeRecoilAmplitude" : 0.55,
+    "shakeRecoilSpeed" : 3,
+    "viewRecoilAmplitude" : 4.0,
+    "phasedReloads": [
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 0",
+            "duration": 3250,
+            "animation": "animation.model.reload"
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex > 0",
+            "duration": 3200,
+            "animation": "animation.model.reload"
+        }
+    ],
+    "drawAnimations": [
+        {
+            "name": "animation.model.draw",
+            "duration": 550
+        }
+    ],
+    "inspectAnimations": [
+        {
+            "name": "animation.model.inspect",
+            "duration": 3800
+        }
+    ],
+    "effects": [
+        {
+            "phase": "hit_scan_acquired",
+            "name": "tracer"
+        },
+        {
+            "phase": "firing",
+            "name": "muzzle_flash_small"
+        }
+    ],
+    "features": [
+        {
+            "type": "Aiming",
+            "zoom": 0.2,
+            "condition": {
+                "allOf": [{"doesNotHaveAttachmentGroup": "hg_sights"}]
+            }
+        },
+        {
+            "type": "Sound",
+            "fireSound": "m9_silenced",
+            "fireSoundVolume": 1,
+            "condition": {
+                "hasAttachmentGroup": "smg_suppressors"
+            }
+        },
+        {
+            "type": "PartVisibility",
+            "parts": [
+                {
+                    "name": "sightmount",
+                    "visible": false,
+                    "condition": {
+                        "allOf": [{"doesNotHaveAttachmentGroup": "hg_sights"}]
+                    }
+                }
+            ]
+        },
+        {
+            "type": "MuzzleFlash",
+            "effects": [
+                {
+                    "phase": "firing",
+                    "name": "muzzle_flash_small"
+                }
+            ],
+            "condition": {
+                "allOf": [
+                    {
+                        "isUsingDefaultMuzzle": true
+                    },
+                    {
+                        "doesNotHaveAttachmentGroup": "smg_muzzle"
+                    }
+                ]
+            }
+        }
+    ],
+    "glowingParts": [{"name": "glowy"}]
+}

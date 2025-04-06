@@ -1,0 +1,182 @@
+{
+    "name": "glock18",
+    "type": "Gun",
+    "maxAmmoCapacity": 20,
+    "compatibleAmmo": ["ammo9mm","ammocreative"],
+    "damage": 3.5,
+    "rpm": 1100,
+    "fireSound": "glock17",
+    "animationType": "pistol",
+    "compatibleAttachments": [
+        "glockstock"
+    ],
+    "compatibleAttachmentGroups": [
+        "smg_muzzle",
+        "hg_sights",
+        "glock17_skins"
+    ],
+    "gunRecoilInitialAmplitude" : 0.8,
+    "shakeRecoilAmplitude" : 0.35,
+    "shakeRecoilSpeed" : 3,
+    "viewRecoilAmplitude" : 3.0,
+    "phasedReloads": [
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 0",
+            "duration": 1850,
+            "animation": "animation.model.reloadempty"
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex > 0",
+            "duration": 1800,
+            "animation": "animation.model.reload"
+        }
+    ],
+    "drawAnimations": [
+        {
+            "name": "animation.model.draw",
+            "duration": 550,
+            "condition": "ammoCount > 0"
+        },
+        {
+            "name": "animation.model.drawempty",
+            "duration": 550,
+            "condition": "ammoCount == 0"
+        }
+    ],
+    "idleAnimations": [
+        {
+            "name": "animation.model.idle",
+            "duration": 0,
+            "condition": "ammoCount > 0"
+        },
+        {
+            "name": "animation.model.idleempty",
+            "duration": 0,
+            "condition": "ammoCount == 0"
+        }
+    ],
+    "inspectAnimations": [
+        {
+            "name": "animation.model.inspect",
+            "duration": 3800,
+            "condition": "ammoCount > 0"
+        },
+        {
+            "name": "animation.model.inspectempty",
+            "duration": 3800,
+            "condition": "ammoCount == 0"
+        }
+    ],
+    "effects": [
+        {
+            "phase": "hit_scan_acquired",
+            "name": "tracer"
+        },
+        {
+            "phase": "firing",
+            "name": "muzzle_flash_small"
+        }
+    ],
+    "features": [
+        {
+            "type": "FireMode",
+            "fireModes": [
+                {
+                    "name": "single",
+                    "displayName": "label.pointblank.fireMode.single",
+                    "type": "SINGLE",
+                    "rpm": 800,
+                    "damage": 4.0,
+                    "fireAnimations": [
+                        {
+                            "name": "animation.model.fire",
+                            "duration": 50,
+                            "condition": {
+                                "doesNotHaveAttachment": "glockstock"
+                            }
+                        },
+                        {
+                            "name": "animation.model.firestock",
+                            "duration": 50,
+                            "condition": {
+                                "hasAttachment": "glockstock"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "automatic",
+                    "displayName": "label.pointblank.fireMode.automatic",
+                    "type": "AUTOMATIC",
+                    "rpm": 1100,
+                    "damage": 4.0,
+                    "fireAnimations": [
+                        {
+                            "name": "animation.model.fire",
+                            "duration": 50,
+                            "condition": {
+                                "doesNotHaveAttachment": "glockstock"
+                            }
+                        },
+                        {
+                            "name": "animation.model.firestock",
+                            "duration": 50,
+                            "condition": {
+                                "hasAttachment": "glockstock"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "Aiming",
+            "zoom": 0.25,
+            "condition": {
+                "allOf": [{"doesNotHaveAttachmentGroup": "hg_sights"}]
+            }
+        },
+        {
+            "type": "Sound",
+            "fireSound": "glock17_silenced",
+            "fireSoundVolume": 1,
+            "condition": {
+                "hasAttachmentGroup": "smg_suppressors"
+            }
+        },
+        {
+            "type": "PartVisibility",
+            "parts": [
+                {
+                    "name": "sightmount",
+                    "visible": false,
+                    "condition": {
+                        "allOf": [{"doesNotHaveAttachmentGroup": "hg_sights"}]
+                    }
+                }
+            ]
+        },
+        {
+            "type": "MuzzleFlash",
+            "effects": [
+                {
+                    "phase": "firing",
+                    "name": "muzzle_flash_small"
+                }
+            ],
+            "condition": {
+                "allOf": [
+                    {
+                        "isUsingDefaultMuzzle": true
+                    },
+                    {
+                        "doesNotHaveAttachmentGroup": "smg_muzzle"
+                    }
+                ]
+            }
+        }
+    ],
+    "glowingParts": [{"name": "glowy"}]
+}
