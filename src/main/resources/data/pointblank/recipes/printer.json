@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "forge:ingots/iron"
+    },
+    "P": {
+      "tag": "forge:glass_panes"
+    },
+    "X": {
+      "item": "pointblank:processor"
+    }
+  },
+  "pattern": [
+    "III",
+    "PPX",
+    "III"
+  ],
+  "result": {
+    "item": "pointblank:printer"
+  },
+  "show_notification": true
+}

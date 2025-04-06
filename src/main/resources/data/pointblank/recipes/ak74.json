@@ -1,0 +1,28 @@
+{
+  "type": "pointblank:default",
+  "ingredients": [
+    {
+      "count": 29,
+      "item": "pointblank:gunmetal_ingot"
+    },
+    {
+      "count": 8,
+      "item": "pointblank:guninternals"
+    },
+    {
+      "count": 9,
+      "tag": "forge:ingots/iron"
+    },
+    {
+      "count": 2,
+      "tag": "forge:ingots/gold"
+    },
+    {
+      "count": 4,
+      "tag": "minecraft:planks"
+    }
+  ],
+  "result": {
+    "item": "pointblank:ak74"
+  }
+}

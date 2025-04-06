@@ -1,0 +1,28 @@
+{
+  "type": "pointblank:default",
+  "ingredients": [
+    {
+      "count": 26,
+      "item": "pointblank:gunmetal_ingot"
+    },
+    {
+      "count": 7,
+      "item": "pointblank:guninternals"
+    },
+    {
+      "count": 4,
+      "tag": "forge:ingots/iron"
+    },
+    {
+      "count": 20,
+      "item": "minecraft:lapis_lazuli"
+    },
+    {
+      "count": 1,
+      "tag": "forge:ingots/gold"
+    }
+  ],
+  "result": {
+    "item": "pointblank:ro635"
+  }
+}

@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Implementation-Title: pointblank
+MixinConfigs: pointblank.mixins.json,pointblank.mixins.compat.iris.jso
+ n,,pointblank.mixins.compat.iris16.json
+Implementation-Version: 1.20.1-1.9.6
+Specification-Vendor: Victor Matskiv Jr, Victor Matskiv
+Specification-Title: pointblank
+Implementation-Timestamp: 2024-12-21T21:04:34-0800
+Specification-Version: 1
+Implementation-Vendor: Victor Matskiv Jr, Victor Matskiv
+

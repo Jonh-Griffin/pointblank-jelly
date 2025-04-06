@@ -1,0 +1,21 @@
+package com.vicmatskiv.pointblank.mixin;
+
+import com.vicmatskiv.pointblank.client.ClientSystem;
+import net.minecraft.client.MouseHandler;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+
+@Mixin({MouseHandler.class})
+public class MouseHandlerMixin {
+   @ModifyConstant(
+      method = {"turnPlayer()V"},
+      constant = {@Constant(
+   doubleValue = 0.6000000238418579D
+)},
+      expect = 0
+   )
+   private double modifySensitivity(double originalValue) {
+      return ClientSystem.modifyMouseSensitivity(originalValue);
+   }
+}
