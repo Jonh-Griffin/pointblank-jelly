@@ -1,6 +1,7 @@
 package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
@@ -524,7 +525,17 @@ public class FireModeFeature extends ConditionalFeature {
             fireModeBuilder.withAmmoSupplier(ammoSupplier);
             fireModeBuilder.withRpm(JsonUtil.getJsonInt(fireModeObj, "rpm", -1));
             fireModeBuilder.withBurstShots(JsonUtil.getJsonInt(fireModeObj, "burstShots", -1));
-            fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", 1));
+            //fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", 1));
+            //Rather than checking for just an int, we'll use GunItem's implementation of checking for infinite ammo
+            JsonPrimitive jsonMaxAmmoCapacity = fireModeObj.getAsJsonPrimitive("maxAmmoCapacity");
+            if(jsonMaxAmmoCapacity.isString() && "infinite".equalsIgnoreCase(jsonMaxAmmoCapacity.getAsString())) {
+               //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO INFINITE!!!");
+               fireModeBuilder.withMaxAmmoCapacity(Integer.MAX_VALUE);
+            }
+            else {
+               //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO WHATEVER IT IS IN ITS JSON FILE!!!");
+               fireModeBuilder.withMaxAmmoCapacity(fireModeObj.getAsJsonPrimitive("maxAmmoCapacity").getAsInt());
+            }
             fireModeBuilder.withPelletCount(JsonUtil.getJsonInt(fireModeObj, "pelletCount", 0));
             fireModeBuilder.withPelletSpread(JsonUtil.getJsonDouble(fireModeObj, "pelletSpread", 1.0F));
             fireModeBuilder.withIsUsingDefaultMuzzle(JsonUtil.getJsonBoolean(fireModeObj, "isUsingDefaultMuzzle", true));
