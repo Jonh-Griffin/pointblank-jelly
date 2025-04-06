@@ -128,7 +128,7 @@ public class PointBlankJelly {
       Network.setupNetworkChannel();
    }
 
-   public static ServerTaskScheduler getServerTaskScheduler() {
+   public static ServerTaskScheduler getTaskScheduler() {
       return scheduler;
    }
 
