@@ -6,14 +6,13 @@ import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Predicate;
 import net.minecraft.world.level.ItemLike;
 
 public class PartVisibilityFeature implements Feature {
-   private FeatureProvider owner;
-   private Map<String, Predicate<ConditionContext>> predicates = new HashMap();
+   private final FeatureProvider owner;
+   private final Map<String, Predicate<ConditionContext>> predicates;
 
    private PartVisibilityFeature(FeatureProvider owner, Map<String, Predicate<ConditionContext>> partPredicates) {
       this.owner = owner;
@@ -28,21 +27,17 @@ public class PartVisibilityFeature implements Feature {
       if (partOwner != this.owner) {
          return true;
       } else {
-         Predicate<ConditionContext> bonePredicate = (Predicate)this.predicates.get(partName);
+         Predicate<ConditionContext> bonePredicate = this.predicates.get(partName);
          if (bonePredicate == null) {
             return true;
          } else {
-            boolean result = bonePredicate.test(conditionContext);
-            if (partName.contains("muzzle")) {
-            }
-
-            return result;
+             return bonePredicate.test(conditionContext);
          }
       }
    }
 
    public static class Builder implements FeatureBuilder<Builder, PartVisibilityFeature> {
-      private Map<String, Predicate<ConditionContext>> partPredicates = new HashMap();
+      private final Map<String, Predicate<ConditionContext>> partPredicates = new HashMap<>();
 
       public Builder withShownPart(String partName, Predicate<ConditionContext> condition) {
          if (this.partPredicates.put(partName, condition) != null) {
@@ -61,16 +56,13 @@ public class PartVisibilityFeature implements Feature {
       }
 
       public Builder withJsonObject(JsonObject obj) {
-         Iterator var2 = JsonUtil.getJsonObjects(obj, "parts").iterator();
-
-         while(var2.hasNext()) {
-            JsonObject partObj = (JsonObject)var2.next();
-            String partName = JsonUtil.getJsonString(partObj, "name");
-            boolean isVisible = JsonUtil.getJsonBoolean(partObj, "visible", true);
-            JsonElement conditionObj = partObj.get("condition");
-            Predicate<ConditionContext> condition = Conditions.fromJson(conditionObj);
-            this.withShownPart(partName, isVisible ? condition : condition.negate());
-         }
+          for (JsonObject partObj : JsonUtil.getJsonObjects(obj, "parts")) {
+              String partName = JsonUtil.getJsonString(partObj, "name");
+              boolean isVisible = JsonUtil.getJsonBoolean(partObj, "visible", true);
+              JsonElement conditionObj = partObj.get("condition");
+              Predicate<ConditionContext> condition = Conditions.fromJson(conditionObj);
+              this.withShownPart(partName, isVisible ? condition : condition.negate());
+          }
 
          return this;
       }

@@ -10,8 +10,11 @@ public abstract class ConfigOptionBuilder<T, B extends ConfigOptionBuilder<T, B>
    protected T maxValue;
    protected T defaultValue;
 
+   public ConfigOptionBuilder() {
+   }
+
    public B self() {
-      return this;
+      return (B)this;
    }
 
    public B withName(String name) {
@@ -54,12 +57,12 @@ public abstract class ConfigOptionBuilder<T, B extends ConfigOptionBuilder<T, B>
       if (this.path != null && !this.path.isEmpty()) {
          if (this.description != null && !this.description.isBlank()) {
             if (this.minValue != null || this.maxValue != null) {
-               Object var2 = this.minValue;
+               T var2 = this.minValue;
                if (!(var2 instanceof Comparable)) {
                   throw new IllegalArgumentException("Value type is not comparable: " + this.minValue);
                }
 
-               Comparable<?> minComparable = (Comparable)var2;
+               Comparable<T> minComparable = (Comparable<T>) var2;
                if (this.maxValue == null) {
                   throw new IllegalArgumentException("Max value is not set");
                }
@@ -82,6 +85,6 @@ public abstract class ConfigOptionBuilder<T, B extends ConfigOptionBuilder<T, B>
    public abstract ConfigOption<?> build(String var1, List<String> var2, int var3);
 
    public ConfigOption<?> build() {
-      return this.build((String)null, (List)null, -1);
+      return this.build(null, null, -1);
    }
 }

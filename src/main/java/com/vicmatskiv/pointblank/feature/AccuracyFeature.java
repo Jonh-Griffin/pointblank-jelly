@@ -3,7 +3,6 @@ package com.vicmatskiv.pointblank.feature;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.network.chat.Component;
@@ -22,7 +21,7 @@ public class AccuracyFeature extends ConditionalFeature {
    }
 
    public MutableComponent getDescription() {
-      return this.accuracyModifier < 1.0F ? Component.m_237115_("description.pointblank.reducesAccuracy").m_7220_(Component.m_237113_(String.format(" %.0f%%", 100.0F * (1.0F - this.accuracyModifier)))) : Component.m_237115_("description.pointblank.increasesAccuracy").m_7220_(Component.m_237113_(String.format(" %.0f%%", 100.0F * (this.accuracyModifier - 1.0F))));
+      return this.accuracyModifier < 1.0F ? Component.translatable("description.pointblank.reducesAccuracy").append(Component.literal(String.format(" %.0f%%", 100.0F * (1.0F - this.accuracyModifier)))) : Component.translatable("description.pointblank.increasesAccuracy").append(Component.literal(String.format(" %.0f%%", 100.0F * (this.accuracyModifier - 1.0F))));
    }
 
    public float getAccuracyModifier() {
@@ -33,20 +32,20 @@ public class AccuracyFeature extends ConditionalFeature {
       List<Features.EnabledFeature> enabledAccuracyFeatures = Features.getEnabledFeatures(itemStack, AccuracyFeature.class);
       float accuracyModifier = 1.0F;
 
-      AccuracyFeature accuracyFeature;
-      for(Iterator var3 = enabledAccuracyFeatures.iterator(); var3.hasNext(); accuracyModifier *= accuracyFeature.getAccuracyModifier()) {
-         Features.EnabledFeature enabledFeature = (Features.EnabledFeature)var3.next();
-         accuracyFeature = (AccuracyFeature)enabledFeature.feature();
+      for(Features.EnabledFeature enabledFeature : enabledAccuracyFeatures) {
+         AccuracyFeature accuracyFeature = (AccuracyFeature)enabledFeature.feature();
+         accuracyModifier *= accuracyFeature.getAccuracyModifier();
       }
 
-      return Mth.m_14036_(accuracyModifier, 0.1F, 10.0F);
+      return Mth.clamp(accuracyModifier, 0.1F, 10.0F);
    }
 
    public static class Builder implements FeatureBuilder<Builder, AccuracyFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private float accuracyModifier;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -63,7 +62,7 @@ public class AccuracyFeature extends ConditionalFeature {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
 
-         this.withAccuracyModifier((double)JsonUtil.getJsonFloat(obj, "accuracyModifier"));
+         this.withAccuracyModifier(JsonUtil.getJsonFloat(obj, "accuracyModifier"));
          return this;
       }
 

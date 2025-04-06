@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.client.particle;
 
 import com.mojang.blaze3d.platform.GlStateManager.DestFactor;
@@ -40,50 +45,41 @@ import org.apache.logging.log4j.Logger;
 @OnlyIn(Dist.CLIENT)
 public class EffectParticles {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
-   private static Function<EffectRenderKey, ParticleRenderType> effectRenderTypes = Util.m_143827_((key) -> {
-      return new EffectParticleRenderType(key.texture, key.blendMode, key.isDepthTestEnabled);
-   });
+   private static final Function<EffectRenderKey, ParticleRenderType> effectRenderTypes = Util.memoize((key) -> new EffectParticleRenderType(key.texture, key.blendMode, key.isDepthTestEnabled));
 
-   private static class EffectParticleRenderType implements ParticleRenderType {
-      private ResourceLocation texture;
-      private Effect.BlendMode blendMode;
-      private boolean isDepthTestEnabled;
-
-      public EffectParticleRenderType(ResourceLocation texture, Effect.BlendMode blendMode, boolean isDepthTestEnabled) {
-         this.texture = texture;
-         this.blendMode = blendMode;
-         this.isDepthTestEnabled = isDepthTestEnabled;
-      }
-
-      public void m_6505_(BufferBuilder bufferBuilder, TextureManager textureManager) {
-         RenderSystem.setShaderTexture(0, this.texture);
-         RenderSystem.enableBlend();
-         if (this.isDepthTestEnabled) {
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
-         } else {
-            RenderSystem.depthMask(false);
-            RenderSystem.disableDepthTest();
-         }
-
-         RenderSystem.disableCull();
-         switch(this.blendMode) {
-         case ADDITIVE:
-            RenderSystem.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE);
-            break;
-         default:
-            RenderSystem.defaultBlendFunc();
-         }
-
-         Minecraft mc = Minecraft.m_91087_();
-         mc.f_91063_.m_109154_().m_109896_();
-         bufferBuilder.m_166779_(Mode.QUADS, DefaultVertexFormat.f_85813_);
-      }
-
-      public void m_6294_(Tesselator tesselator) {
-         tesselator.m_85914_();
-      }
+   public EffectParticles() {
    }
+
+   private record EffectParticleRenderType(ResourceLocation texture, Effect.BlendMode blendMode,
+                                           boolean isDepthTestEnabled) implements ParticleRenderType {
+
+      public void begin(BufferBuilder bufferBuilder, TextureManager textureManager) {
+            RenderSystem.setShaderTexture(0, this.texture);
+            RenderSystem.enableBlend();
+            if (this.isDepthTestEnabled) {
+               RenderSystem.depthMask(true);
+               RenderSystem.enableDepthTest();
+            } else {
+               RenderSystem.depthMask(false);
+               RenderSystem.disableDepthTest();
+            }
+
+            RenderSystem.disableCull();
+          if (Objects.requireNonNull(this.blendMode) == Effect.BlendMode.ADDITIVE) {
+              RenderSystem.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE);
+          } else {
+              RenderSystem.defaultBlendFunc();
+          }
+
+            Minecraft mc = Minecraft.getInstance();
+            mc.gameRenderer.lightTexture().turnOnLightLayer();
+            bufferBuilder.begin(Mode.QUADS, DefaultVertexFormat.PARTICLE);
+         }
+
+         public void end(Tesselator tesselator) {
+            tesselator.end();
+         }
+      }
 
    private static class EffectRenderKey {
       ResourceLocation texture;
@@ -97,7 +93,7 @@ public class EffectParticles {
       }
 
       public int hashCode() {
-         return Objects.hash(new Object[]{this.blendMode, this.isDepthTestEnabled, this.texture});
+         return Objects.hash(this.blendMode, this.isDepthTestEnabled, this.texture);
       }
 
       public boolean equals(Object obj) {
@@ -111,17 +107,6 @@ public class EffectParticles {
             EffectRenderKey other = (EffectRenderKey)obj;
             return this.blendMode == other.blendMode && this.isDepthTestEnabled == other.isDepthTestEnabled && Objects.equals(this.texture, other.texture);
          }
-      }
-   }
-
-   @OnlyIn(Dist.CLIENT)
-   public static class EffectParticleProvider implements ParticleProvider<SimpleParticleType> {
-      public EffectParticleProvider(SpriteSet spriteSet) {
-      }
-
-      public Particle createParticle(SimpleParticleType particleType, ClientLevel level, double posX, double posY, double posZ, double xd, double yd, double zd) {
-         EffectParticle particle = new EffectParticle(level, posX, posY, posZ);
-         return particle;
       }
    }
 
@@ -140,76 +125,87 @@ public class EffectParticles {
       }
 
       public EffectParticle(Entity owner, Effect effect) {
-         super((ClientLevel)MiscUtil.getLevel(owner), 0.0D, 0.0D, 0.0D);
+         super((ClientLevel)MiscUtil.getLevel(owner), 0.0F, 0.0F, 0.0F);
          this.effect = effect;
          this.hasInfiniteBounds = effect.hasInfiniteBounds();
-         Vec3 startPosition = (Vec3)effect.getStartPositionProvider().get();
+         Vec3 startPosition = effect.getStartPositionProvider().get();
          Random random = new Random();
-         this.m_107264_(startPosition.f_82479_ + (double)(random.nextFloat() * 0.01F), startPosition.f_82480_ + (double)(random.nextFloat() * 0.01F), startPosition.f_82481_ + (double)(random.nextFloat() * 0.01F));
-         this.f_107209_ = this.f_107212_;
-         this.f_107210_ = this.f_107213_;
-         this.f_107211_ = this.f_107214_;
-         this.f_107215_ *= 0.10000000149011612D;
-         this.f_107216_ *= 0.10000000149011612D;
-         this.f_107217_ *= 0.10000000149011612D;
-         Vec3 velocity = (Vec3)effect.getVelocityProvider().get();
+         this.setPos(startPosition.x + (double)(random.nextFloat() * 0.01F), startPosition.y + (double)(random.nextFloat() * 0.01F), startPosition.z + (double)(random.nextFloat() * 0.01F));
+         this.xo = this.x;
+         this.yo = this.y;
+         this.zo = this.z;
+         this.xd *= 0.1F;
+         this.yd *= 0.1F;
+         this.zd *= 0.1F;
+         Vec3 velocity = effect.getVelocityProvider().get();
          float c = 1.0F;
-         this.f_107215_ += velocity.f_82479_ * (double)c;
-         this.f_107216_ += velocity.f_82480_ * (double)c;
-         this.f_107217_ += velocity.f_82481_ * (double)c;
-         this.f_107219_ = effect.hasPhysics();
+         this.xd += velocity.x * (double)c;
+         this.yd += velocity.y * (double)c;
+         this.zd += velocity.z * (double)c;
+         this.hasPhysics = effect.hasPhysics();
          this.owner = owner;
          this.delay = (int)TimeUnit.MILLISECOND.toTicks(effect.getDelay());
-         this.f_107225_ = (int)TimeUnit.MILLISECOND.toTicks(effect.getDuration()) + this.delay;
-         this.renderType = (ParticleRenderType)EffectParticles.effectRenderTypes.apply(new EffectRenderKey(effect.getTexture(), effect.getBlendMode(), effect.isDepthTestEnabled()));
+         this.lifetime = (int)TimeUnit.MILLISECOND.toTicks(effect.getDuration()) + this.delay;
+         this.renderType = EffectParticles.effectRenderTypes.apply(new EffectRenderKey(effect.getTexture(), effect.getBlendMode(), effect.isDepthTestEnabled()));
          this.initialRoll = effect.getInitialRoll();
-         this.f_172258_ = effect.getFriction();
-         this.f_107226_ = effect.getGravity();
-         this.f_172259_ = true;
+         this.friction = effect.getFriction();
+         this.gravity = effect.getGravity();
+         this.speedUpWhenYMotionIsBlocked = true;
          this.spriteUVProvider = effect.getSpriteUVProvider();
       }
 
       protected float getProgress(float partialTick) {
-         int adjustedAge = this.f_107224_ - this.delay;
+         int adjustedAge = this.age - this.delay;
          float elapsedTimeTicks = (float)adjustedAge + partialTick;
          float progress;
          if (adjustedAge < 0) {
             progress = elapsedTimeTicks / (float)this.delay;
          } else {
-            progress = elapsedTimeTicks / (float)(this.f_107225_ - this.delay);
+            progress = elapsedTimeTicks / (float)(this.lifetime - this.delay);
          }
 
-         return Mth.m_14036_(progress, -1.0F, 1.0F);
+         return Mth.clamp(progress, -1.0F, 1.0F);
       }
 
-      public void m_5744_(VertexConsumer vertexConsumer, Camera camera, float partialTick) {
+      public void render(VertexConsumer vertexConsumer, Camera camera, float partialTick) {
          try {
-            if (camera.m_90592_() != this.owner) {
+            if (camera.getEntity() != this.owner) {
             }
 
-            int lightColor = this.m_6355_(partialTick);
-            double posX = Mth.m_14139_((double)partialTick, this.f_107209_, this.f_107212_);
-            double posY = Mth.m_14139_((double)partialTick, this.f_107210_, this.f_107213_);
-            double posZ = Mth.m_14139_((double)partialTick, this.f_107211_, this.f_107214_);
+            int lightColor = this.getLightColor(partialTick);
+            double posX = Mth.lerp(partialTick, this.xo, this.x);
+            double posY = Mth.lerp(partialTick, this.yo, this.y);
+            double posZ = Mth.lerp(partialTick, this.zo, this.z);
             float progress = this.getProgress(partialTick);
             EffectRenderContext effectRenderContext = (new EffectRenderContext()).withCamera(camera).withRotation(this.effect.getRotation()).withPosition(new Vec3(posX, posY, posZ)).withInitialAngle(this.initialRoll).withVertexBuffer(vertexConsumer).withProgress(progress).withLightColor(lightColor).withSpriteUVProvider(this.spriteUVProvider);
             this.effect.render(effectRenderContext);
-         } catch (Exception var13) {
-            EffectParticles.LOGGER.error("Failed to render effect particle: {}", var13);
+         } catch (Exception e) {
+            EffectParticles.LOGGER.error("Failed to render effect particle: {}", e);
          }
 
       }
 
-      public ParticleRenderType m_7556_() {
+      public ParticleRenderType getRenderType() {
          return this.renderType;
       }
 
-      public AABB m_107277_() {
-         return this.hasInfiniteBounds ? IForgeBlockEntity.INFINITE_EXTENT_AABB : super.m_107277_();
+      public AABB getBoundingBox() {
+         return this.hasInfiniteBounds ? IForgeBlockEntity.INFINITE_EXTENT_AABB : super.getBoundingBox();
       }
 
-      public void m_5989_() {
-         super.m_5989_();
+      public void tick() {
+         super.tick();
+      }
+   }
+
+   @OnlyIn(Dist.CLIENT)
+   public static class EffectParticleProvider implements ParticleProvider<SimpleParticleType> {
+      public EffectParticleProvider(SpriteSet spriteSet) {
+      }
+
+      public Particle createParticle(SimpleParticleType particleType, ClientLevel level, double posX, double posY, double posZ, double xd, double yd, double zd) {
+         EffectParticle particle = new EffectParticle(level, posX, posY, posZ);
+         return particle;
       }
    }
 }

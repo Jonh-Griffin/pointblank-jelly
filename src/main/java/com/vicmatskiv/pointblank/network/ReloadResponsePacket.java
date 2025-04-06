@@ -35,6 +35,6 @@ public class ReloadResponsePacket extends GunStateResponsePacket {
    }
 
    protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
-      ((GunItem)itemStack.m_41720_()).processServerReloadResponse(this.correlationId, this.isSuccess, itemStack, gunClientState, this.ammo, this.fireModeInstance);
+      ((GunItem)itemStack.getItem()).processServerReloadResponse(this.correlationId, this.isSuccess, itemStack, gunClientState, this.ammo, this.fireModeInstance);
    }
 }

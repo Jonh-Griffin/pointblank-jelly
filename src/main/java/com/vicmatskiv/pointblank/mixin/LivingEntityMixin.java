@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.mixin;
 
 import com.vicmatskiv.pointblank.Config;
@@ -18,48 +23,50 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({LivingEntity.class})
 public class LivingEntityMixin {
    @Unique
-   private final ThreadLocal<DamageSource> hurtDamageSource = new ThreadLocal();
+   private final ThreadLocal<DamageSource> hurtDamageSource = new ThreadLocal<>();
+
+   public LivingEntityMixin() {
+   }
 
    @Inject(
-      method = {"hurt"},
-      at = {@At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"
-)}
+           method = {"hurt"},
+           at = {@At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"
+           )}
    )
    private void beforeHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> callbackInfo) {
       this.hurtDamageSource.set(source);
    }
 
    @Inject(
-      method = {"hurt"},
-      at = {@At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V",
-   shift = Shift.AFTER
-)}
+           method = {"hurt"},
+           at = {@At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V",
+                   shift = Shift.AFTER
+           )}
    )
    private void afterHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> callbackInfo) {
       this.hurtDamageSource.remove();
    }
 
    @ModifyArg(
-      method = {"hurt"},
-      at = @At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"
-),
-      index = 0
+           method = {"hurt"},
+           at = @At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"
+           ),
+           index = 0
    )
    private double onKnockback(double knockback) {
-      DamageSource source = (DamageSource)this.hurtDamageSource.get();
+      DamageSource source = this.hurtDamageSource.get();
       if (source != null) {
-         Entity var5 = source.m_7639_();
-         if (var5 instanceof LivingEntity) {
-            LivingEntity hurtByEntity = (LivingEntity)var5;
-            GunItem gunItem = (GunItem)MiscUtil.getMainHeldGun(hurtByEntity).orElse((Object)null);
+         Entity entity = source.getEntity();
+         if (entity instanceof LivingEntity hurtByEntity) {
+             GunItem gunItem = MiscUtil.getMainHeldGun(hurtByEntity).orElse(null);
             if (gunItem != null) {
-               knockback = Mth.m_14008_(knockback * Config.knockback, 0.0D, 100.0D);
+               knockback = Mth.clamp(knockback * Config.knockback, 0.0F, 100.0F);
             }
          }
       }

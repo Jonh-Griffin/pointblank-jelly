@@ -30,7 +30,7 @@ public class AttachmentSlot extends Slot implements Activatable, HierarchicalSlo
       return this.container;
    }
 
-   public boolean m_6659_() {
+   public boolean isActive() {
       return this.isActive;
    }
 
@@ -40,13 +40,13 @@ public class AttachmentSlot extends Slot implements Activatable, HierarchicalSlo
    }
 
    public String getPath() {
-      String var10000;
       String parentPath;
+      String var10000;
       label16: {
          parentPath = this.getParentSlot() != null ? this.getParentSlot().getPath() : "/";
-         ItemStack itemStack = this.m_7993_();
+         ItemStack itemStack = this.getItem();
          if (itemStack != null) {
-            Item var5 = itemStack.m_41720_();
+            Item var5 = itemStack.getItem();
             if (var5 instanceof Nameable) {
                Nameable n = (Nameable)var5;
                var10000 = n.getName();
@@ -77,14 +77,14 @@ public class AttachmentSlot extends Slot implements Activatable, HierarchicalSlo
       return this.childContainer;
    }
 
-   public boolean m_5857_(ItemStack newAttachmentStack) {
+   public boolean mayPlace(ItemStack newAttachmentStack) {
       if (!this.isActive) {
          return false;
-      } else if (!(newAttachmentStack.m_41720_() instanceof Attachment)) {
+      } else if (!(newAttachmentStack.getItem() instanceof Attachment)) {
          return false;
       } else {
-         ItemStack currentItemStack = this.m_7993_();
-         if (currentItemStack != null && currentItemStack.m_41720_() instanceof Attachment) {
+         ItemStack currentItemStack = this.getItem();
+         if (currentItemStack != null && currentItemStack.getItem() instanceof Attachment) {
             return false;
          } else {
             VirtualInventory e = this.container.getVirtualInventory();
@@ -93,17 +93,17 @@ public class AttachmentSlot extends Slot implements Activatable, HierarchicalSlo
       }
    }
 
-   public int m_6641_() {
+   public int getMaxStackSize() {
       return 1;
    }
 
-   public boolean m_8010_(Player player) {
+   public boolean mayPickup(Player player) {
       if (!this.isActive) {
          return false;
       } else {
-         ItemStack currentItemStack = this.m_7993_();
-         if (currentItemStack != null && !currentItemStack.m_41619_() && !player.m_7500_()) {
-            return !(currentItemStack.m_41720_() instanceof Attachment) ? true : Attachments.isRemoveable(currentItemStack.m_41783_());
+         ItemStack currentItemStack = this.getItem();
+         if (currentItemStack != null && !currentItemStack.isEmpty() && !player.isCreative()) {
+            return !(currentItemStack.getItem() instanceof Attachment) ? true : Attachments.isRemoveable(currentItemStack.getTag());
          } else {
             return true;
          }
@@ -118,19 +118,19 @@ public class AttachmentSlot extends Slot implements Activatable, HierarchicalSlo
       this.isActive = isActive;
    }
 
-   public void m_269060_(ItemStack itemStack) {
+   public void setByPlayer(ItemStack itemStack) {
       this.doSet(itemStack);
    }
 
    private void doSet(ItemStack itemStack) {
-      LOGGER.debug("Setting attachment slot {} for container {} to stack {} with tag {}", this.slotIndexInContainer, this.container, itemStack, itemStack.m_41783_());
-      super.m_5852_(itemStack);
+      LOGGER.debug("Setting attachment slot {} for container {} to stack {} with tag {}", this.slotIndexInContainer, this.container, itemStack, itemStack.getTag());
+      super.set(itemStack);
    }
 
-   public void m_5852_(ItemStack itemStack) {
+   public void set(ItemStack itemStack) {
       this.doSet(itemStack);
    }
 
-   public void m_6654_() {
+   public void setChanged() {
    }
 }

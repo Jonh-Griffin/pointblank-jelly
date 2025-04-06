@@ -101,16 +101,11 @@ public abstract class ItemBuilder<T extends ItemBuilder<T>> implements Nameable 
 
    public abstract Item build();
 
-   public static enum ItemType {
+   public enum ItemType {
       GUN,
       AMMO,
       MISC,
       ATTACHMENT,
-      THROWABLE;
-
-      // $FF: synthetic method
-      private static ItemType[] $values() {
-         return new ItemType[]{GUN, AMMO, MISC, ATTACHMENT, THROWABLE};
-      }
+      THROWABLE
    }
 }

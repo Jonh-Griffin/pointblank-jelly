@@ -9,27 +9,27 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class PlayerRecoilController implements GunStateListener {
-   private static double middleProgress = 1.0D - Math.sqrt(2.0D) / 2.0D;
+   private static final double middleProgress = (double)1.0F - Math.sqrt(2.0F) / (double)2.0F;
    private int elapsedTime;
-   private double ticksPerTransition;
+   private final double ticksPerTransition;
    private double progress;
    private double prevProgress;
    private boolean isForward;
    private double actualAmplitude;
-   private double amplitude;
+   private final double amplitude;
    private double dPitch;
-   private double dPitchResetRatio = 1.0D;
+   private double dPitchResetRatio = 1.0F;
    private double startPitch;
-   private double maxPitch;
+   private final double maxPitch;
    private double initialPitch;
    private long startTime;
    private long nanoSecPerTransition;
-   private long resetDurationNano;
+   private final long resetDurationNano;
    private State currentState;
 
    public PlayerRecoilController(double amplitude, double maxPitch, double duration) {
-      this.currentState = State.IDLE;
-      this.nanoSecPerTransition = (long)(duration * 1000000.0D);
+      this.currentState = PlayerRecoilController.State.IDLE;
+      this.nanoSecPerTransition = (long)(duration * (double)1000000.0F);
       this.amplitude = amplitude;
       this.actualAmplitude = amplitude;
       this.ticksPerTransition = duration;
@@ -45,57 +45,54 @@ public class PlayerRecoilController implements GunStateListener {
    }
 
    public void onRenderTick(LivingEntity player, GunClientState state, ItemStack itemStack, ItemDisplayContext itemDisplayContext, float partialTicks) {
-      if (this.currentState != State.IDLE) {
+      if (this.currentState != PlayerRecoilController.State.IDLE) {
          this.prevProgress = this.progress;
          this.progress = this.getProgress(state, partialTicks);
-         if (this.currentState == State.RECOILING && this.progress >= 1.0D) {
+         if (this.currentState == PlayerRecoilController.State.RECOILING && this.progress >= (double)1.0F) {
             if (Config.resetAutoFirePitchEnabled && this.resetDurationNano > 0L) {
-               this.currentState = State.RESETTING;
+               this.currentState = PlayerRecoilController.State.RESETTING;
                this.startTime = System.nanoTime();
-               this.startPitch = (double)player.m_146909_();
-               this.progress = this.prevProgress = 0.0D;
+               this.startPitch = player.getXRot();
+               this.progress = this.prevProgress = 0.0F;
                this.nanoSecPerTransition = this.resetDurationNano;
             } else {
-               this.currentState = State.IDLE;
+               this.currentState = PlayerRecoilController.State.IDLE;
             }
          }
 
-         if (this.currentState == State.RESETTING) {
-            this.progress = 0.5D - 0.5D * Math.cos(3.141592653589793D * this.progress);
-            if (this.progress >= 1.0D) {
-               this.currentState = State.IDLE;
+         if (this.currentState == PlayerRecoilController.State.RESETTING) {
+            this.progress = (double)0.5F - (double)0.5F * Math.cos(Math.PI * this.progress);
+            if (this.progress >= (double)1.0F) {
+               this.currentState = PlayerRecoilController.State.IDLE;
             }
          }
 
-         double dProgress;
-         float prevPitch;
-         float newXRot;
-         if (this.currentState == State.RESETTING) {
-            dProgress = this.progress - this.prevProgress;
-            prevPitch = player.m_146909_();
+         if (this.currentState == PlayerRecoilController.State.RESETTING) {
+            double dProgress = this.progress - this.prevProgress;
+            float prevPitch = player.getXRot();
             this.dPitch = (this.initialPitch - this.startPitch) * dProgress;
-            newXRot = (float)((double)prevPitch + this.dPitch);
-            player.m_146926_(newXRot);
+            float newXRot = (float)((double)prevPitch + this.dPitch);
+            player.setXRot(newXRot);
          } else {
             if (this.isForward && this.progress > middleProgress) {
                this.isForward = false;
             }
 
-            dProgress = this.progress - this.prevProgress;
+            double dProgress = this.progress - this.prevProgress;
             if (this.isForward) {
                this.dPitch = -this.actualAmplitude * dProgress / middleProgress;
             } else {
-               this.dPitch = this.dPitchResetRatio * this.actualAmplitude * dProgress / (1.0D - middleProgress);
+               this.dPitch = this.dPitchResetRatio * this.actualAmplitude * dProgress / ((double)1.0F - middleProgress);
             }
 
-            prevPitch = player.m_146909_();
-            newXRot = (float)((double)prevPitch + this.dPitch);
+            float prevPitch = player.getXRot();
+            float newXRot = (float)((double)prevPitch + this.dPitch);
             if (!this.isForward) {
                if ((double)newXRot < this.startPitch) {
-                  player.m_146926_(newXRot);
+                  player.setXRot(newXRot);
                }
             } else {
-               player.m_146926_(newXRot);
+               player.setXRot(newXRot);
             }
 
          }
@@ -104,42 +101,40 @@ public class PlayerRecoilController implements GunStateListener {
 
    public void onStartFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
       this.isForward = true;
-      this.currentState = State.RECOILING;
+      this.currentState = PlayerRecoilController.State.RECOILING;
       this.elapsedTime = -1;
       this.startTime = System.nanoTime();
-      this.startPitch = (double)player.m_146909_();
-      this.progress = this.prevProgress = 0.0D;
-      this.actualAmplitude = state.isAiming() ? this.amplitude * 0.5D : this.amplitude;
-      this.actualAmplitude *= (double)RecoilFeature.getRecoilModifier(itemStack);
+      this.startPitch = player.getXRot();
+      this.progress = this.prevProgress = 0.0F;
+      this.actualAmplitude = state.isAiming() ? this.amplitude * (double)0.5F : this.amplitude;
+      this.actualAmplitude *= RecoilFeature.getRecoilModifier(itemStack);
       if (state.getTotalUninterruptedShots() <= 1 || this.startPitch > this.initialPitch) {
          this.initialPitch = this.startPitch;
       }
 
       if (state.getTotalUninterruptedShots() > 1 && !(Math.abs(this.startPitch - this.initialPitch) >= Math.abs(this.maxPitch))) {
-         this.dPitchResetRatio = 0.1D;
+         this.dPitchResetRatio = 0.1;
       } else {
-         this.dPitchResetRatio = 1.0D;
+         this.dPitchResetRatio = 1.0F;
       }
 
    }
 
    protected double getProgress(GunClientState gunClientState, float partialTicks) {
       double progress = (double)(System.nanoTime() - this.startTime) / (double)this.nanoSecPerTransition;
-      if (progress > 1.0D) {
-         progress = 1.0D;
+      if (progress > (double)1.0F) {
+         progress = 1.0F;
       }
 
       return progress;
    }
 
-   private static enum State {
+   private enum State {
       IDLE,
       RECOILING,
       RESETTING;
 
-      // $FF: synthetic method
-      private static State[] $values() {
-         return new State[]{IDLE, RECOILING, RESETTING};
+      State() {
       }
    }
 }

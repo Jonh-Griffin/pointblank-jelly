@@ -1,7 +1,7 @@
 package com.vicmatskiv.pointblank.compat.iris.mixin;
 
 import com.vicmatskiv.pointblank.compat.iris.IrisCompat;
-import net.coderbot.iris.pipeline.ShadowRenderer;
+import net.irisshaders.iris.shadows.ShadowRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

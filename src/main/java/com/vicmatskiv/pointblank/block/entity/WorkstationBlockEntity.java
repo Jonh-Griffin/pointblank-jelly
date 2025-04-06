@@ -14,7 +14,7 @@ public class WorkstationBlockEntity extends BlockEntity implements GeoBlockEntit
    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
    public WorkstationBlockEntity(BlockPos pos, BlockState state) {
-      super((BlockEntityType)BlockEntityRegistry.WORKSTATION_BLOCK_ENTITY.get(), pos, state);
+      super(BlockEntityRegistry.WORKSTATION_BLOCK_ENTITY.get(), pos, state);
    }
 
    public void registerControllers(ControllerRegistrar controllers) {

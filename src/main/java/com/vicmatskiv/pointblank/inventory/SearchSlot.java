@@ -15,19 +15,19 @@ public class SearchSlot extends Slot {
       this.isHighlightable = isHighlightable;
    }
 
-   public boolean m_280329_() {
+   public boolean isHighlightable() {
       return this.isHighlightable;
    }
 
-   public boolean m_8010_(Player player) {
+   public boolean mayPickup(Player player) {
       return false;
    }
 
-   public boolean m_5857_(ItemStack itemStack) {
+   public boolean mayPlace(ItemStack itemStack) {
       return false;
    }
 
    public String toString() {
-      return String.format("SearchSlot {index: %d, container: %s}", this.slotIndex, System.identityHashCode(this.f_40218_));
+      return String.format("SearchSlot {index: %d, container: %s}", this.slotIndex, System.identityHashCode(this.container));
    }
 }

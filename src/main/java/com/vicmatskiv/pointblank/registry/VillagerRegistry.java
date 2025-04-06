@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.Holder.Reference;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -36,34 +36,26 @@ public class VillagerRegistry {
    private static final ResourceKey<StructureProcessorList> EMPTY_PROCESSOR_LIST_KEY;
    private static final ResourceLocation[] HOUSES_RESOURCES;
 
+   public VillagerRegistry() {
+   }
+
    private static Set<BlockState> getBlockStates(Block block) {
-      return ImmutableSet.copyOf(block.m_49965_().m_61056_());
+      return ImmutableSet.copyOf(block.getStateDefinition().getPossibleStates());
    }
 
    private static RegistryObject<PoiType> registerPoiType(String name, Supplier<Block> block, int maxTickets, int validRange) {
-      return POI_TYPES.register(name, () -> {
-         return new PoiType(getBlockStates((Block)block.get()), maxTickets, validRange);
-      });
+      return POI_TYPES.register(name, () -> new PoiType(getBlockStates(block.get()), maxTickets, validRange));
    }
 
    private static RegistryObject<VillagerProfession> registerProfession(String name, RegistryObject<PoiType> poiHolder) {
-      return PROFESSIONS.register(name, () -> {
-         return new VillagerProfession(name, (holder) -> {
-            return holder.m_203565_(poiHolder.getKey());
-         }, (holder) -> {
-            return holder.m_203565_(poiHolder.getKey());
-         }, ImmutableSet.of(), ImmutableSet.of(), SoundEvents.f_12565_);
-      });
+      return PROFESSIONS.register(name, () -> new VillagerProfession(name, (holder) -> holder.is(poiHolder.getKey()), (holder) -> holder.is(poiHolder.getKey()), ImmutableSet.of(), ImmutableSet.of(), SoundEvents.VILLAGER_WORK_CARTOGRAPHER));
    }
 
    public static void registerStructures(MinecraftServer server) {
-      Registry<StructureTemplatePool> templatePoolRegistry = (Registry)server.m_206579_().m_6632_(Registries.f_256948_).orElseThrow();
-      Registry<StructureProcessorList> processorListRegistry = (Registry)server.m_206579_().m_6632_(Registries.f_257011_).orElseThrow();
-      ResourceLocation[] var3 = HOUSES_RESOURCES;
-      int var4 = var3.length;
+      Registry<StructureTemplatePool> templatePoolRegistry = server.registryAccess().registry(Registries.TEMPLATE_POOL).orElseThrow();
+      Registry<StructureProcessorList> processorListRegistry = server.registryAccess().registry(Registries.PROCESSOR_LIST).orElseThrow();
 
-      for(int var5 = 0; var5 < var4; ++var5) {
-         ResourceLocation poolLocation = var3[var5];
+      for(ResourceLocation poolLocation : HOUSES_RESOURCES) {
          registerStructure(templatePoolRegistry, processorListRegistry, poolLocation, ARMS_DEALER_BARN_RESOURCE, Config.armsDealerHouseWeight);
       }
 
@@ -71,31 +63,29 @@ public class VillagerRegistry {
 
    public static void registerStructure(Registry<StructureTemplatePool> templatePoolRegistry, Registry<StructureProcessorList> processorListRegistry, ResourceLocation targetPoolResource, ResourceLocation structureResource, int weight) {
       if (weight != 0) {
-         Reference<StructureProcessorList> emptyProcessorList = processorListRegistry.m_246971_(EMPTY_PROCESSOR_LIST_KEY);
-         StructureTemplatePool pool = (StructureTemplatePool)templatePoolRegistry.m_7745_(targetPoolResource);
+         Holder.Reference<StructureProcessorList> emptyProcessorList = processorListRegistry.getHolderOrThrow(EMPTY_PROCESSOR_LIST_KEY);
+         StructureTemplatePool pool = templatePoolRegistry.get(targetPoolResource);
          if (pool != null) {
-            SinglePoolElement structurePoolElement = (SinglePoolElement)SinglePoolElement.m_210531_(structureResource.toString(), emptyProcessorList).apply(Projection.RIGID);
+            SinglePoolElement structurePoolElement = SinglePoolElement.single(structureResource.toString(), emptyProcessorList).apply(Projection.RIGID);
 
             for(int i = 0; i < weight; ++i) {
                ((StructureTemplatePoolMixin)pool).getTemplates().add(structurePoolElement);
             }
 
-            List<Pair<StructurePoolElement, Integer>> rawTemplates = new ArrayList(((StructureTemplatePoolMixin)pool).getRawTemplates());
-            rawTemplates.add(new Pair(structurePoolElement, weight));
+            List<Pair<StructurePoolElement, Integer>> rawTemplates = new ArrayList<>(((StructureTemplatePoolMixin)pool).getRawTemplates());
+            rawTemplates.add(new Pair<>(structurePoolElement, weight));
             ((StructureTemplatePoolMixin)pool).setRawTemplates(rawTemplates);
          }
       }
    }
 
    static {
-      PROFESSIONS = DeferredRegister.create(Registries.f_256749_, "pointblank");
-      POI_TYPES = DeferredRegister.create(Registries.f_256805_, "pointblank");
-      ARMS_DEALER_POI = registerPoiType("arms_dealer", () -> {
-         return (Block)BlockRegistry.WORKSTATION.get();
-      }, 1, 1);
+      PROFESSIONS = DeferredRegister.create(Registries.VILLAGER_PROFESSION, "pointblank");
+      POI_TYPES = DeferredRegister.create(Registries.POINT_OF_INTEREST_TYPE, "pointblank");
+      ARMS_DEALER_POI = registerPoiType("arms_dealer", BlockRegistry.WORKSTATION, 1, 1);
       ARMS_DEALER_PROFESSION = registerProfession("arms_dealer", ARMS_DEALER_POI);
       ARMS_DEALER_BARN_RESOURCE = new ResourceLocation("pointblank", "village/all_terrain/arms_dealer_barn");
-      EMPTY_PROCESSOR_LIST_KEY = ResourceKey.m_135785_(Registries.f_257011_, new ResourceLocation("minecraft", "empty"));
+      EMPTY_PROCESSOR_LIST_KEY = ResourceKey.create(Registries.PROCESSOR_LIST, new ResourceLocation("minecraft", "empty"));
       HOUSES_RESOURCES = new ResourceLocation[]{new ResourceLocation("minecraft", "village/plains/houses"), new ResourceLocation("minecraft", "village/desert/houses"), new ResourceLocation("minecraft", "village/savanna/houses"), new ResourceLocation("minecraft", "village/snowy/houses"), new ResourceLocation("minecraft", "village/taiga/houses")};
    }
 }

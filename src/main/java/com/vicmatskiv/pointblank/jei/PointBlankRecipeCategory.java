@@ -21,33 +21,31 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource.BufferSource;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ItemLike;
 import org.joml.Quaternionf;
 
 public class PointBlankRecipeCategory implements IRecipeCategory<PointBlankRecipe> {
    public static final ResourceLocation BACKGROUND_RESOURCE = new ResourceLocation("pointblank", "textures/gui/jei.png");
-   private IDrawableStatic backgroundDrawable;
-   private IDrawableStatic itemDrawable;
-   private IDrawableStatic inventoryDrawable;
-   private IDrawable icon;
-   private Component title;
+   private final IDrawableStatic backgroundDrawable;
+   private final IDrawableStatic itemDrawable;
+   private final IDrawableStatic inventoryDrawable;
+   private final IDrawable icon;
+   private final Component title;
 
    public PointBlankRecipeCategory(IGuiHelper gui) {
       this.backgroundDrawable = gui.createBlankDrawable(180, 124);
       this.itemDrawable = gui.createDrawable(BACKGROUND_RESOURCE, 2, 2, 180, 102);
       this.inventoryDrawable = gui.createDrawable(BACKGROUND_RESOURCE, 2, 108, 180, 19);
-      this.icon = gui.createDrawableIngredient(VanillaTypes.ITEM_STACK, new ItemStack((ItemLike)BlockRegistry.PRINTER.get()));
-      this.title = Component.m_237115_("block.pointblank.printer");
+      this.icon = gui.createDrawableIngredient(VanillaTypes.ITEM_STACK, new ItemStack(BlockRegistry.PRINTER.get()));
+      this.title = Component.translatable("block.pointblank.printer");
    }
 
    public RecipeType<PointBlankRecipe> getRecipeType() {
@@ -67,44 +65,44 @@ public class PointBlankRecipeCategory implements IRecipeCategory<PointBlankRecip
    }
 
    public void setRecipe(IRecipeLayoutBuilder builder, PointBlankRecipe recipe, IFocusGroup focuses) {
-      ItemStack resultStack = recipe.m_8043_((RegistryAccess)null);
+      ItemStack resultStack = recipe.getResultItem(null);
       List<PointBlankIngredient> pbi = recipe.getPointBlankIngredients();
 
       for(int i = 0; i < pbi.size(); ++i) {
-         builder.addSlot(RecipeIngredientRole.INPUT, i * 18 + 1, 106).addIngredients(VanillaTypes.ITEM_STACK, ((PointBlankIngredient)pbi.get(i)).getItemStacks());
+         builder.addSlot(RecipeIngredientRole.INPUT, i * 18 + 1, 106).addIngredients(VanillaTypes.ITEM_STACK, pbi.get(i).getItemStacks());
       }
 
       builder.addInvisibleIngredients(RecipeIngredientRole.OUTPUT).addItemStack(resultStack);
    }
 
    public void draw(PointBlankRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
-      Minecraft mc = Minecraft.m_91087_();
+      Minecraft mc = Minecraft.getInstance();
       this.itemDrawable.draw(guiGraphics, 0, 0);
       this.inventoryDrawable.draw(guiGraphics, 0, this.itemDrawable.getHeight() + 3);
-      Font font = mc.f_91062_;
+      Font font = mc.font;
       ItemStack itemStack = recipe.getInitializedStack();
-      MutableComponent displayName = itemStack.m_41786_().m_6881_();
-      if (itemStack.m_41613_() > 1) {
-         displayName.m_7220_(Component.m_237113_(" x " + itemStack.m_41613_()));
+      MutableComponent displayName = itemStack.getHoverName().copy();
+      if (itemStack.getCount() > 1) {
+         displayName.append(Component.literal(" x " + itemStack.getCount()));
       }
 
       int offsetX = this.itemDrawable.getWidth() >> 1;
-      guiGraphics.m_280653_(font, displayName, offsetX, 4, -256);
+      guiGraphics.drawCenteredString(font, displayName, offsetX, 4, -256);
       PoseStack poseStack = RenderSystem.getModelViewStack();
-      float fullTick = (float)mc.f_91074_.f_19797_ + mc.m_91296_();
-      float yOffset = Mth.m_14089_(fullTick * 3.1415927F * 0.02F) * 2.0F;
-      poseStack.m_85836_();
-      poseStack.m_252931_(guiGraphics.m_280168_().m_85850_().m_252922_());
-      poseStack.m_252880_(90.0F, 55.0F + yOffset, 1000.0F);
-      poseStack.m_252781_((new Quaternionf()).rotationXYZ(-0.34906584F, fullTick * 0.017453292F * 2.0F, 0.0F));
-      poseStack.m_85841_(60.0F, -60.0F, 60.0F);
+      float fullTick = (float)mc.player.tickCount + mc.getFrameTime();
+      float yOffset = Mth.cos(fullTick * (float)Math.PI * 0.02F) * 2.0F;
+      poseStack.pushPose();
+      poseStack.mulPoseMatrix(guiGraphics.pose().last().pose());
+      poseStack.translate(90.0F, 55.0F + yOffset, 1000.0F);
+      poseStack.mulPose((new Quaternionf()).rotationXYZ(-0.34906584F, fullTick * ((float)Math.PI / 180F) * 2.0F, 0.0F));
+      poseStack.scale(60.0F, -60.0F, 60.0F);
       RenderSystem.applyModelViewMatrix();
-      BakedModel model = mc.m_91291_().m_174264_(itemStack, MiscUtil.getLevel(mc.f_91074_), mc.f_91074_, mc.f_91074_.m_19879_() + ItemDisplayContext.GROUND.ordinal());
-      Lighting.m_84931_();
-      BufferSource buffer = mc.m_91269_().m_110104_();
-      mc.m_91291_().m_115143_(itemStack, ItemDisplayContext.GROUND, false, new PoseStack(), buffer, 15728880, OverlayTexture.f_118083_, model);
-      buffer.m_109911_();
-      poseStack.m_85849_();
+      BakedModel model = mc.getItemRenderer().getModel(itemStack, MiscUtil.getLevel(mc.player), mc.player, mc.player.getId() + ItemDisplayContext.GROUND.ordinal());
+      Lighting.setupFor3DItems();
+      MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
+      mc.getItemRenderer().render(itemStack, ItemDisplayContext.GROUND, false, new PoseStack(), buffer, 15728880, OverlayTexture.NO_OVERLAY, model);
+      buffer.endBatch();
+      poseStack.popPose();
       RenderSystem.applyModelViewMatrix();
    }
 }

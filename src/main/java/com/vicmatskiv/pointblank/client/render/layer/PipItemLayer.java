@@ -20,7 +20,7 @@ public class PipItemLayer extends FeaturePassLayer<GunItem> {
    private RenderPass currentRenderPass;
 
    public PipItemLayer(GunItemRenderer renderer) {
-      super(renderer, PipFeature.class, RenderPass.PIP, Collections.singleton("scopepip"), true, (Object)null);
+      super(renderer, PipFeature.class, RenderPass.PIP, Collections.singleton("scopepip"), true, null);
       this.currentRenderPass = RenderPass.PIP;
    }
 
@@ -39,18 +39,16 @@ public class PipItemLayer extends FeaturePassLayer<GunItem> {
          ResourceLocation maskTexture = pipFeature.getMaskTexture();
          ResourceLocation overlayTexture = pipFeature.getOverlayTexture();
          boolean isParallaxEnabled = pipFeature.isParallaxEnabled();
-         RenderType maskRenderType;
          if (maskTexture != null) {
             RenderPass.push(RenderPass.PIP_MASK);
             this.currentRenderPass = RenderPass.PIP_MASK;
 
             try {
-               maskRenderType = RenderTypeProvider.getInstance().getPipMaskRenderType(maskTexture);
-               VertexConsumer maskBuffer = bufferSource.m_6299_(maskRenderType);
+               RenderType maskRenderType = RenderTypeProvider.getInstance().getPipMaskRenderType(maskTexture);
+               VertexConsumer maskBuffer = bufferSource.getBuffer(maskRenderType);
                super.render(attachmentModel, poseStack, bufferSource, animatable, maskRenderType, maskBuffer, partialTick, packedLight, overlay, red, green, blue, alpha);
-               if (bufferSource instanceof Flushable) {
-                  Flushable flushable = (Flushable)bufferSource;
-                  flushable.flush();
+               if (bufferSource instanceof Flushable flushable) {
+                   flushable.flush();
                }
             } finally {
                RenderPass.pop();
@@ -58,47 +56,29 @@ public class PipItemLayer extends FeaturePassLayer<GunItem> {
             }
          }
 
-         maskRenderType = RenderTypeProvider.getInstance().getPipRenderType(maskTexture != null);
-         super.render(attachmentModel, poseStack, bufferSource, animatable, maskRenderType, bufferSource.m_6299_(maskRenderType), partialTick, packedLight, overlay, red, green, blue, alpha);
-         if (bufferSource instanceof Flushable) {
-            Flushable flushable = (Flushable)bufferSource;
-            flushable.flush();
+         RenderType pipRenderType = RenderTypeProvider.getInstance().getPipRenderType(maskTexture != null);
+         super.render(attachmentModel, poseStack, bufferSource, animatable, pipRenderType, bufferSource.getBuffer(pipRenderType), partialTick, packedLight, overlay, red, green, blue, alpha);
+         if (bufferSource instanceof Flushable flushable) {
+             flushable.flush();
          }
 
          if (overlayTexture != null) {
-            HierarchicalRenderContext subHrc = HierarchicalRenderContext.push();
-
-            try {
+            try (HierarchicalRenderContext subHrc = HierarchicalRenderContext.push()) {
                subHrc.setAttribute("is_parallax_enabled", isParallaxEnabled);
                RenderPass.push(RenderPass.PIP_OVERLAY);
                this.currentRenderPass = RenderPass.PIP_OVERLAY;
 
                try {
                   RenderType overlayRenderType = RenderTypeProvider.getInstance().getPipOverlayRenderType(overlayTexture, maskTexture != null);
-                  VertexConsumer overlayBuffer = bufferSource.m_6299_(overlayRenderType);
+                  VertexConsumer overlayBuffer = bufferSource.getBuffer(overlayRenderType);
                   super.render(attachmentModel, poseStack, bufferSource, animatable, overlayRenderType, overlayBuffer, partialTick, packedLight, overlay, red, green, blue, alpha);
-                  if (bufferSource instanceof Flushable) {
-                     Flushable flushable = (Flushable)bufferSource;
-                     flushable.flush();
+                  if (bufferSource instanceof Flushable flushable) {
+                      flushable.flush();
                   }
                } finally {
                   RenderPass.pop();
                   this.currentRenderPass = RenderPass.PIP;
                }
-            } catch (Throwable var35) {
-               if (subHrc != null) {
-                  try {
-                     subHrc.close();
-                  } catch (Throwable var32) {
-                     var35.addSuppressed(var32);
-                  }
-               }
-
-               throw var35;
-            }
-
-            if (subHrc != null) {
-               subHrc.close();
             }
          }
 

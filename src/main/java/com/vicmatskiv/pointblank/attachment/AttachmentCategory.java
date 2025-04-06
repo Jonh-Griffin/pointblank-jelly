@@ -17,7 +17,7 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 
 public class AttachmentCategory implements Comparable<AttachmentCategory> {
-   private static SortedMap<String, AttachmentCategory> categories = new TreeMap();
+   private static final SortedMap<String, AttachmentCategory> categories = new TreeMap<>();
    public static final AttachmentCategory SCOPE = fromString("scope", (c) -> {
       return c == AimingFeature.class || c == ReticleFeature.class || c == PipFeature.class;
    });
@@ -40,8 +40,8 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
       return false;
    });
    private final String name;
-   private Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate;
-   private List<FeatureBuilder<?, ?>> defaultFeatures;
+   private final Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate;
+   private final List<FeatureBuilder<?, ?>> defaultFeatures;
 
    public static Collection<AttachmentCategory> values() {
       return categories.values();
@@ -54,10 +54,9 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
    }
 
    private static AttachmentCategory fromString(String categoryName, Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate) {
-      AttachmentCategory category = (AttachmentCategory)categories.computeIfAbsent(categoryName.toLowerCase(), (n) -> {
-         return new AttachmentCategory(n, isActiveAttachmentRequiredPredicate);
-      });
-      return category;
+       return categories.computeIfAbsent(categoryName.toLowerCase(), (n) -> {
+          return new AttachmentCategory(n, isActiveAttachmentRequiredPredicate);
+       });
    }
 
    public static AttachmentCategory fromOrdinal(int ordinal) {
@@ -66,8 +65,8 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
       if (ordinal >= categories.size()) {
          throw new IllegalArgumentException("Invalid ordinal " + ordinal);
       } else {
-         for(Iterator var3 = categories.values().iterator(); var3.hasNext(); ++index) {
-            AttachmentCategory ac = (AttachmentCategory)var3.next();
+         for(Iterator<AttachmentCategory> var3 = categories.values().iterator(); var3.hasNext(); ++index) {
+            AttachmentCategory ac = var3.next();
             if (index == ordinal) {
                result = ac;
                break;
@@ -81,7 +80,7 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
    private AttachmentCategory(String name, Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate) {
       this.name = name;
       this.isActiveAttachmentRequiredPredicate = isActiveAttachmentRequiredPredicate;
-      this.defaultFeatures = new ArrayList();
+      this.defaultFeatures = new ArrayList<>();
    }
 
    private AttachmentCategory withDefaultFeatures(List<FeatureBuilder<?, ?>> defaultFeatures) {
@@ -104,8 +103,8 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
    public int ordinal() {
       int result = 0;
 
-      for(Iterator var2 = categories.values().iterator(); var2.hasNext(); ++result) {
-         AttachmentCategory ac = (AttachmentCategory)var2.next();
+      for(Iterator<AttachmentCategory> var2 = categories.values().iterator(); var2.hasNext(); ++result) {
+         AttachmentCategory ac = var2.next();
          if (ac == this) {
             return result;
          }
@@ -115,7 +114,7 @@ public class AttachmentCategory implements Comparable<AttachmentCategory> {
    }
 
    public int hashCode() {
-      return Objects.hash(new Object[]{this.name});
+      return Objects.hash(this.name);
    }
 
    public boolean equals(Object obj) {

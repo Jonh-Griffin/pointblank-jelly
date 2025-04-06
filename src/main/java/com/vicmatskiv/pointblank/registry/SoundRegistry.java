@@ -10,7 +10,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 public class SoundRegistry {
    public static final DeferredRegister<SoundEvent> SOUNDS;
-   private static Map<String, Supplier<SoundEvent>> registeredSoundEvents;
+   private static final Map<String, Supplier<SoundEvent>> registeredSoundEvents;
    public static Supplier<SoundEvent> HIT_HEADSHOT;
    public static Supplier<SoundEvent> HIT_LIGHT;
    public static Supplier<SoundEvent> HIT_HEAVY;
@@ -230,22 +230,20 @@ public class SoundRegistry {
    public static Supplier<SoundEvent> PIN;
    public static Supplier<SoundEvent> THROW;
 
-   public static final Supplier<SoundEvent> register(String sound) {
-      Supplier<SoundEvent> registeredSound = SOUNDS.register(sound, () -> {
-         return SoundEvent.m_262824_(new ResourceLocation("pointblank", sound));
-      });
+   public static Supplier<SoundEvent> register(String sound) {
+      Supplier<SoundEvent> registeredSound = SOUNDS.register(sound, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation("pointblank", sound)));
       registeredSoundEvents.putIfAbsent(sound, registeredSound);
       return registeredSound;
    }
 
-   public static final SoundEvent getSoundEvent(String sound) {
-      Supplier<SoundEvent> registeredSoundEvent = (Supplier)registeredSoundEvents.get(sound);
-      return registeredSoundEvent != null ? (SoundEvent)registeredSoundEvent.get() : null;
+   public static SoundEvent getSoundEvent(String sound) {
+      Supplier<SoundEvent> registeredSoundEvent = registeredSoundEvents.get(sound);
+      return registeredSoundEvent != null ? registeredSoundEvent.get() : null;
    }
 
    static {
       SOUNDS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, "pointblank");
-      registeredSoundEvents = new HashMap();
+      registeredSoundEvents = new HashMap<>();
       HIT_HEADSHOT = register("hit_headshot");
       HIT_LIGHT = register("hit_light");
       HIT_HEAVY = register("hit_heavy");

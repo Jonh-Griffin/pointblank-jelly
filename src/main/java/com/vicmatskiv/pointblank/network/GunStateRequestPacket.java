@@ -3,7 +3,7 @@ package com.vicmatskiv.pointblank.network;
 import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 
 public class GunStateRequestPacket {
    protected UUID stateId;
@@ -34,13 +34,11 @@ public class GunStateRequestPacket {
       return new GunStateRequestPacket(stateId, slotIndex);
    }
 
-   public static <T extends GunStateRequestPacket> void handle(T packet, Supplier<Context> ctx) {
-      ((Context)ctx.get()).enqueueWork(() -> {
-         packet.handleEnqueued(ctx);
-      });
-      ((Context)ctx.get()).setPacketHandled(true);
+   public static <T extends GunStateRequestPacket> void handle(T packet, Supplier<NetworkEvent.Context> ctx) {
+      ctx.get().enqueueWork(() -> packet.handleEnqueued(ctx));
+      ctx.get().setPacketHandled(true);
    }
 
-   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
+   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
    }
 }

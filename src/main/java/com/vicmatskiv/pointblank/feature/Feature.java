@@ -18,29 +18,28 @@ public interface Feature {
    FeatureProvider getOwner();
 
    default Component getDescription() {
-      return Component.m_237119_();
+      return Component.empty();
    }
 
    default boolean isEnabledForAttachment(ItemStack rootStack, ItemStack attachmentStack) {
       if (rootStack == null) {
          return false;
       } else {
-         Item var4 = attachmentStack.m_41720_();
-         if (!(var4 instanceof Attachment)) {
-            return false;
-         } else {
-            Attachment attachment = (Attachment)var4;
-            if (!attachment.getCategory().requiresAttachmentSelection(this.getClass())) {
-               return attachment.getFeature(this.getClass()) == this && this.isEnabled(rootStack);
-            } else {
-               Pair<String, ItemStack> selectedAttachment = Attachments.getSelectedAttachment(rootStack, attachment.getCategory());
-               if (selectedAttachment != null && selectedAttachment.getSecond() == attachmentStack) {
-                  return attachment.getFeature(this.getClass()) == this && this.isEnabled(rootStack);
-               } else {
-                  return false;
-               }
-            }
-         }
+         Item item = attachmentStack.getItem();
+          if (item instanceof Attachment attachment) {
+              if (!attachment.getCategory().requiresAttachmentSelection(this.getClass())) {
+                return attachment.getFeature(this.getClass()) == this && this.isEnabled(rootStack);
+             } else {
+                Pair<String, ItemStack> selectedAttachment = Attachments.getSelectedAttachment(rootStack, attachment.getCategory());
+                if (selectedAttachment != null && selectedAttachment.getSecond() == attachmentStack) {
+                   return attachment.getFeature(this.getClass()) == this && this.isEnabled(rootStack);
+                } else {
+                   return false;
+                }
+             }
+          } else {
+             return false;
+          }
       }
    }
 

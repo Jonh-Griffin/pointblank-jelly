@@ -23,14 +23,14 @@ public class ReloadableMemoize<T, U, R> implements ResourceManagerReloadListener
    }
 
    private BiFunction<T, U, R> memoize(BiFunction<T, U, R> function) {
-      return Util.m_143821_(function);
+      return Util.memoize(function);
    }
 
    public void reload() {
       this.memoizedFunction = this.memoize(this.originalFunction);
    }
 
-   public void m_6213_(ResourceManager resourceManager) {
+   public void onResourceManagerReload(ResourceManager resourceManager) {
       this.reload();
    }
 }

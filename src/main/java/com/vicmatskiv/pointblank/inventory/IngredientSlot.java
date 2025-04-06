@@ -19,7 +19,7 @@ public class IngredientSlot extends Slot {
       this.slotIndex = slotIndex;
    }
 
-   public boolean m_280329_() {
+   public boolean isHighlightable() {
       return false;
    }
 
@@ -32,29 +32,29 @@ public class IngredientSlot extends Slot {
       if (itemStackCount == 1) {
          currentStack = (ItemStack)itemStacks.get(0);
       } else if (itemStackCount > 0) {
-         int index = (int)((long)((double)System.currentTimeMillis() / 800.0D) % (long)itemStackCount);
+         int index = (int)((long)((double)System.currentTimeMillis() / (double)800.0F) % (long)itemStackCount);
          currentStack = (ItemStack)itemStacks.get(index);
       } else {
-         currentStack = ItemStack.f_41583_;
+         currentStack = ItemStack.EMPTY;
       }
 
-      this.m_5852_(currentStack);
+      this.set(currentStack);
    }
 
    public PointBlankIngredient getIngredient() {
       return this.ingredient;
    }
 
-   public boolean m_8010_(Player player) {
+   public boolean mayPickup(Player player) {
       return false;
    }
 
-   public boolean m_5857_(ItemStack itemStack) {
+   public boolean mayPlace(ItemStack itemStack) {
       return false;
    }
 
    public String toString() {
-      return String.format("IngredientSlot {index: %d, container: %s}", this.slotIndex, System.identityHashCode(this.f_40218_));
+      return String.format("IngredientSlot {index: %d, container: %s}", this.slotIndex, System.identityHashCode(this.container));
    }
 
    public boolean isIngredientAvailable() {

@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 
 public class StopFireRequestPacket extends GunStateRequestPacket {
    public StopFireRequestPacket() {
@@ -21,12 +21,12 @@ public class StopFireRequestPacket extends GunStateRequestPacket {
       return new StopFireRequestPacket(header.stateId, header.slotIndex);
    }
 
-   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
-      ServerPlayer player = ((Context)ctx.get()).getSender();
+   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
+      ServerPlayer player = ctx.get().getSender();
       if (player != null) {
-         ItemStack itemStack = player.m_150109_().m_8020_(this.slotIndex);
-         if (itemStack != null && itemStack.m_41720_() instanceof GunItem) {
-            ((GunItem)itemStack.m_41720_()).handleClientStopFireRequest(player, this.stateId, this.slotIndex, this.correlationId);
+         ItemStack itemStack = player.getInventory().getItem(this.slotIndex);
+         if (itemStack != null && itemStack.getItem() instanceof GunItem) {
+            ((GunItem)itemStack.getItem()).handleClientStopFireRequest(player, this.stateId, this.slotIndex, this.correlationId);
          } else {
             System.err.println("Mismatching item in slot " + this.slotIndex);
          }

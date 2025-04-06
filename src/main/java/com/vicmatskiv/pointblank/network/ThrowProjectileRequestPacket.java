@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 
 public class ThrowProjectileRequestPacket {
    protected UUID stateId;
@@ -26,11 +26,9 @@ public class ThrowProjectileRequestPacket {
       buffer.writeInt(packet.slotIndex);
    }
 
-   public static void handle(ThrowProjectileRequestPacket packet, Supplier<Context> ctx) {
-      ((Context)ctx.get()).enqueueWork(() -> {
-         packet.handleEnqueued(ctx);
-      });
-      ((Context)ctx.get()).setPacketHandled(true);
+   public static void handle(ThrowProjectileRequestPacket packet, Supplier<NetworkEvent.Context> ctx) {
+      ctx.get().enqueueWork(() -> packet.handleEnqueued(ctx));
+      ctx.get().setPacketHandled(true);
    }
 
    public static ThrowProjectileRequestPacket decode(FriendlyByteBuf buffer) {
@@ -39,12 +37,12 @@ public class ThrowProjectileRequestPacket {
       return new ThrowProjectileRequestPacket(stateId, slotIndex);
    }
 
-   protected <T extends ThrowProjectileRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
-      ServerPlayer player = ((Context)ctx.get()).getSender();
+   protected void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
+      ServerPlayer player = ctx.get().getSender();
       if (player != null) {
-         ItemStack itemStack = player.m_150109_().m_8020_(this.slotIndex);
-         if (itemStack != null && itemStack.m_41720_() instanceof ThrowableLike) {
-            ((ThrowableLike)itemStack.m_41720_()).handleClientThrowRequest(player, this.stateId, this.slotIndex);
+         ItemStack itemStack = player.getInventory().getItem(this.slotIndex);
+         if (itemStack != null && itemStack.getItem() instanceof ThrowableLike) {
+            ((ThrowableLike)itemStack.getItem()).handleClientThrowRequest(player, this.stateId, this.slotIndex);
          } else {
             System.err.println("Mismatching item in slot " + this.slotIndex);
          }

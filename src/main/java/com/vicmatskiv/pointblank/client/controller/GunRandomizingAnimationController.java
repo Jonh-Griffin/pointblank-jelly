@@ -8,14 +8,14 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class GunRandomizingAnimationController extends AbstractProceduralAnimationController implements GunStateListener {
-   private double amplitude;
+   private final double amplitude;
    private double currentAmplitude;
    private double theta;
-   private long idleNanoTicksPerTransition;
-   private long fireNanoTicksPerTransition;
+   private final long idleNanoTicksPerTransition;
+   private final long fireNanoTicksPerTransition;
    private boolean isIdle;
    private boolean isForward;
-   private static double middleProgress = 1.0D - Math.sqrt(2.0D) / 2.0D;
+   private static final double middleProgress = 1.0D - Math.sqrt(2.0D) / 2.0D;
    private final Random random;
 
    public GunRandomizingAnimationController(double amplitude, long idleDuration, long fireDuration) {

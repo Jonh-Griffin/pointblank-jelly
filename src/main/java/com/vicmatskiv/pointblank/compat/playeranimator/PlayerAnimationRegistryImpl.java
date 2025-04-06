@@ -10,7 +10,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,25 +20,21 @@ public class PlayerAnimationRegistryImpl implements PlayerAnimationRegistry<Keyf
    private static final Gson GSON = new Gson();
    private static final String ATTR_NAME = "name";
    static final KeyframeAnimation AUX_ANIMATION = createAux();
-   private final Map<String, Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>>> registeredAnimations = new HashMap();
-   private final Map<String, List<Supplier<Reader>>> registrations = new HashMap();
+   private final Map<String, Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>>> registeredAnimations = new HashMap<>();
+   private final Map<String, List<Supplier<Reader>>> registrations = new HashMap<>();
 
    PlayerAnimationRegistryImpl() {
    }
 
    public void reload() {
       this.registeredAnimations.clear();
-      Iterator var1 = this.registrations.entrySet().iterator();
 
-      while(var1.hasNext()) {
-         Entry<String, List<Supplier<Reader>>> e = (Entry)var1.next();
-         Iterator var3 = ((List)e.getValue()).iterator();
+       for (Entry<String, List<Supplier<Reader>>> stringListEntry : this.registrations.entrySet()) {
 
-         while(var3.hasNext()) {
-            Supplier<Reader> readerFactory = (Supplier)var3.next();
-            this.read((String)e.getKey(), readerFactory);
-         }
-      }
+           for (Supplier<Reader> o : stringListEntry.getValue()) {
+               this.read(stringListEntry.getKey(), o);
+           }
+       }
 
    }
 
@@ -48,20 +43,16 @@ public class PlayerAnimationRegistryImpl implements PlayerAnimationRegistry<Keyf
    }
 
    public void register(String ownerId, Supplier<Reader> readerFactory) {
-      ((List)this.registrations.computeIfAbsent(ownerId, (o) -> {
-         return new ArrayList();
-      })).add(readerFactory);
+      this.registrations.computeIfAbsent(ownerId, (o) -> new ArrayList<>()).add(readerFactory);
       this.read(ownerId, readerFactory);
    }
 
    private void read(String ownerId, Supplier<Reader> readerFactory) {
       try {
-         Reader reader = (Reader)readerFactory.get();
+         Reader reader = readerFactory.get();
 
          try {
-            PlayerAnimationPreprocessor.preprocess(reader, (outputReader) -> {
-               this.readOne(ownerId, outputReader);
-            });
+            PlayerAnimationPreprocessor.preprocess(reader, (outputReader) -> this.readOne(ownerId, outputReader));
          } catch (Throwable var7) {
             if (reader != null) {
                try {
@@ -84,41 +75,33 @@ public class PlayerAnimationRegistryImpl implements PlayerAnimationRegistry<Keyf
    }
 
    private void readOne(String ownerId, Reader reader) {
-      Iterator var3 = AnimationSerializing.deserializeAnimation(reader).iterator();
-
-      while(var3.hasNext()) {
-         KeyframeAnimation keyframeAnimation = (KeyframeAnimation)var3.next();
-         if (keyframeAnimation.extraData != null) {
-            Object var6 = keyframeAnimation.extraData.get("name");
-            if (var6 instanceof String) {
-               String encoded = (String)var6;
-               String animationName = ((String)GSON.fromJson(encoded, String.class)).toLowerCase(Locale.ROOT);
-               int index = animationName.lastIndexOf(46);
-               if (index > 0) {
-                  String baseAnimationName = animationName.substring(0, index);
-                  String group = animationName.substring(index + 1);
-                  PlayerAnimationType playerAnimationType = PlayerAnimationType.fromBaseAnimationName(baseAnimationName);
-                  if (playerAnimationType != null) {
-                     Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>> keyframeAnimations = (Map)this.registeredAnimations.computeIfAbsent(ownerId, (key) -> {
-                        return new HashMap();
-                     });
-                     List<PlayerAnimation<KeyframeAnimation>> playerAnimations = (List)keyframeAnimations.computeIfAbsent(playerAnimationType, (t) -> {
-                        return new ArrayList();
-                     });
-                     playerAnimations.add(new PlayerAnimation(animationName, ownerId, keyframeAnimation, PlayerAnimationPartGroup.fromName(group)));
-                  }
+       for (KeyframeAnimation keyframeAnimation : AnimationSerializing.deserializeAnimation(reader)) {
+           if (keyframeAnimation.extraData != null) {
+               Object var6 = keyframeAnimation.extraData.get("name");
+               if (var6 instanceof String encoded) {
+                   String animationName = GSON.fromJson(encoded, String.class).toLowerCase(Locale.ROOT);
+                   int index = animationName.lastIndexOf(46);
+                   if (index > 0) {
+                       String baseAnimationName = animationName.substring(0, index);
+                       String group = animationName.substring(index + 1);
+                       PlayerAnimationType playerAnimationType = PlayerAnimationType.fromBaseAnimationName(baseAnimationName);
+                       if (playerAnimationType != null) {
+                           Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>> keyframeAnimations = this.registeredAnimations.computeIfAbsent(ownerId, (key) -> new HashMap<>());
+                           List<PlayerAnimation<KeyframeAnimation>> playerAnimations = keyframeAnimations.computeIfAbsent(playerAnimationType, (t) -> new ArrayList<>());
+                           playerAnimations.add(new PlayerAnimation<>(animationName, ownerId, keyframeAnimation, PlayerAnimationPartGroup.fromName(group)));
+                       }
+                   }
                }
-            }
-         }
-      }
+           }
+       }
 
    }
 
    public List<PlayerAnimation<KeyframeAnimation>> getAnimations(String ownerId, PlayerAnimationType animationType) {
-      Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>> ownerAnimations = (Map)this.registeredAnimations.get(ownerId);
+      Map<PlayerAnimationType, List<PlayerAnimation<KeyframeAnimation>>> ownerAnimations = this.registeredAnimations.get(ownerId);
       List<PlayerAnimation<KeyframeAnimation>> result = null;
       if (ownerAnimations != null) {
-         result = (List)ownerAnimations.get(animationType);
+         result = ownerAnimations.get(animationType);
       }
 
       if (result == null) {
@@ -142,6 +125,6 @@ public class PlayerAnimationRegistryImpl implements PlayerAnimationRegistry<Keyf
       auxGroup.add("animations", animations);
       String s = GSON.toJson(auxGroup);
       List<KeyframeAnimation> auxAnimations = AnimationSerializing.deserializeAnimation(new StringReader(s));
-      return (KeyframeAnimation)auxAnimations.get(0);
+      return auxAnimations.get(0);
    }
 }

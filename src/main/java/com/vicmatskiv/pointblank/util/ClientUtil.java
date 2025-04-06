@@ -1,3 +1,4 @@
+
 package com.vicmatskiv.pointblank.util;
 
 import net.minecraft.client.CameraType;
@@ -6,18 +7,21 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 public class ClientUtil {
+   public ClientUtil() {
+   }
+
    public static Player getClientPlayer() {
-      Minecraft mc = Minecraft.m_91087_();
-      return mc.f_91074_;
+      Minecraft mc = Minecraft.getInstance();
+      return mc.player;
    }
 
    public static boolean isFirstPerson(LivingEntity livingEntity) {
-      Minecraft mc = Minecraft.m_91087_();
-      return livingEntity == mc.f_91074_ && mc.f_91066_.m_92176_() == CameraType.FIRST_PERSON;
+      Minecraft mc = Minecraft.getInstance();
+      return livingEntity == mc.player && mc.options.getCameraType() == CameraType.FIRST_PERSON;
    }
 
    public static boolean isFirstPerson() {
-      Minecraft mc = Minecraft.m_91087_();
-      return mc.f_91066_.m_92176_() == CameraType.FIRST_PERSON;
+      Minecraft mc = Minecraft.getInstance();
+      return mc.options.getCameraType() == CameraType.FIRST_PERSON;
    }
 }

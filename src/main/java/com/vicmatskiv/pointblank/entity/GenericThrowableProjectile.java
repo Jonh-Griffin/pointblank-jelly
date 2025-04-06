@@ -9,17 +9,17 @@ import com.vicmatskiv.pointblank.client.effect.TrailEffect;
 import com.vicmatskiv.pointblank.item.EffectBuilderInfo;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.HurtingItem;
+import com.vicmatskiv.pointblank.item.GunItem.FirePhase;
 import com.vicmatskiv.pointblank.registry.EntityRegistry;
 import com.vicmatskiv.pointblank.util.HitScan;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -33,7 +33,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -53,15 +52,15 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
    private static final int DEFAULT_CLIENT_TRACKING_RANGE = 1024;
    private static final int DEFAULT_UPDATE_INTERVAL = 1;
    private static final int DEFAULT_LIFETIME_TICKS = 200;
-   private static final double MIN_SPEED_THRESHOLD = 0.01D;
+   private static final double MIN_SPEED_THRESHOLD = 0.01;
    private HurtingItem throwableItem;
    private ItemStack throwableItemStack;
    private double initialVelocityBlocksPerTick;
    private boolean isRicochet;
    private float gravity;
    private int maxLifetimeTicks;
-   private List<EffectInfo> trailEffects;
-   private List<EffectInfo> attachedEffects;
+   private List<ProjectileLike.EffectInfo> trailEffects;
+   private List<ProjectileLike.EffectInfo> attachedEffects;
    private List<Effect> activeTrailEffects = Collections.emptyList();
    private List<Effect> activeAttachedEffects = Collections.emptyList();
 
@@ -85,7 +84,7 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
       this.gravity = gravity;
    }
 
-   protected float m_7139_() {
+   protected float getGravity() {
       return this.gravity;
    }
 
@@ -114,123 +113,107 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
    }
 
    public void launchAtTargetEntity(LivingEntity player, HitResult hitResult, Entity targetEntity) {
-      Vec3 hitLocation = hitResult.m_82450_();
-      Vec3 muzzleWorldPos = this.m_20182_();
-      Vec3 eyePos = player.m_146892_();
-      Vec3 viewHitVector = hitLocation.m_82546_(eyePos);
-      Vec3 spawnOffset = muzzleWorldPos.m_82546_(eyePos);
-      Vec3 direction = viewHitVector.m_82546_(spawnOffset).m_82541_();
-      this.m_6686_(direction.f_82479_, direction.f_82480_, direction.f_82481_, (float)this.getInitialVelocityBlocksPerTick(), 0.0F);
+      Vec3 hitLocation = hitResult.getLocation();
+      Vec3 muzzleWorldPos = this.position();
+      Vec3 eyePos = player.getEyePosition();
+      Vec3 viewHitVector = hitLocation.subtract(eyePos);
+      Vec3 spawnOffset = muzzleWorldPos.subtract(eyePos);
+      Vec3 direction = viewHitVector.subtract(spawnOffset).normalize();
+      this.shoot(direction.x, direction.y, direction.z, (float)this.getInitialVelocityBlocksPerTick(), 0.0F);
    }
 
    public void launchAtLookTarget(LivingEntity player, double inaccuracy, long seed) {
-      HitResult hitScanTarget = HitScan.getNearestObjectInCrosshair(player, 0.0F, 150.0D, inaccuracy, seed, (block) -> {
-         return false;
-      }, (block) -> {
-         return false;
-      }, new ArrayList());
-      Vec3 hitLocation = hitScanTarget.m_82450_();
-      Vec3 muzzleWorldPos = this.m_20182_();
-      Vec3 eyePos = player.m_146892_();
-      Vec3 viewHitVector = hitLocation.m_82546_(eyePos);
-      Vec3 spawnOffset = muzzleWorldPos.m_82546_(eyePos);
-      Vec3 direction = viewHitVector.m_82546_(spawnOffset).m_82541_();
-      this.m_6686_(direction.f_82479_, direction.f_82480_, direction.f_82481_, (float)this.getInitialVelocityBlocksPerTick(), 0.0F);
+      HitResult hitScanTarget = HitScan.getNearestObjectInCrosshair(player, 0.0F, 150.0F, inaccuracy, seed, (block) -> false, (block) -> false, new ArrayList<>());
+      Vec3 hitLocation = hitScanTarget.getLocation();
+      Vec3 muzzleWorldPos = this.position();
+      Vec3 eyePos = player.getEyePosition();
+      Vec3 viewHitVector = hitLocation.subtract(eyePos);
+      Vec3 spawnOffset = muzzleWorldPos.subtract(eyePos);
+      Vec3 direction = viewHitVector.subtract(spawnOffset).normalize();
+      this.shoot(direction.x, direction.y, direction.z, (float)this.getInitialVelocityBlocksPerTick(), 0.0F);
    }
 
    private double getSpeedSqr() {
-      return this.m_20184_().m_82556_();
+      return this.getDeltaMovement().lengthSqr();
    }
 
-   protected void m_8060_(BlockHitResult blockHitResult) {
+   protected void onHitBlock(BlockHitResult blockHitResult) {
       if (this.isRicochet) {
-         BlockPos resultPos = blockHitResult.m_82425_();
+         BlockPos resultPos = blockHitResult.getBlockPos();
          Level level = MiscUtil.getLevel(this);
-         BlockState state = level.m_8055_(resultPos);
-         SoundEvent event = state.m_60734_().m_49962_(state).m_56776_();
-         if (this.getSpeedSqr() > 0.01D) {
-            level.m_6263_((Player)null, blockHitResult.m_82450_().f_82479_, blockHitResult.m_82450_().f_82480_, blockHitResult.m_82450_().f_82481_, event, SoundSource.AMBIENT, 1.0F, 1.0F);
+         BlockState state = level.getBlockState(resultPos);
+         SoundEvent event = state.getBlock().getSoundType(state).getStepSound();
+         if (this.getSpeedSqr() > 0.01) {
+            level.playSound(null, blockHitResult.getLocation().x, blockHitResult.getLocation().y, blockHitResult.getLocation().z, event, SoundSource.AMBIENT, 1.0F, 1.0F);
          }
 
-         this.ricochet(blockHitResult.m_82434_());
+         this.ricochet(blockHitResult.getDirection());
       } else {
-         Entity owner = this.m_19749_();
-         if (owner instanceof LivingEntity) {
-            LivingEntity player = (LivingEntity)owner;
-            this.throwableItem.handleBlockHit(player, blockHitResult, this);
+         Entity owner = this.getOwner();
+         if (owner instanceof LivingEntity player) {
+             this.throwableItem.handleBlockHit(player, blockHitResult, this);
          }
       }
 
    }
 
-   protected void m_5790_(EntityHitResult entityHitResult) {
-      Entity owner = this.m_19749_();
+   protected void onHitEntity(EntityHitResult entityHitResult) {
+      Entity owner = this.getOwner();
       if (this.isRicochet) {
-         if (owner instanceof LivingEntity && this.getSpeedSqr() > 0.01D) {
-            Entity entity = entityHitResult.m_82443_();
+         if (owner instanceof LivingEntity && this.getSpeedSqr() > 0.01) {
+            Entity entity = entityHitResult.getEntity();
             if (!MiscUtil.isProtected(entity)) {
-               entity.m_6469_(entity.m_269291_().m_269390_(this, this.m_19749_()), 0.5F);
+               entity.hurt(entity.damageSources().thrown(this, this.getOwner()), 0.5F);
             }
          }
 
-         this.ricochet(Direction.m_122366_(this.m_20184_().m_7096_(), this.m_20184_().m_7098_(), this.m_20184_().m_7094_()).m_122424_(), 0.3D, 1.0D, 0.3D);
-      } else if (owner instanceof LivingEntity) {
-         LivingEntity player = (LivingEntity)owner;
-         this.throwableItem.hurtEntity(player, entityHitResult, this, this.throwableItemStack);
+         this.ricochet(Direction.getNearest(this.getDeltaMovement().x(), this.getDeltaMovement().y(), this.getDeltaMovement().z()).getOpposite(), 0.3, 1.0F, 0.3);
+      } else if (owner instanceof LivingEntity player) {
+          this.throwableItem.hurtEntity(player, entityHitResult, this, this.throwableItemStack);
       }
 
    }
 
    private void ricochet(Direction direction) {
-      this.ricochet(direction, 1.0D, 1.0D, 1.0D);
+      this.ricochet(direction, 1.0F, 1.0F, 1.0F);
    }
 
    private void ricochet(Direction direction, double mx, double my, double mz) {
-      Axis axis = direction.m_122434_();
-      Vec3 delta = this.m_20184_();
-      delta = delta.m_82542_(axis == Axis.X ? -0.5D : 0.7D, axis == Axis.Y ? -0.2D : 0.7D, axis == Axis.Z ? -0.5D : 0.7D);
-      if (axis == Axis.Y && delta.f_82480_ < (double)this.m_7139_()) {
-         delta = new Vec3(delta.f_82479_, 0.0D, delta.f_82481_);
+      Direction.Axis axis = direction.getAxis();
+      Vec3 delta = this.getDeltaMovement();
+      delta = delta.multiply(axis == Axis.X ? (double)-0.5F : 0.7, axis == Axis.Y ? -0.2 : 0.7, axis == Axis.Z ? (double)-0.5F : 0.7);
+      if (axis == Axis.Y && delta.y < (double)this.getGravity()) {
+         delta = new Vec3(delta.x, 0.0F, delta.z);
       }
 
-      this.m_20256_(delta.m_82542_(mx, my, mz));
+      this.setDeltaMovement(delta.multiply(mx, my, mz));
    }
 
-   public boolean m_20068_() {
+   public boolean isNoGravity() {
       return false;
    }
 
    public void writeSpawnData(FriendlyByteBuf buffer) {
-      buffer.m_130055_(this.throwableItemStack);
+      buffer.writeItem(this.throwableItemStack);
    }
 
    public void readSpawnData(FriendlyByteBuf buffer) {
-      this.throwableItemStack = buffer.m_130267_();
+      this.throwableItemStack = buffer.readItem();
    }
 
-   public void m_8119_() {
-      super.m_8119_();
-      if (this.f_19797_ >= this.maxLifetimeTicks) {
+   public void tick() {
+      super.tick();
+      if (this.tickCount >= this.maxLifetimeTicks) {
          this.doDiscard();
       }
 
       if (MiscUtil.isClientSide(this)) {
-         this.activeAttachedEffects = this.attachedEffects.stream().filter((ei) -> {
-            return ei.predicate().test(this);
-         }).map((ei) -> {
-            return ei.effect();
-         }).toList();
-         this.activeTrailEffects = this.trailEffects.stream().filter((ei) -> {
-            return ei.predicate().test(this);
-         }).map((ei) -> {
-            return ei.effect();
-         }).toList();
-         Vec3 dm = this.m_20184_();
-         Iterator var2 = this.activeTrailEffects.iterator();
+         this.activeAttachedEffects = this.attachedEffects.stream().filter((ei) -> ei.predicate().test(this)).map(EffectInfo::effect).toList();
+         this.activeTrailEffects = this.trailEffects.stream().filter((ei) -> ei.predicate().test(this)).map(EffectInfo::effect).toList();
+         Vec3 dm = this.getDeltaMovement();
 
-         while(var2.hasNext()) {
-            Effect trailEffect = (Effect)var2.next();
-            ((TrailEffect)trailEffect).launchNext(this, new Vec3(this.m_20185_(), this.m_20186_(), this.m_20189_()), dm);
+         for(Effect trailEffect : this.activeTrailEffects) {
+            ((TrailEffect)trailEffect).launchNext(this, new Vec3(this.getX(), this.getY(), this.getZ()), dm);
          }
       }
 
@@ -242,15 +225,15 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
             this.throwableItem.discardProjectile(this);
          }
 
-         this.m_146870_();
+         this.discard();
       }
 
    }
 
-   protected void m_8097_() {
+   protected void defineSynchedData() {
    }
 
-   public Packet<ClientGamePacketListener> m_5654_() {
+   public Packet<ClientGamePacketListener> getAddEntityPacket() {
       return NetworkHooks.getEntitySpawningPacket(this);
    }
 
@@ -262,7 +245,7 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
       private int maxLifetimeTicks = 200;
       private float gravity;
       private boolean isRicochet;
-      private final List<EffectBuilderInfo> effectBuilderSuppliers = new ArrayList();
+      private final List<EffectBuilderInfo> effectBuilderSuppliers = new ArrayList<>();
       private Supplier<EntityRendererBuilder<?, Entity, EntityRenderer<Entity>>> rendererBuilder;
       private Supplier<HurtingItem> hurtingItem;
 
@@ -274,9 +257,7 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
       }
 
       public Builder withItem(Supplier<Item> hurtingItem) {
-         this.hurtingItem = () -> {
-            return (HurtingItem)hurtingItem.get();
-         };
+         this.hurtingItem = () -> (HurtingItem)hurtingItem.get();
          return this;
       }
 
@@ -311,13 +292,18 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
          return this;
       }
 
+      @Override
+      public GenericThrowableProjectile build(Level var1) {
+         return build((EntityType<GenericThrowableProjectile>) EntityRegistry.getTypeByName(this.name).get(), var1);
+      }
+
       public Builder withGravity(boolean isGravityEnabled) {
          this.gravity = isGravityEnabled ? 0.05F : 0.0F;
          return this;
       }
 
       public Builder withGravity(double gravity) {
-         this.gravity = Mth.m_14036_((float)gravity, -1.0F, 1.0F);
+         this.gravity = Mth.clamp((float)gravity, -1.0F, 1.0F);
          return this;
       }
 
@@ -326,61 +312,53 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
          return this;
       }
 
-      public EntityTypeExt getEntityTypeExt() {
+      public EntityBuilder.EntityTypeExt getEntityTypeExt() {
          return EntityTypeExt.PROJECTILE;
       }
 
       public EntityType.Builder<GenericThrowableProjectile> getEntityTypeBuilder() {
-         return EntityType.Builder.m_20704_(this::build, MobCategory.MISC).m_20699_(this.width, this.height).m_20702_(1024).m_20698_().m_20719_().m_20717_(1);
+         return EntityType.Builder.of((EntityType.EntityFactory<GenericThrowableProjectile>) this::build, MobCategory.MISC).sized(this.width, this.height).clientTrackingRange(1024).noSummon().fireImmune().updateInterval(1);
       }
 
-      public GenericThrowableProjectile build(EntityType<?> entityType, Level level) {
+      public GenericThrowableProjectile build(EntityType<GenericThrowableProjectile> entityType, Level level) {
          GenericThrowableProjectile projectile = new GenericThrowableProjectile(entityType, level);
-         if (level.f_46443_) {
+         if (level.isClientSide) {
             this.initEffects(projectile);
          }
 
          if (this.hurtingItem != null) {
-            projectile.throwableItem = (HurtingItem)this.hurtingItem.get();
+            projectile.throwableItem = this.hurtingItem.get();
             projectile.throwableItemStack = new ItemStack(projectile.throwableItem);
          }
 
          projectile.maxLifetimeTicks = this.maxLifetimeTicks;
          projectile.isRicochet = this.isRicochet;
-         projectile.setInitialVelocityBlocksPerTick(this.initialVelocityBlocksPerSecond * 0.05000000074505806D);
+         projectile.setInitialVelocityBlocksPerTick(this.initialVelocityBlocksPerSecond * (double)0.05F);
          projectile.setMaxLifetimeTicks(this.maxLifetimeTicks);
-         projectile.m_20242_(MiscUtil.isNearlyZero((double)this.gravity));
+         projectile.setNoGravity(MiscUtil.isNearlyZero(this.gravity));
          projectile.setGravity(this.gravity);
          return projectile;
       }
 
-      public GenericThrowableProjectile build(Level level) {
-         Supplier<EntityType<?>> entityTypeSupplier = EntityRegistry.getTypeByName(this.name);
-         return this.build((EntityType)entityTypeSupplier.get(), level);
-      }
-
       public void initEffects(GenericThrowableProjectile projectile) {
-         List<EffectInfo> trailEffects = new ArrayList();
-         List<EffectInfo> attachedEffects = new ArrayList();
-         GunItem.FirePhase phase = GunItem.FirePhase.FLYING;
-         Iterator var5 = this.effectBuilderSuppliers.iterator();
+         List<ProjectileLike.EffectInfo> trailEffects = new ArrayList<>();
+         List<ProjectileLike.EffectInfo> attachedEffects = new ArrayList<>();
+         GunItem.FirePhase phase = FirePhase.FLYING;
 
-         while(var5.hasNext()) {
-            EffectBuilderInfo effectBuilderInfo = (EffectBuilderInfo)var5.next();
-            EffectBuilder<?, ?> effectBuilder = (EffectBuilder)effectBuilderInfo.effectSupplier().get();
-            EffectBuilder.Context context;
-            if (effectBuilder.getCompatiblePhases().contains(GunItem.FirePhase.FLYING)) {
-               context = new EffectBuilder.Context();
+         for(EffectBuilderInfo effectBuilderInfo : this.effectBuilderSuppliers) {
+            EffectBuilder<?, ?> effectBuilder = effectBuilderInfo.effectSupplier().get();
+            if (effectBuilder.getCompatiblePhases().contains(FirePhase.FLYING)) {
+               EffectBuilder.Context context = new EffectBuilder.Context();
                TrailEffect effect = (TrailEffect)effectBuilder.build(context);
-               trailEffects.add(new EffectInfo(effect, effectBuilderInfo.predicate()));
+               trailEffects.add(new ProjectileLike.EffectInfo(effect, effectBuilderInfo.predicate()));
             } else {
                if (!(effectBuilder instanceof AttachedProjectileEffect.Builder)) {
                   throw new IllegalStateException("Effect builder " + effectBuilder + " is not compatible with phase '" + phase + "'. Check how you construct projectile: " + this.getName());
                }
 
-               context = new EffectBuilder.Context();
+               EffectBuilder.Context context = new EffectBuilder.Context();
                AttachedProjectileEffect effect = (AttachedProjectileEffect)effectBuilder.build(context);
-               attachedEffects.add(new EffectInfo(effect, effectBuilderInfo.predicate()));
+               attachedEffects.add(new ProjectileLike.EffectInfo(effect, effectBuilderInfo.predicate()));
             }
          }
 
@@ -392,8 +370,8 @@ public class GenericThrowableProjectile extends ThrowableProjectile implements P
          return this.rendererBuilder != null;
       }
 
-      public EntityRenderer<Entity> createEntityRenderer(Context context) {
-         return ((EntityRendererBuilder)this.rendererBuilder.get()).build(context);
+      public EntityRenderer<Entity> createEntityRenderer(EntityRendererProvider.Context context) {
+         return this.rendererBuilder.get().build(context);
       }
 
       public Builder withJsonObject(JsonObject obj) {

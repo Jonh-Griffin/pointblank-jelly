@@ -9,18 +9,18 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class GunRecoilAnimationController extends AbstractProceduralAnimationController implements GunStateListener {
-   private double initialAmplitude;
+   private final double initialAmplitude;
    private double initialAmplitudeAdj;
-   private double rateOfAmplitudeDecay;
+   private final double rateOfAmplitudeDecay;
    private double rateOfAmplitudeDecayAdj;
-   private double initialAngularFrequency;
+   private final double initialAngularFrequency;
    private double initialAngularFrequencyAdj;
-   private double rateOfFrequencyIncrease;
+   private final double rateOfFrequencyIncrease;
    private double rateOfFrequencyIncreaseAdj;
-   private double pitchMultiplier;
+   private final double pitchMultiplier;
    private int shotCount;
-   private int shotsPerRecoil;
-   private Random random = new Random();
+   private final int shotsPerRecoil;
+   private final Random random = new Random();
 
    public GunRecoilAnimationController(double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease, double pitchMultiplier, long ticksPerTransition, int shotsPerRecoil) {
       super(ticksPerTransition);
@@ -84,6 +84,6 @@ public class GunRecoilAnimationController extends AbstractProceduralAnimationCon
          this.initialAmplitudeAdj *= 0.5D;
       }
 
-      this.initialAmplitudeAdj *= (double)RecoilFeature.getRecoilModifier(itemStack);
+      this.initialAmplitudeAdj *= RecoilFeature.getRecoilModifier(itemStack);
    }
 }

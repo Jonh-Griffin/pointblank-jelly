@@ -15,24 +15,14 @@ public record ConditionContext(LivingEntity player, ItemStack rootStack, ItemSta
    }
 
    public ConditionContext(LivingEntity player, GunClientState gunClientState) {
-      this(player, (ItemStack)null, gunClientState, (ItemDisplayContext)null);
+      this(player, null, gunClientState, null);
    }
 
    public ConditionContext(ItemStack itemStack) {
-      this((LivingEntity)null, itemStack, itemStack, (GunClientState)null, (ItemDisplayContext)null);
+      this(null, itemStack, itemStack, null, null);
    }
 
-   public ConditionContext(LivingEntity player, ItemStack rootStack, ItemStack currentItemStack, GunClientState gunClientState, ItemDisplayContext itemDisplayContext, int randomSample1, int randomSample2) {
-      this.player = player;
-      this.rootStack = rootStack;
-      this.currentItemStack = currentItemStack;
-      this.gunClientState = gunClientState;
-      this.itemDisplayContext = itemDisplayContext;
-      this.randomSample1 = randomSample1;
-      this.randomSample2 = randomSample2;
-   }
-
-   public LivingEntity player() {
+    public LivingEntity player() {
       return this.player;
    }
 

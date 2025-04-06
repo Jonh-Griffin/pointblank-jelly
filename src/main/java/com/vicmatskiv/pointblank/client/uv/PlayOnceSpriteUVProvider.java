@@ -3,11 +3,11 @@ package com.vicmatskiv.pointblank.client.uv;
 import net.minecraft.util.Mth;
 
 public class PlayOnceSpriteUVProvider implements SpriteUVProvider {
-   private int totalSprites;
-   private double spriteFrameDurationMillis;
-   private int rows;
-   private int columns;
-   private long lifetimeMillis;
+   private final int totalSprites;
+   private final double spriteFrameDurationMillis;
+   private final int rows;
+   private final int columns;
+   private final long lifetimeMillis;
 
    public PlayOnceSpriteUVProvider(int rows, int columns, int spritesPerSecond, long lifetimeMillis) {
       this.rows = rows;
@@ -18,8 +18,8 @@ public class PlayOnceSpriteUVProvider implements SpriteUVProvider {
    }
 
    private int getSpriteIndex(float progress) {
-      double elapsedTimeMillis = (double)(progress * (float)this.lifetimeMillis);
-      return Mth.m_14045_((int)(elapsedTimeMillis / this.spriteFrameDurationMillis), 0, this.totalSprites);
+      double elapsedTimeMillis = progress * (float)this.lifetimeMillis;
+      return Mth.clamp((int)(elapsedTimeMillis / this.spriteFrameDurationMillis), 0, this.totalSprites);
    }
 
    public float[] getSpriteUV(float progress) {

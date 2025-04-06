@@ -17,14 +17,15 @@ public interface PlayerAnimationBuilder {
 
    static PlayerAnimationBuilder fromPath(final Path path) {
       Path fileNamePath = path.getFileName();
-      final String fileName = fileNamePath.toString();
+      String fileName = fileNamePath.toString();
       if (fileName.endsWith(".animation.json")) {
          fileName = fileName.substring(0, fileName.length() - 15);
       }
 
+      String finalFileName = fileName;
       return new PlayerAnimationBuilder() {
          public String getName() {
-            return fileName;
+            return finalFileName;
          }
 
          public Supplier<Reader> getReaderFactory() {

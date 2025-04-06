@@ -23,7 +23,7 @@ public class FinalPassRendererMixin {
       if (!Config.advancedIrisIntegrationEnabled) {
          return vsh;
       } else {
-         Integer auxIndex = (Integer)IriaAuxIndexHolder.value.get();
+         Integer auxIndex = IriaAuxIndexHolder.value.get();
          if (auxIndex == null) {
             return vsh;
          } else {
@@ -46,7 +46,7 @@ public class FinalPassRendererMixin {
       if (!Config.advancedIrisIntegrationEnabled) {
          return fsh;
       } else {
-         Integer auxIndex = (Integer)IriaAuxIndexHolder.value.get();
+         Integer auxIndex = IriaAuxIndexHolder.value.get();
          if (auxIndex == null) {
             return fsh;
          } else {

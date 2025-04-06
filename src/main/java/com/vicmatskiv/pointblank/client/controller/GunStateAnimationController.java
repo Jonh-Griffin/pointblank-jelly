@@ -25,16 +25,15 @@ import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.animation.Animation.LoopType;
-import software.bernie.geckolib.core.animation.AnimationController.AnimationStateHandler;
 import software.bernie.geckolib.core.object.PlayState;
 
 public class GunStateAnimationController extends AnimationController<GunItem> implements GunStateListener {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private final RawAnimation animation;
-   private Predicate<ConditionContext> shouldAnimate;
-   private Deque<Action> pendingActions = new ArrayDeque();
-   private String animationName;
-   private Map<String, RawAnimation> animations = new HashMap();
+   private final Predicate<ConditionContext> shouldAnimate;
+   private final Deque<Action> pendingActions = new ArrayDeque<>();
+   private final String animationName;
+   private final Map<String, RawAnimation> animations = new HashMap<>();
 
    public GunStateAnimationController(GunItem animatable, String controllerName, String animationName, Predicate<ConditionContext> shouldAnimate) {
       super(animatable, controllerName, new StateHandler());
@@ -45,9 +44,7 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
    }
 
    RawAnimation getAnimation(String animationName) {
-      return (RawAnimation)this.animations.computeIfAbsent(animationName, (n) -> {
-         return RawAnimation.begin().then(animationName, LoopType.PLAY_ONCE);
-      });
+      return this.animations.computeIfAbsent(animationName, (n) -> RawAnimation.begin().then(animationName, LoopType.PLAY_ONCE));
    }
 
    public void scheduleReset(LivingEntity player, GunClientState state, ItemStack itemStack, String animationName) {
@@ -61,27 +58,30 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
 
    }
 
-   private static class StateHandler implements AnimationStateHandler<GunItem> {
+   private static class StateHandler implements AnimationController.AnimationStateHandler<GunItem> {
       private PlayState currentPlayState;
+
+      private StateHandler() {
+      }
 
       public PlayState handle(AnimationState<GunItem> state) {
          GunStateAnimationController controller = this.getThisController(state);
 
          while(!controller.pendingActions.isEmpty()) {
-            Action action = (Action)controller.pendingActions.removeFirst();
+            Action action = controller.pendingActions.removeFirst();
             action.execute(state);
          }
 
-         ItemDisplayContext perspective = (ItemDisplayContext)state.getData(DataTickets.ITEM_RENDER_PERSPECTIVE);
+         ItemDisplayContext perspective = state.getData(DataTickets.ITEM_RENDER_PERSPECTIVE);
          if (perspective != ItemDisplayContext.FIRST_PERSON_RIGHT_HAND) {
             return PlayState.STOP;
          } else {
-            ItemStack itemStack = (ItemStack)state.getData(DataTickets.ITEMSTACK);
+            ItemStack itemStack = state.getData(DataTickets.ITEMSTACK);
             Player player = ClientUtil.getClientPlayer();
             GunClientState gunClientState = null;
             UUID itemStackId = GunItem.getItemStackId(itemStack);
-            boolean isMainHand = itemStackId != null && Objects.equals(GunItem.getItemStackId(player.m_21205_()), itemStackId);
-            if (player != null && isMainHand && itemStack != null && itemStack.m_41720_() instanceof GunItem) {
+            boolean isMainHand = itemStackId != null && Objects.equals(GunItem.getItemStackId(player.getMainHandItem()), itemStackId);
+            if (player != null && isMainHand && itemStack != null && itemStack.getItem() instanceof GunItem) {
                gunClientState = GunClientState.getState(player, itemStack, -1, false);
                boolean shouldAnimate = false;
                if (gunClientState != null && (shouldAnimate = controller.shouldAnimate.test(new ConditionContext(player, itemStack, gunClientState, perspective)))) {
@@ -112,7 +112,7 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
    }
 
    private class ResetAction implements Action {
-      private String animationName;
+      private final String animationName;
 
       ResetAction(String animationName) {
          this.animationName = animationName;
@@ -121,7 +121,7 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
       public void execute(AnimationState<GunItem> state) {
          CoreGeoModel<GunItem> model = GunStateAnimationController.this.lastModel;
          if (model != null) {
-            Animation a = model.getAnimation((GunItem)GunStateAnimationController.this.animatable, this.animationName);
+            Animation a = model.getAnimation(GunStateAnimationController.this.animatable, this.animationName);
             if (a != null) {
                GunStateAnimationController.LOGGER.debug("{} {} resetting animation {}", System.currentTimeMillis() % 100000L, GunStateAnimationController.this.getName(), this.animationName);
                ((StateHandler)GunStateAnimationController.this.stateHandler).currentPlayState = null;

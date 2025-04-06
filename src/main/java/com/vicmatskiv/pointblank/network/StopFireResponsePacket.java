@@ -25,6 +25,6 @@ public class StopFireResponsePacket extends GunStateResponsePacket {
    }
 
    protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
-      ((GunItem)itemStack.m_41720_()).processStopServerFireResponse(this.stateId, this.correlationId, this.isSuccess, itemStack, gunClientState);
+      ((GunItem)itemStack.getItem()).processStopServerFireResponse(this.stateId, this.correlationId, this.isSuccess, itemStack, gunClientState);
    }
 }

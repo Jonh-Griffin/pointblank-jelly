@@ -1,6 +1,7 @@
 package com.vicmatskiv.pointblank.client.effect;
 
 import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.client.effect.Effect.BlendMode;
 import com.vicmatskiv.pointblank.client.uv.LoopingSpriteUVProvider;
 import com.vicmatskiv.pointblank.client.uv.PlayOnceSpriteUVProvider;
 import com.vicmatskiv.pointblank.client.uv.RandomSpriteUVProvider;
@@ -21,7 +22,7 @@ public abstract class AbstractEffect implements Effect {
    protected long duration;
    protected long delay;
    protected float initialRoll;
-   protected BlendMode blendMode;
+   protected Effect.BlendMode blendMode;
    protected boolean isGlowEnabled;
    protected boolean isDepthTestEnabled;
    protected Supplier<SpriteUVProvider> spriteUVProviderSupplier;
@@ -37,6 +38,9 @@ public abstract class AbstractEffect implements Effect {
    protected float numRotations;
    protected int color;
 
+   public AbstractEffect() {
+   }
+
    public String getName() {
       return this.name;
    }
@@ -49,7 +53,7 @@ public abstract class AbstractEffect implements Effect {
       return this.color;
    }
 
-   public BlendMode getBlendMode() {
+   public Effect.BlendMode getBlendMode() {
       return this.blendMode;
    }
 
@@ -102,14 +106,43 @@ public abstract class AbstractEffect implements Effect {
    }
 
    public SpriteUVProvider getSpriteUVProvider() {
-      return (SpriteUVProvider)this.spriteUVProviderSupplier.get();
+      return this.spriteUVProviderSupplier.get();
+   }
+
+   public enum SpriteAnimationType {
+      STATIC,
+      RANDOM,
+      LOOP,
+      PLAY_ONCE;
+
+      SpriteAnimationType() {
+      }
+   }
+
+   public record SpriteInfo(int rows, int columns, int spritesPerSecond, SpriteAnimationType type) {
+
+       public int rows() {
+         return this.rows;
+      }
+
+      public int columns() {
+         return this.columns;
+      }
+
+      public int spritesPerSecond() {
+         return this.spritesPerSecond;
+      }
+
+      public SpriteAnimationType type() {
+         return this.type;
+      }
    }
 
    public abstract static class AbstractEffectBuilder<T extends AbstractEffectBuilder<T, E>, E extends AbstractEffect> implements EffectBuilder<T, E> {
       private static long counter;
       public static final SpriteUVProvider DEFAULT_SPRITE_UV_PROVIDER;
       private static final String DEFAULT_NAME_PREFIX = "pointblank:effect";
-      private static BlendMode DEFAULT_BLEND_MODE;
+      private static final Effect.BlendMode DEFAULT_BLEND_MODE;
       private static final Interpolators.FloatInterpolator DEFAULT_WIDTH_PROVIDER;
       private static final Interpolators.FloatInterpolator DEFAULT_ALPHA_PROVIDER;
       private static final Interpolators.FloatProvider DEFAULT_INITIAL_ROLL_PROVIDER;
@@ -120,7 +153,7 @@ public abstract class AbstractEffect implements Effect {
       protected ResourceLocation texture;
       protected long duration;
       protected long delay;
-      protected BlendMode blendMode;
+      protected Effect.BlendMode blendMode;
       protected boolean isDepthTestEnabled;
       protected long lifetimeNanos;
       protected boolean isGlowEnabled;
@@ -138,7 +171,7 @@ public abstract class AbstractEffect implements Effect {
       private float numRotations;
 
       protected T cast(AbstractEffectBuilder<T, E> _this) {
-         return _this;
+         return (T)_this;
       }
 
       public AbstractEffectBuilder() {
@@ -171,7 +204,7 @@ public abstract class AbstractEffect implements Effect {
          return this.cast(this);
       }
 
-      public T withBlendMode(BlendMode blendMode) {
+      public T withBlendMode(Effect.BlendMode blendMode) {
          this.blendMode = blendMode;
          return this.cast(this);
       }
@@ -258,14 +291,14 @@ public abstract class AbstractEffect implements Effect {
 
       public T withJsonObject(JsonObject obj) {
          this.withName(JsonUtil.getJsonString(obj, "name"));
-         this.withDuration((long)JsonUtil.getJsonInt(obj, "duration", 1000));
-         this.withDelay((long)JsonUtil.getJsonInt(obj, "delay", 0));
+         this.withDuration(JsonUtil.getJsonInt(obj, "duration", 1000));
+         this.withDelay(JsonUtil.getJsonInt(obj, "delay", 0));
          this.withTexture(obj.getAsJsonPrimitive("texture").getAsString());
-         this.withBlendMode((BlendMode)JsonUtil.getEnum(obj, "blendMode", BlendMode.class, DEFAULT_BLEND_MODE, true));
+         this.withBlendMode((Effect.BlendMode)JsonUtil.getEnum(obj, "blendMode", Effect.BlendMode.class, DEFAULT_BLEND_MODE, true));
          this.withDepthTest(JsonUtil.getJsonBoolean(obj, "depthTest", true));
          this.withGlow(JsonUtil.getJsonBoolean(obj, "glow", false));
          this.withBrightness(JsonUtil.getJsonInt(obj, "brightness", 1));
-         this.withRotations((double)JsonUtil.getJsonFloat(obj, "numRotations", 0.0F));
+         this.withRotations(JsonUtil.getJsonFloat(obj, "numRotations", 0.0F));
          this.withInitialRollProvider(JsonUtil.getJsonFloatProvider(obj, "initialRoll", DEFAULT_INITIAL_ROLL_PROVIDER));
          this.withColor(JsonUtil.getJsonInt(obj, "color", 16777215));
          Interpolators.FloatInterpolator alphaInt = JsonUtil.getJsonInterpolator(obj, "alpha");
@@ -283,14 +316,14 @@ public abstract class AbstractEffect implements Effect {
             int rows = JsonUtil.getJsonInt(spritesObj, "rows", 1);
             int columns = JsonUtil.getJsonInt(spritesObj, "columns", 1);
             int fps = JsonUtil.getJsonInt(spritesObj, "fps", 60);
-            SpriteAnimationType spriteAnimationType = (SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", SpriteAnimationType.class, SpriteAnimationType.LOOP, true);
+            SpriteAnimationType spriteAnimationType = (SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", SpriteAnimationType.class, AbstractEffect.SpriteAnimationType.LOOP, true);
             this.withSprites(rows, columns, fps, spriteAnimationType);
          }
 
          return this.cast(this);
       }
 
-      public E apply(E effect, Context context) {
+      public E apply(E effect, EffectBuilder.Context context) {
          effect.name = this.name;
          effect.texture = this.texture;
          effect.blendMode = this.blendMode;
@@ -305,9 +338,7 @@ public abstract class AbstractEffect implements Effect {
          effect.numRotations = this.numRotations;
          effect.color = this.color;
          if (context.getStartPosition() != null) {
-            effect.startPositionProvider = () -> {
-               return context.getStartPosition();
-            };
+            effect.startPositionProvider = () -> context.getStartPosition();
          }
 
          if (effect.startPositionProvider == null) {
@@ -315,15 +346,11 @@ public abstract class AbstractEffect implements Effect {
          }
 
          if (effect.startPositionProvider == null) {
-            effect.startPositionProvider = () -> {
-               return Vec3.f_82478_;
-            };
+            effect.startPositionProvider = () -> Vec3.ZERO;
          }
 
          if (context.getVelocity() != null) {
-            effect.velocityProvider = () -> {
-               return context.getVelocity();
-            };
+            effect.velocityProvider = () -> context.getVelocity();
          }
 
          if (effect.velocityProvider == null) {
@@ -331,9 +358,7 @@ public abstract class AbstractEffect implements Effect {
          }
 
          if (effect.velocityProvider == null) {
-            effect.velocityProvider = () -> {
-               return Vec3.f_82478_;
-            };
+            effect.velocityProvider = () -> Vec3.ZERO;
          }
 
          effect.initialRoll = this.initialRollProvider.getValue();
@@ -342,33 +367,23 @@ public abstract class AbstractEffect implements Effect {
          effect.gravity = this.gravity;
          effect.hasPhysics = this.hasPhysics;
          if (this.spriteInfo != null) {
-            switch(this.spriteInfo.type()) {
-            case STATIC:
-               effect.spriteUVProviderSupplier = () -> {
-                  return StaticSpriteUVProvider.INSTANCE;
-               };
-               break;
-            case LOOP:
-               SpriteUVProvider spriteUVProvider = new LoopingSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
-               effect.spriteUVProviderSupplier = () -> {
-                  return spriteUVProvider;
-               };
-               break;
-            case RANDOM:
-               effect.spriteUVProviderSupplier = () -> {
-                  return new RandomSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
-               };
-               break;
-            case PLAY_ONCE:
-               SpriteUVProvider spriteUVProvider = new PlayOnceSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
-               effect.spriteUVProviderSupplier = () -> {
-                  return spriteUVProvider;
-               };
+            switch (this.spriteInfo.type()) {
+               case STATIC:
+                  effect.spriteUVProviderSupplier = () -> StaticSpriteUVProvider.INSTANCE;
+                  break;
+               case LOOP:
+                  SpriteUVProvider spriteUVProvider = new LoopingSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
+                  effect.spriteUVProviderSupplier = () -> spriteUVProvider;
+                  break;
+               case RANDOM:
+                  effect.spriteUVProviderSupplier = () -> new RandomSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
+                  break;
+               case PLAY_ONCE:
+                  SpriteUVProvider spriteUVProvider2 = new PlayOnceSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), this.duration);
+                  effect.spriteUVProviderSupplier = () -> spriteUVProvider2;
             }
          } else {
-            effect.spriteUVProviderSupplier = () -> {
-               return DEFAULT_SPRITE_UV_PROVIDER;
-            };
+            effect.spriteUVProviderSupplier = () -> DEFAULT_SPRITE_UV_PROVIDER;
          }
 
          return effect;
@@ -390,7 +405,7 @@ public abstract class AbstractEffect implements Effect {
          return this.isGlowEnabled;
       }
 
-      public BlendMode getBlendMode() {
+      public Effect.BlendMode getBlendMode() {
          return this.blendMode;
       }
 
@@ -400,43 +415,6 @@ public abstract class AbstractEffect implements Effect {
          DEFAULT_WIDTH_PROVIDER = new Interpolators.ConstantFloatProvider(1.0F);
          DEFAULT_ALPHA_PROVIDER = new Interpolators.ConstantFloatProvider(1.0F);
          DEFAULT_INITIAL_ROLL_PROVIDER = new Interpolators.RandomFloatProvider(360.0F);
-      }
-   }
-
-   public static record SpriteInfo(int rows, int columns, int spritesPerSecond, SpriteAnimationType type) {
-      public SpriteInfo(int rows, int columns, int spritesPerSecond, SpriteAnimationType type) {
-         this.rows = rows;
-         this.columns = columns;
-         this.spritesPerSecond = spritesPerSecond;
-         this.type = type;
-      }
-
-      public int rows() {
-         return this.rows;
-      }
-
-      public int columns() {
-         return this.columns;
-      }
-
-      public int spritesPerSecond() {
-         return this.spritesPerSecond;
-      }
-
-      public SpriteAnimationType type() {
-         return this.type;
-      }
-   }
-
-   public static enum SpriteAnimationType {
-      STATIC,
-      RANDOM,
-      LOOP,
-      PLAY_ONCE;
-
-      // $FF: synthetic method
-      private static SpriteAnimationType[] $values() {
-         return new SpriteAnimationType[]{STATIC, RANDOM, LOOP, PLAY_ONCE};
       }
    }
 }

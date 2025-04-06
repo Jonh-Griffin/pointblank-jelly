@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,36 +17,30 @@ import org.apache.logging.log4j.Logger;
 public class StateMachine<T extends Enum<T>, Context> {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private T currentState;
-   private List<Transition<T, Context>> allTransitions;
-   private Set<T> allStates = new HashSet();
-   private Map<T, Action<T, Context>> onSetStateActions;
-   private Action<T, Context> onChangeStateAction;
-   private StateHistory<T> stateHistory;
-   private Map<T, List<Transition<T, Context>>> transitionsByFromState;
-   private Map<T, List<Transition<T, Context>>> transitionsByToState;
+   private final List<Transition<T, Context>> allTransitions;
+   private final Set<T> allStates = new HashSet<>();
+   private final Map<T, Action<T, Context>> onSetStateActions;
+   private final Action<T, Context> onChangeStateAction;
+   private final StateHistory<T> stateHistory;
+   private final Map<T, List<Transition<T, Context>>> transitionsByFromState;
+   private final Map<T, List<Transition<T, Context>>> transitionsByToState;
 
    private StateMachine(T initialState, List<Transition<T, Context>> allowedTransitions, Map<T, Action<T, Context>> onSetStateActions, Action<T, Context> onChangeStateAction) {
       this.currentState = initialState;
       this.allTransitions = Collections.unmodifiableList(allowedTransitions);
       this.onChangeStateAction = onChangeStateAction;
-      this.transitionsByFromState = new HashMap();
-      this.transitionsByToState = new HashMap();
-      Iterator var5 = allowedTransitions.iterator();
+      this.transitionsByFromState = new HashMap<>();
+      this.transitionsByToState = new HashMap<>();
 
-      while(var5.hasNext()) {
-         Transition<T, Context> transition = (Transition)var5.next();
+      for(Transition<T, Context> transition : allowedTransitions) {
          this.allStates.add(transition.fromState);
          this.allStates.add(transition.toState);
-         ((List)this.transitionsByFromState.computeIfAbsent(transition.fromState, (k) -> {
-            return new ArrayList();
-         })).add(transition);
-         ((List)this.transitionsByToState.computeIfAbsent(transition.toState, (k) -> {
-            return new ArrayList();
-         })).add(transition);
+         this.transitionsByFromState.computeIfAbsent(transition.fromState, (k) -> new ArrayList<>()).add(transition);
+         this.transitionsByToState.computeIfAbsent(transition.toState, (k) -> new ArrayList<>()).add(transition);
       }
 
       this.onSetStateActions = Collections.unmodifiableMap(onSetStateActions);
-      this.stateHistory = new StateHistory(this.allStates.size() + 1);
+      this.stateHistory = new StateHistory<>(this.allStates.size() + 1);
       this.stateHistory.add(initialState);
    }
 
@@ -64,14 +57,11 @@ public class StateMachine<T extends Enum<T>, Context> {
 
    public T setState(Context context, T newState) {
       boolean result = false;
-      List<Transition<T, Context>> possibleTransitions = (List)this.transitionsByToState.get(newState);
+      List<Transition<T, Context>> possibleTransitions = this.transitionsByToState.get(newState);
       if (possibleTransitions == null) {
          throw new IllegalArgumentException("Unknown state: " + newState);
       } else {
-         Iterator var5 = possibleTransitions.iterator();
-
-         while(var5.hasNext()) {
-            Transition<T, Context> transition = (Transition)var5.next();
+         for(Transition<T, Context> transition : possibleTransitions) {
             if (Objects.equals(this.currentState, transition.fromState) && Objects.equals(newState, transition.toState) && transition.p.test(context)) {
                this.setState(context, transition);
                result = true;
@@ -89,10 +79,8 @@ public class StateMachine<T extends Enum<T>, Context> {
 
    public T setStateToAnyOf(Context context, Collection<T> toStates) {
       T result = null;
-      Iterator var4 = toStates.iterator();
 
-      while(var4.hasNext()) {
-         T toState = (Enum)var4.next();
+      for(T toState : toStates) {
          result = this.setState(context, toState);
          if (result != null) {
             break;
@@ -106,7 +94,7 @@ public class StateMachine<T extends Enum<T>, Context> {
       int maxAllowedTransitions = this.allStates.size();
 
       for(int i = 0; i < maxAllowedTransitions; ++i) {
-         Transition<T, Context> transition = this.next(context, TransitionMode.AUTO);
+         Transition<T, Context> transition = this.next(context, StateMachine.TransitionMode.AUTO);
          if (transition == null) {
             break;
          }
@@ -128,7 +116,7 @@ public class StateMachine<T extends Enum<T>, Context> {
          transition.postAction.execute(context, transition.fromState, transition.toState);
       }
 
-      Action<T, Context> onSetStateAction = (Action)this.onSetStateActions.get(this.currentState);
+      Action<T, Context> onSetStateAction = this.onSetStateActions.get(this.currentState);
       if (onSetStateAction != null) {
          onSetStateAction.execute(context, transition.fromState, transition.toState);
       }
@@ -141,19 +129,13 @@ public class StateMachine<T extends Enum<T>, Context> {
    }
 
    private Transition<T, Context> next(Context context, TransitionMode transitionMode) {
-      List<Transition<T, Context>> possibleTransitions = (List)this.transitionsByFromState.get(this.currentState);
-      Iterator var4 = possibleTransitions.iterator();
-
-      Transition transition;
-      do {
-         if (!var4.hasNext()) {
-            return null;
+      for(Transition<T, Context> transition : this.transitionsByFromState.get(this.currentState)) {
+         if (Objects.equals(this.currentState, transition.fromState) && transition.p.test(context) && transition.mode == transitionMode) {
+            return transition;
          }
+      }
 
-         transition = (Transition)var4.next();
-      } while(!Objects.equals(this.currentState, transition.fromState) || !transition.p.test(context) || transition.mode != transitionMode);
-
-      return transition;
+      return null;
    }
 
    public List<Transition<T, Context>> getAllTransitions() {
@@ -164,29 +146,12 @@ public class StateMachine<T extends Enum<T>, Context> {
       return Collections.unmodifiableCollection(this.stateHistory.deque);
    }
 
-   public interface Action<T extends Enum<T>, Context> {
-      void execute(Context var1, T var2, T var3);
-   }
+   public enum TransitionMode {
+      AUTO,
+      EVENT_OR_AUTO,
+      EVENT;
 
-   private static class Transition<T extends Enum<T>, Context> {
-      T fromState;
-      T toState;
-      Predicate<Context> p;
-      Action<T, Context> preAction;
-      Action<T, Context> postAction;
-      TransitionMode mode;
-
-      public Transition(T fromState, T toState, Predicate<Context> p, Action<T, Context> preAction, Action<T, Context> postAction, TransitionMode transitionMode) {
-         this.fromState = fromState;
-         this.toState = toState;
-         this.p = p;
-         this.preAction = preAction;
-         this.postAction = postAction;
-         this.mode = transitionMode;
-      }
-
-      public String toString() {
-         return String.format("Tr[%s->%s, %s, pre: %s, post: %s]", this.fromState, this.toState, this.mode, this.preAction, this.postAction);
+      TransitionMode() {
       }
    }
 
@@ -195,7 +160,7 @@ public class StateMachine<T extends Enum<T>, Context> {
       private final int maxSize;
 
       public StateHistory(int size) {
-         this.deque = new ArrayDeque(size);
+         this.deque = new ArrayDeque<>(size);
          this.maxSize = size;
       }
 
@@ -220,22 +185,36 @@ public class StateMachine<T extends Enum<T>, Context> {
       }
    }
 
-   public static enum TransitionMode {
-      AUTO,
-      EVENT_OR_AUTO,
-      EVENT;
+   private static class Transition<T extends Enum<T>, Context> {
+      T fromState;
+      T toState;
+      Predicate<Context> p;
+      Action<T, Context> preAction;
+      Action<T, Context> postAction;
+      TransitionMode mode;
 
-      // $FF: synthetic method
-      private static TransitionMode[] $values() {
-         return new TransitionMode[]{AUTO, EVENT_OR_AUTO, EVENT};
+      public Transition(T fromState, T toState, Predicate<Context> p, Action<T, Context> preAction, Action<T, Context> postAction, TransitionMode transitionMode) {
+         this.fromState = fromState;
+         this.toState = toState;
+         this.p = p;
+         this.preAction = preAction;
+         this.postAction = postAction;
+         this.mode = transitionMode;
+      }
+
+      public String toString() {
+         return String.format("Tr[%s->%s, %s, pre: %s, post: %s]", this.fromState, this.toState, this.mode, this.preAction, this.postAction);
       }
    }
 
    public static class Builder<T extends Enum<T>, Context> {
-      private List<Transition<T, Context>> allowedTransitions = new ArrayList();
-      private final Set<T> allStates = new HashSet();
-      private Map<T, Action<T, Context>> onSetStateActions = new HashMap();
+      private final List<Transition<T, Context>> allowedTransitions = new ArrayList<>();
+      private final Set<T> allStates = new HashSet<>();
+      private final Map<T, Action<T, Context>> onSetStateActions = new HashMap<>();
       private Action<T, Context> onChangeStateAction;
+
+      public Builder() {
+      }
 
       public Builder<T, Context> withOnSetStateAction(T toState, Action<T, Context> action) {
          this.onSetStateActions.put(toState, action);
@@ -249,15 +228,10 @@ public class StateMachine<T extends Enum<T>, Context> {
 
       public Builder<T, Context> withTransition(List<T> fromStates, T toState, Predicate<Context> predicate, TransitionMode transitionMode, Action<T, Context> preAction, Action<T, Context> postAction) {
          if (predicate == null) {
-            predicate = (context) -> {
-               return true;
-            };
+            predicate = (context) -> true;
          }
 
-         Iterator var7 = fromStates.iterator();
-
-         while(var7.hasNext()) {
-            T fromState = (Enum)var7.next();
+         for(T fromState : fromStates) {
             this.withTransition(fromState, toState, predicate, transitionMode, preAction, postAction);
          }
 
@@ -266,65 +240,55 @@ public class StateMachine<T extends Enum<T>, Context> {
 
       public Builder<T, Context> withTransition(T fromState, T toState, Predicate<Context> predicate, TransitionMode transitionMode, Action<T, Context> preAction, Action<T, Context> postAction) {
          if (predicate == null) {
-            predicate = (context) -> {
-               return true;
-            };
+            predicate = (context) -> true;
          }
 
-         this.allowedTransitions.add(new Transition(fromState, toState, predicate, preAction, postAction, transitionMode));
+         this.allowedTransitions.add(new Transition<>(fromState, toState, predicate, preAction, postAction, transitionMode));
          this.allStates.add(fromState);
          this.allStates.add(toState);
          return this;
       }
 
       public Builder<T, Context> withTransition(T fromState, T toState, Predicate<Context> predicate, TransitionMode transitionMode) {
-         return this.withTransition((Enum)fromState, toState, predicate, transitionMode, (Action)null, (Action)null);
+         return this.withTransition(fromState, toState, predicate, transitionMode, null, null);
       }
 
       public Builder<T, Context> withTransition(T fromState, T toState) {
-         return this.withTransition((Enum)fromState, toState, (Predicate)null, TransitionMode.EVENT, (Action)null, (Action)null);
+         return this.withTransition(fromState, toState, null, StateMachine.TransitionMode.EVENT, null, null);
       }
 
       public Builder<T, Context> withTransition(T fromState, T toState, Predicate<Context> predicate) {
-         return this.withTransition((Enum)fromState, toState, predicate, TransitionMode.AUTO, (Action)null, (Action)null);
+         return this.withTransition(fromState, toState, predicate, StateMachine.TransitionMode.AUTO, null, null);
       }
 
       private void validate() {
-         Set<T> statesWithOutgoingTransitions = new HashSet();
-         Iterator var2 = this.allowedTransitions.iterator();
+         Set<T> statesWithOutgoingTransitions = new HashSet<>();
 
-         while(var2.hasNext()) {
-            Transition<T, Context> transition = (Transition)var2.next();
+         for(Transition<T, Context> transition : this.allowedTransitions) {
             statesWithOutgoingTransitions.add(transition.fromState);
          }
 
-         var2 = this.allStates.iterator();
+         for(T state : this.allStates) {
+            if (!statesWithOutgoingTransitions.contains(state)) {
+               throw new IllegalArgumentException("No outgoing transitions found for state " + state);
+            }
+         }
 
-         Enum state;
-         do {
-            if (!var2.hasNext()) {
-               var2 = this.onSetStateActions.keySet().iterator();
-
-               do {
-                  if (!var2.hasNext()) {
-                     return;
-                  }
-
-                  state = (Enum)var2.next();
-               } while(this.allStates.contains(state));
-
+         for(T state : this.onSetStateActions.keySet()) {
+            if (!this.allStates.contains(state)) {
                throw new IllegalArgumentException("No transitions defined for state used in action: " + state);
             }
+         }
 
-            state = (Enum)var2.next();
-         } while(statesWithOutgoingTransitions.contains(state));
-
-         throw new IllegalArgumentException("No outgoing transitions found for state " + state);
       }
 
       public StateMachine<T, Context> build(T initialState) {
          this.validate();
-         return new StateMachine(initialState, this.allowedTransitions, this.onSetStateActions, this.onChangeStateAction);
+         return new StateMachine<>(initialState, this.allowedTransitions, this.onSetStateActions, this.onChangeStateAction);
       }
+   }
+
+   public interface Action<T extends Enum<T>, Context> {
+      void execute(Context var1, T var2, T var3);
    }
 }

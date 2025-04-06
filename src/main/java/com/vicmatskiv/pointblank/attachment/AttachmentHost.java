@@ -5,7 +5,6 @@ import com.vicmatskiv.pointblank.feature.FeatureProvider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -23,9 +22,7 @@ public interface AttachmentHost extends ItemLike, Nameable, FeatureProvider {
    }
 
    default Collection<AttachmentCategory> getCompatibleAttachmentCategories() {
-      return this.getCompatibleAttachments().stream().map((a) -> {
-         return a.getCategory();
-      }).toList();
+      return this.getCompatibleAttachments().stream().map(Attachment::getCategory).toList();
    }
 
    default int getMaxAttachmentCategories() {
@@ -33,18 +30,16 @@ public interface AttachmentHost extends ItemLike, Nameable, FeatureProvider {
    }
 
    default List<Component> getCompatibleAttachmentTooltipLines(ItemStack itemStack) {
-      List<Component> tooltipLines = new ArrayList();
-      tooltipLines.add(Component.m_237119_());
+      List<Component> tooltipLines = new ArrayList<>();
+      tooltipLines.add(Component.empty());
       Collection<Attachment> compatibleAttachments = this.getCompatibleAttachments();
       if (compatibleAttachments.isEmpty()) {
-         tooltipLines.add(Component.m_237115_("label.pointblank.noCompatibleAttachments").m_6270_(Style.f_131099_.m_178520_(11184810).m_131155_(true).m_131162_(false)));
+         tooltipLines.add(Component.translatable("label.pointblank.noCompatibleAttachments").setStyle(Style.EMPTY.withColor(11184810).withItalic(true).withUnderlined(false)));
       } else {
-         tooltipLines.add(Component.m_237115_("label.pointblank.compatibleAttachments").m_130946_(":").m_130940_(ChatFormatting.WHITE).m_130940_(ChatFormatting.ITALIC));
-         Iterator var4 = compatibleAttachments.iterator();
+         tooltipLines.add(Component.translatable("label.pointblank.compatibleAttachments").append(":").withStyle(ChatFormatting.WHITE).withStyle(ChatFormatting.ITALIC));
 
-         while(var4.hasNext()) {
-            Attachment attachment = (Attachment)var4.next();
-            tooltipLines.add(Component.m_237115_(attachment.m_5456_().m_5524_()).m_130940_(ChatFormatting.AQUA).m_130940_(ChatFormatting.ITALIC));
+         for(Attachment attachment : compatibleAttachments) {
+            tooltipLines.add(Component.translatable(attachment.asItem().getDescriptionId()).withStyle(ChatFormatting.AQUA).withStyle(ChatFormatting.ITALIC));
          }
       }
 

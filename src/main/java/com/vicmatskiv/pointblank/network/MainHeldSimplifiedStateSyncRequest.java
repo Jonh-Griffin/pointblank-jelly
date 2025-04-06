@@ -1,15 +1,15 @@
 package com.vicmatskiv.pointblank.network;
 
 import com.vicmatskiv.pointblank.client.GunClientState;
+import com.vicmatskiv.pointblank.client.GunClientState.FireState;
 import com.vicmatskiv.pointblank.util.MiscUtil;
-import java.util.Iterator;
 import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.NetworkEvent.Context;
 
 public class MainHeldSimplifiedStateSyncRequest extends GunStateRequestPacket {
    private static final int MAX_STATE_SYNC_DISTANCE_SQR = 10000;
@@ -29,22 +29,16 @@ public class MainHeldSimplifiedStateSyncRequest extends GunStateRequestPacket {
 
    public static MainHeldSimplifiedStateSyncRequest decode(FriendlyByteBuf buffer) {
       GunStateRequestPacket header = GunStateRequestPacket.decodeHeader(buffer);
-      GunClientState.FireState state = GunClientState.FireState.values()[buffer.readInt()];
+      GunClientState.FireState state = FireState.values()[buffer.readInt()];
       return new MainHeldSimplifiedStateSyncRequest(header.stateId, state);
    }
 
-   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
-      ServerPlayer sender = ((Context)ctx.get()).getSender();
-      Iterator var3 = ((ServerLevel)MiscUtil.getLevel(sender)).m_8795_((p) -> {
-         return true;
-      }).iterator();
+   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
+      ServerPlayer sender = ctx.get().getSender();
 
-      while(var3.hasNext()) {
-         ServerPlayer player = (ServerPlayer)var3.next();
-         if (player != sender && player.m_20238_(player.m_20182_()) < 10000.0D) {
-            Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-               return player;
-            }), new MainHeldSimplifiedStateBroadcastPacket(sender, this.stateId, this.simplifiedState));
+      for(ServerPlayer player : ((ServerLevel)MiscUtil.getLevel(sender)).getPlayers((p) -> true)) {
+         if (player != sender && player.distanceToSqr(player.position()) < (double)10000.0F) {
+            Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> player), new MainHeldSimplifiedStateBroadcastPacket(sender, this.stateId, this.simplifiedState));
          }
       }
 

@@ -1,11 +1,11 @@
 package com.vicmatskiv.pointblank.client.uv;
 
 public class LoopingSpriteUVProvider implements SpriteUVProvider {
-   private int totalSprites;
-   private double spriteFrameDurationMillis;
-   private int rows;
-   private int columns;
-   private long lifetimeMillis;
+   private final int totalSprites;
+   private final double spriteFrameDurationMillis;
+   private final int rows;
+   private final int columns;
+   private final long lifetimeMillis;
 
    public LoopingSpriteUVProvider(int rows, int columns, int spritesPerSecond, long lifetimeMillis) {
       this.rows = rows;
@@ -16,10 +16,9 @@ public class LoopingSpriteUVProvider implements SpriteUVProvider {
    }
 
    public int getSpriteIndex(float progress) {
-      double elapsedTimeMillis = (double)(progress * (float)this.lifetimeMillis);
+      double elapsedTimeMillis = progress * (float)this.lifetimeMillis;
       int elapsedSprites = (int)(elapsedTimeMillis / this.spriteFrameDurationMillis);
-      int spriteIndex = elapsedSprites % this.totalSprites;
-      return spriteIndex;
+       return elapsedSprites % this.totalSprites;
    }
 
    public float[] getSpriteUV(float progress) {

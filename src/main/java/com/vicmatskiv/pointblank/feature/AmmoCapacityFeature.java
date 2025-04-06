@@ -31,11 +31,12 @@ public class AmmoCapacityFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, AmmoCapacityFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private IntUnaryOperator ammoCapacityTransformer;
       private Component description;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -43,18 +44,14 @@ public class AmmoCapacityFeature extends ConditionalFeature {
       }
 
       public Builder withAmmoCapacityModifier(int ammoCapacityModifier) {
-         this.ammoCapacityTransformer = (ammo) -> {
-            return Mth.m_14045_(ammo * ammoCapacityModifier, 1, Integer.MAX_VALUE);
-         };
-         this.description = Component.m_237115_("description.pointblank.extendsAmmoCapacity").m_7220_(Component.m_237113_(String.format(" %d%%", (ammoCapacityModifier - 1) * 100)));
+         this.ammoCapacityTransformer = (ammo) -> Mth.clamp(ammo * ammoCapacityModifier, 1, Integer.MAX_VALUE);
+         this.description = Component.translatable("description.pointblank.extendsAmmoCapacity").append(Component.literal(String.format(" %d%%", (ammoCapacityModifier - 1) * 100)));
          return this;
       }
 
       public Builder withAmmoCapacity(int ammoCapacity) {
-         this.ammoCapacityTransformer = (ammo) -> {
-            return Mth.m_14045_(ammoCapacity, 1, Integer.MAX_VALUE);
-         };
-         this.description = Component.m_237115_("description.pointblank.changesAmmoCapacity").m_7220_(Component.m_237113_(" " + ammoCapacity));
+         this.ammoCapacityTransformer = (ammo) -> Mth.clamp(ammoCapacity, 1, Integer.MAX_VALUE);
+         this.description = Component.translatable("description.pointblank.changesAmmoCapacity").append(Component.literal(" " + ammoCapacity));
          return this;
       }
 

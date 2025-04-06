@@ -9,53 +9,25 @@ import net.minecraft.world.phys.HitResult;
 import software.bernie.geckolib.util.ClientUtils;
 
 public class ParticleValueProviders {
-   public static class BoundingBoxBasedParticleWidthProvider implements ParticleWidthProvider {
-      private double maxBoundBoxSize;
-      private double maxWidth;
-
-      public BoundingBoxBasedParticleWidthProvider(double maxBoundBoxSize, double maxWidth) {
-         this.maxBoundBoxSize = maxBoundBoxSize;
-         this.maxWidth = maxWidth;
-      }
-
-      public float getWidth(EffectBuilder.Context effectContext) {
-         float result = (float)this.maxWidth;
-         HitResult hitResult = effectContext.getHitResult();
-         if (hitResult instanceof SimpleHitResult) {
-            SimpleHitResult simpleHitResult = (SimpleHitResult)hitResult;
-            int entityId = simpleHitResult.getEntityId();
-            Entity entity = ClientUtils.getLevel().m_6815_(entityId);
-            if (entity != null) {
-               AABB bb = entity.m_20191_();
-               if (bb != null) {
-                  result = (float)Mth.m_14008_(this.maxWidth * bb.m_82309_() / this.maxBoundBoxSize, 0.0D, this.maxWidth);
-               }
-            }
-         }
-
-         return result;
-      }
+   public ParticleValueProviders() {
    }
 
-   public static class DamageBasedParticleCountProvider implements ParticleCountProvider {
-      private int maxCount;
-      private float maxDamage;
+   public static class ConstantParticleCountProvider implements ParticleCountProvider {
+      private final int count;
 
-      public DamageBasedParticleCountProvider(int maxCount, float maxDamage) {
-         this.maxCount = maxCount;
-         this.maxDamage = maxDamage;
+      public ConstantParticleCountProvider(int count) {
+         this.count = count;
       }
 
       public int getCount(EffectBuilder.Context effectContext) {
-         float damage = effectContext.getDamage();
-         return Math.round(Mth.m_14036_((float)this.maxCount * damage / this.maxDamage, 0.0F, (float)this.maxCount));
+         return this.count;
       }
    }
 
    public static class RandomParticleCountProvider implements ParticleCountProvider {
-      private Random random = new Random();
-      private int origin;
-      private int bound;
+      private final Random random = new Random();
+      private final int origin;
+      private final int bound;
 
       public RandomParticleCountProvider(int origin, int bound) {
          this.origin = origin;
@@ -67,23 +39,53 @@ public class ParticleValueProviders {
       }
    }
 
-   public static class ConstantParticleCountProvider implements ParticleCountProvider {
-      private int count;
+   public static class DamageBasedParticleCountProvider implements ParticleCountProvider {
+      private final int maxCount;
+      private final float maxDamage;
 
-      public ConstantParticleCountProvider(int count) {
-         this.count = count;
+      public DamageBasedParticleCountProvider(int maxCount, float maxDamage) {
+         this.maxCount = maxCount;
+         this.maxDamage = maxDamage;
       }
 
       public int getCount(EffectBuilder.Context effectContext) {
-         return this.count;
+         float damage = effectContext.getDamage();
+         return Math.round(Mth.clamp((float)this.maxCount * damage / this.maxDamage, 0.0F, (float)this.maxCount));
       }
    }
 
-   public interface ParticleWidthProvider {
-      float getWidth(EffectBuilder.Context var1);
+   public static class BoundingBoxBasedParticleWidthProvider implements ParticleWidthProvider {
+      private final double maxBoundBoxSize;
+      private final double maxWidth;
+
+      public BoundingBoxBasedParticleWidthProvider(double maxBoundBoxSize, double maxWidth) {
+         this.maxBoundBoxSize = maxBoundBoxSize;
+         this.maxWidth = maxWidth;
+      }
+
+      public float getWidth(EffectBuilder.Context effectContext) {
+         float result = (float)this.maxWidth;
+         HitResult hitResult = effectContext.getHitResult();
+         if (hitResult instanceof SimpleHitResult simpleHitResult) {
+            int entityId = simpleHitResult.getEntityId();
+            Entity entity = ClientUtils.getLevel().getEntity(entityId);
+            if (entity != null) {
+               AABB bb = entity.getBoundingBox();
+               if (bb != null) {
+                  result = (float)Mth.clamp(this.maxWidth * bb.getSize() / this.maxBoundBoxSize, 0.0F, this.maxWidth);
+               }
+            }
+         }
+
+         return result;
+      }
    }
 
    public interface ParticleCountProvider {
       int getCount(EffectBuilder.Context var1);
+   }
+
+   public interface ParticleWidthProvider {
+      float getWidth(EffectBuilder.Context var1);
    }
 }

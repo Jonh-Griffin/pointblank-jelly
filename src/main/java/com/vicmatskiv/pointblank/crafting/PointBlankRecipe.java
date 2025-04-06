@@ -7,7 +7,6 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.registry.RecipeTypeRegistry;
 import com.vicmatskiv.pointblank.util.InventoryUtils;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,46 +33,34 @@ import net.minecraftforge.common.Tags.Items;
 
 public class PointBlankRecipe implements Recipe<Container> {
    private static final int MAX_INGREDIENTS = 10;
-   private static Function<Level, Map<Item, PointBlankRecipe>> levelRecipesByItem = Util.m_143827_((level) -> {
-      return (Map)level.m_7465_().m_44013_((RecipeType)RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get()).stream().collect(Collectors.toMap((r) -> {
-         return r.getItem();
-      }, (r) -> {
-         return r;
-      }));
-   });
-   private static Function<Level, Map<ResourceLocation, PointBlankRecipe>> levelRecipesById = Util.m_143827_((level) -> {
-      return (Map)level.m_7465_().m_44013_((RecipeType)RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get()).stream().collect(Collectors.toMap((r) -> {
-         return r.m_6423_();
-      }, (r) -> {
-         return r;
-      }));
-   });
+   private static final Function<Level, Map<Item, PointBlankRecipe>> levelRecipesByItem = Util.memoize((level) -> level.getRecipeManager().getAllRecipesFor(RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get()).stream().collect(Collectors.toMap(PointBlankRecipe::getItem, (r) -> r)));
+   private static final Function<Level, Map<ResourceLocation, PointBlankRecipe>> levelRecipesById = Util.memoize((level) -> level.getRecipeManager().getAllRecipesFor(RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get()).stream().collect(Collectors.toMap(PointBlankRecipe::getId, (r) -> r)));
    private static final int MAX_SIZE = 10;
    private final ResourceLocation id;
    private final String group;
    private final ItemStack result;
    private final ItemStack initializedItemStack;
    private final List<PointBlankIngredient> ingredients;
-   private static NonNullList<Ingredient> defaultIngredients;
+   private static final NonNullList<Ingredient> defaultIngredients;
 
    public static PointBlankRecipe getRecipe(Level level, Item item) {
-      return (PointBlankRecipe)((Map)levelRecipesByItem.apply(level)).get(item);
+      return (levelRecipesByItem.apply(level)).get(item);
    }
 
    public static PointBlankRecipe getRecipe(Level level, ResourceLocation recipeId) {
-      return (PointBlankRecipe)((Map)levelRecipesById.apply(level)).get(recipeId);
+      return (levelRecipesById.apply(level)).get(recipeId);
    }
 
    public static List<PointBlankRecipe> getRecipes(Level level) {
-      return new ArrayList(((Map)levelRecipesById.apply(level)).values());
+      return new ArrayList<>(levelRecipesById.apply(level).values());
    }
 
    public PointBlankRecipe(ResourceLocation recipeId, String group, ItemStack resultItemStack, List<PointBlankIngredient> ingredients) {
       this.id = recipeId;
       this.group = group;
-      this.result = resultItemStack.m_41777_();
-      this.initializedItemStack = resultItemStack.m_41777_();
-      if (this.initializedItemStack.m_41720_() instanceof GunItem) {
+      this.result = resultItemStack.copy();
+      this.initializedItemStack = resultItemStack.copy();
+      if (this.initializedItemStack.getItem() instanceof GunItem) {
          GunItem.initStackForCrafting(this.initializedItemStack);
       }
 
@@ -88,31 +75,31 @@ public class PointBlankRecipe implements Recipe<Container> {
       }
    }
 
-   public ResourceLocation m_6423_() {
+   public ResourceLocation getId() {
       return this.id;
    }
 
-   public RecipeSerializer<?> m_7707_() {
-      return (RecipeSerializer)RecipeTypeRegistry.DEFAULT_SERIALIZER.get();
+   public RecipeSerializer<?> getSerializer() {
+      return RecipeTypeRegistry.DEFAULT_SERIALIZER.get();
    }
 
-   public String m_6076_() {
+   public String getGroup() {
       return this.group;
    }
 
    private Item getItem() {
-      return this.result.m_41720_();
+      return this.result.getItem();
    }
 
-   public ItemStack m_8043_(RegistryAccess registryAccess) {
-      return this.result.m_41777_();
+   public ItemStack getResultItem(RegistryAccess registryAccess) {
+      return this.result.copy();
    }
 
    public ItemStack getInitializedStack() {
       return this.initializedItemStack;
    }
 
-   public NonNullList<Ingredient> m_7527_() {
+   public NonNullList<Ingredient> getIngredients() {
       return defaultIngredients;
    }
 
@@ -120,14 +107,12 @@ public class PointBlankRecipe implements Recipe<Container> {
       return this.ingredients;
    }
 
-   public boolean m_5818_(Container container, Level level) {
+   public boolean matches(Container container, Level level) {
       throw new UnsupportedOperationException("Implement me!");
    }
 
    public boolean canBeCrafted(Player player) {
-      return this.ingredients.stream().anyMatch((ingredient) -> {
-         return InventoryUtils.hasIngredient(player, ingredient);
-      });
+      return this.ingredients.stream().anyMatch((ingredient) -> InventoryUtils.hasIngredient(player, ingredient));
    }
 
    public void removeIngredients(Player player) {
@@ -138,41 +123,44 @@ public class PointBlankRecipe implements Recipe<Container> {
    }
 
    public ItemStack assemble(CraftingContainer craftingContainer, RegistryAccess registryAccess) {
-      return this.result.m_41777_();
+      return this.result.copy();
    }
 
-   public boolean m_8004_(int m, int n) {
+   public boolean canCraftInDimensions(int m, int n) {
       return false;
    }
 
-   public ItemStack m_5874_(Container container, RegistryAccess registryAccess) {
+   public ItemStack assemble(Container container, RegistryAccess registryAccess) {
       throw new UnsupportedOperationException("Implement me!");
    }
 
-   public RecipeType<?> m_6671_() {
-      return (RecipeType)RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get();
+   public RecipeType<?> getType() {
+      return RecipeTypeRegistry.DEFAULT_RECIPE_TYPE.get();
    }
 
    static {
-      defaultIngredients = NonNullList.m_122783_(Ingredient.m_204132_(Items.INGOTS), new Ingredient[0]);
+      defaultIngredients = NonNullList.of(Ingredient.of(Items.INGOTS));
    }
 
    public static class Serializer implements RecipeSerializer<PointBlankRecipe> {
+      public Serializer() {
+      }
+
       public PointBlankRecipe fromJson(ResourceLocation recipeId, JsonObject jsonObject) {
-         String s = GsonHelper.m_13851_(jsonObject, "group", "");
-         NonNullList<PointBlankIngredient> ingredients = itemsFromJson(GsonHelper.m_13933_(jsonObject, "ingredients"));
+         String s = GsonHelper.getAsString(jsonObject, "group", "");
+         NonNullList<PointBlankIngredient> ingredients = itemsFromJson(GsonHelper.getAsJsonArray(jsonObject, "ingredients"));
          if (ingredients.isEmpty()) {
             throw new JsonParseException("No ingredients for the recipe");
          } else if (ingredients.size() > 10) {
             throw new JsonParseException("Too many ingredients for the recipe. The maximum is 10");
          } else {
-            ItemStack itemstack = ShapedRecipe.m_151274_(GsonHelper.m_13930_(jsonObject, "result"));
+            ItemStack itemstack = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(jsonObject, "result"));
             return new PointBlankRecipe(recipeId, s, itemstack, ingredients);
          }
       }
 
       private static NonNullList<PointBlankIngredient> itemsFromJson(JsonArray jsonArray) {
-         NonNullList<PointBlankIngredient> ingredients = NonNullList.m_122779_();
+         NonNullList<PointBlankIngredient> ingredients = NonNullList.create();
 
          for(int i = 0; i < jsonArray.size(); ++i) {
             PointBlankIngredient ingredient = PointBlankIngredient.fromJson(jsonArray.get(i));
@@ -183,29 +171,27 @@ public class PointBlankRecipe implements Recipe<Container> {
       }
 
       public PointBlankRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf byteBuf) {
-         String recipeGroup = byteBuf.m_130277_();
-         int ingredientSize = byteBuf.m_130242_();
-         NonNullList<PointBlankIngredient> ingredients = NonNullList.m_122779_();
+         String recipeGroup = byteBuf.readUtf();
+         int ingredientSize = byteBuf.readVarInt();
+         NonNullList<PointBlankIngredient> ingredients = NonNullList.create();
 
          for(int j = 0; j < ingredientSize; ++j) {
             ingredients.add(PointBlankIngredient.fromNetwork(byteBuf));
          }
 
-         ItemStack recipeResult = byteBuf.m_130267_();
+         ItemStack recipeResult = byteBuf.readItem();
          return new PointBlankRecipe(recipeId, recipeGroup, recipeResult, ingredients);
       }
 
       public void toNetwork(FriendlyByteBuf byteBuf, PointBlankRecipe recipe) {
-         byteBuf.m_130070_(recipe.group);
-         byteBuf.m_130130_(recipe.ingredients.size());
-         Iterator var3 = recipe.ingredients.iterator();
+         byteBuf.writeUtf(recipe.group);
+         byteBuf.writeVarInt(recipe.ingredients.size());
 
-         while(var3.hasNext()) {
-            PointBlankIngredient ingredient = (PointBlankIngredient)var3.next();
+         for(PointBlankIngredient ingredient : recipe.ingredients) {
             ingredient.toNetwork(byteBuf);
          }
 
-         byteBuf.m_130055_(recipe.result);
+         byteBuf.writeItem(recipe.result);
       }
    }
 }

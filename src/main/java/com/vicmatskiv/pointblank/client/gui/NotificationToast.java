@@ -21,20 +21,20 @@ public class NotificationToast implements Toast {
 
    public NotificationToast(Component title, long displayTime) {
       this.title = title;
-      Minecraft mc = Minecraft.m_91087_();
-      this.width = Math.max(90, 30 + mc.f_91062_.m_92852_(title));
+      Minecraft mc = Minecraft.getInstance();
+      this.width = Math.max(90, 30 + mc.font.width(title));
       this.displayTime = displayTime;
    }
 
-   public int m_7828_() {
+   public int width() {
       return this.width;
    }
 
-   public int m_94899_() {
+   public int height() {
       return 26;
    }
 
-   public Visibility m_7172_(GuiGraphics guiGraphics, ToastComponent toastComponent, long currentTime) {
+   public Toast.Visibility render(GuiGraphics guiGraphics, ToastComponent toastComponent, long currentTime) {
       if (this.changed) {
          this.lastChanged = currentTime;
          this.changed = false;
@@ -42,9 +42,9 @@ public class NotificationToast implements Toast {
 
       int textureWidth = 160;
       int textureHeight = 32;
-      guiGraphics.m_280027_(BUTTON_RESOURCE, 0, 0, this.m_7828_(), this.m_94899_(), 18, 4, textureWidth, textureHeight, 0, 0);
-      Minecraft minecraft = toastComponent.m_94929_();
-      guiGraphics.m_280614_(minecraft.f_91062_, this.title, 18, 9, -256, false);
-      return (double)(currentTime - this.lastChanged) < (double)this.displayTime * toastComponent.m_264542_() ? Visibility.SHOW : Visibility.HIDE;
+      guiGraphics.blitNineSliced(BUTTON_RESOURCE, 0, 0, this.width(), this.height(), 18, 4, textureWidth, textureHeight, 0, 0);
+      Minecraft minecraft = toastComponent.getMinecraft();
+      guiGraphics.drawString(minecraft.font, this.title, 18, 9, -256, false);
+      return (double)(currentTime - this.lastChanged) < (double)this.displayTime * toastComponent.getNotificationDisplayTimeMultiplier() ? Visibility.SHOW : Visibility.HIDE;
    }
 }

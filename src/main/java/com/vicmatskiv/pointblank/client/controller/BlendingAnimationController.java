@@ -24,8 +24,6 @@ import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.EasingType;
 import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimationController.AnimationStateHandler;
-import software.bernie.geckolib.core.animation.AnimationController.State;
 import software.bernie.geckolib.core.animation.AnimationProcessor.QueuedAnimation;
 import software.bernie.geckolib.core.keyframe.AnimationPoint;
 import software.bernie.geckolib.core.keyframe.BoneAnimation;
@@ -47,13 +45,11 @@ import software.bernie.geckolib.core.state.BoneSnapshot;
 
 public class BlendingAnimationController<T extends GeoAnimatable> extends AnimationController<T> {
    private static final String ANY_ANIMATION = "_any";
-   protected final Map<String, BoneSnapshot> topSnapshots = new Object2ObjectOpenHashMap();
-   private BiFunction<Player, BlendingAnimationController<T>, Double> speedProvider = (p, c) -> {
-      return 1.0D;
-   };
+   protected final Map<String, BoneSnapshot> topSnapshots = new Object2ObjectOpenHashMap<>();
+   private BiFunction<Player, BlendingAnimationController<T>, Double> speedProvider = (p, c) -> 1.0D;
    private boolean justStopped = true;
-   private final Set<KeyFrameData> executedKeyFrames = new ObjectOpenHashSet();
-   private final Map<String, Map<String, TransitionDescriptor>> transitionDescriptors = new HashMap();
+   private final Set<KeyFrameData> executedKeyFrames = new ObjectOpenHashSet<>();
+   private final Map<String, Map<String, TransitionDescriptor>> transitionDescriptors = new HashMap<>();
    protected boolean shouldResetTickOnTransition = true;
    private final TransitionDescriptor defaultTransitionDescriptor;
    protected QueuedAnimation previousAnimation;
@@ -66,9 +62,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
    }
 
    public BlendingAnimationController<T> withTransition(String targetAnimation, int tickTime, boolean resetTickAfterTransition) {
-      Map<String, TransitionDescriptor> fromMap = (Map)this.transitionDescriptors.computeIfAbsent(targetAnimation, (k) -> {
-         return new HashMap();
-      });
+      Map<String, TransitionDescriptor> fromMap = this.transitionDescriptors.computeIfAbsent(targetAnimation, (k) -> new HashMap<>());
       fromMap.put("_any", new TransitionDescriptor(tickTime, resetTickAfterTransition, 1.0D));
       return this;
    }
@@ -78,9 +72,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
    }
 
    public BlendingAnimationController<T> withTransition(String sourceAnimation, String targetAnimation, int tickTime, boolean resetTickAfterTransition, double speed) {
-      Map<String, TransitionDescriptor> fromMap = (Map)this.transitionDescriptors.computeIfAbsent(targetAnimation, (k) -> {
-         return new HashMap();
-      });
+      Map<String, TransitionDescriptor> fromMap = this.transitionDescriptors.computeIfAbsent(targetAnimation, (k) -> new HashMap<>());
       fromMap.put(sourceAnimation, new TransitionDescriptor(tickTime, resetTickAfterTransition, speed));
       return this;
    }
@@ -99,14 +91,14 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
          return this.defaultTransitionDescriptor;
       } else {
          String currentAnimationName = this.currentAnimation.animation().name();
-         Map<String, TransitionDescriptor> fromMap = (Map)this.transitionDescriptors.get(currentAnimationName);
+         Map<String, TransitionDescriptor> fromMap = this.transitionDescriptors.get(currentAnimationName);
          if (fromMap == null) {
             return this.defaultTransitionDescriptor;
          } else if (this.previousAnimation != null) {
             String previousAnimationName = this.previousAnimation.animation().name();
-            return (TransitionDescriptor)fromMap.getOrDefault(previousAnimationName, this.defaultTransitionDescriptor);
+            return fromMap.getOrDefault(previousAnimationName, this.defaultTransitionDescriptor);
          } else {
-            return (TransitionDescriptor)fromMap.getOrDefault("_any", this.defaultTransitionDescriptor);
+            return fromMap.getOrDefault("_any", this.defaultTransitionDescriptor);
          }
       }
    }
@@ -139,7 +131,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
    }
 
    public boolean tryTriggerAnimation(String animName) {
-      RawAnimation anim = (RawAnimation)this.triggerableAnimations.get(animName);
+      RawAnimation anim = this.triggerableAnimations.get(animName);
       if (anim == null) {
          return false;
       } else {
@@ -167,7 +159,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                   this.justStartedTransition = true;
                   this.needsAnimationReload = false;
                   TransitionDescriptor transitionDescriptor = this.getCurrentTransitionDescriptor();
-                  this.transitionLength = (double)transitionDescriptor.length;
+                  this.transitionLength = transitionDescriptor.length;
                   this.shouldResetTickOnTransition = transitionDescriptor.resetTickOnTransition;
                   return;
                }
@@ -182,68 +174,64 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
    }
 
    private void ensureTopSnapshots(Map<String, CoreGeoBone> bones) {
-      Iterator var2 = bones.entrySet().iterator();
 
-      while(var2.hasNext()) {
-         Entry<String, CoreGeoBone> e = (Entry)var2.next();
-         String boneName = (String)e.getKey();
-         if (!this.topSnapshots.containsKey(boneName)) {
-            this.topSnapshots.put(boneName, BoneSnapshot.copy(((CoreGeoBone)e.getValue()).getInitialSnapshot()));
-         }
-      }
+       for (Entry<String, CoreGeoBone> stringCoreGeoBoneEntry : bones.entrySet()) {
+           String boneName = stringCoreGeoBoneEntry.getKey();
+           if (!this.topSnapshots.containsKey(boneName)) {
+               this.topSnapshots.put(boneName, BoneSnapshot.copy(stringCoreGeoBoneEntry.getValue().getInitialSnapshot()));
+           }
+       }
 
    }
 
    public void process(CoreGeoModel<T> model, AnimationState<T> state, Map<String, CoreGeoBone> origBones, Map<String, BoneSnapshot> snapshotsIgnored, double seekTime, boolean crashWhenCantFindBone) {
       this.ensureTopSnapshots(origBones);
       this.processInternal(model, state, origBones, this.topSnapshots, seekTime, crashWhenCantFindBone);
-      Iterator var8 = this.getBoneAnimationQueues().values().iterator();
 
-      while(var8.hasNext()) {
-         BoneAnimationQueue boneAnimationQueue = (BoneAnimationQueue)var8.next();
-         CoreGeoBone bone = boneAnimationQueue.bone();
-         BoneSnapshot snapshot = (BoneSnapshot)this.topSnapshots.get(bone.getName());
-         BoneSnapshot initialSnapshot = bone.getInitialSnapshot();
-         AnimationPoint rotXPoint = (AnimationPoint)boneAnimationQueue.rotationXQueue().peek();
-         AnimationPoint rotYPoint = (AnimationPoint)boneAnimationQueue.rotationYQueue().peek();
-         AnimationPoint rotZPoint = (AnimationPoint)boneAnimationQueue.rotationZQueue().peek();
-         AnimationPoint posXPoint = (AnimationPoint)boneAnimationQueue.positionXQueue().peek();
-         AnimationPoint posYPoint = (AnimationPoint)boneAnimationQueue.positionYQueue().peek();
-         AnimationPoint posZPoint = (AnimationPoint)boneAnimationQueue.positionZQueue().peek();
-         AnimationPoint scaleXPoint = (AnimationPoint)boneAnimationQueue.scaleXQueue().peek();
-         AnimationPoint scaleYPoint = (AnimationPoint)boneAnimationQueue.scaleYQueue().peek();
-         AnimationPoint scaleZPoint = (AnimationPoint)boneAnimationQueue.scaleZQueue().peek();
-         EasingType easingType = (EasingType)this.overrideEasingTypeFunction.apply(this.animatable);
-         float posX;
-         float posY;
-         float posZ;
-         if (rotXPoint != null && rotYPoint != null && rotZPoint != null) {
-            posX = (float)EasingType.lerpWithOverride(rotXPoint, easingType);
-            posY = (float)EasingType.lerpWithOverride(rotYPoint, easingType);
-            posZ = (float)EasingType.lerpWithOverride(rotZPoint, easingType);
-            snapshot.updateRotation(posX + initialSnapshot.getRotX(), posY + initialSnapshot.getRotY(), posZ + initialSnapshot.getRotZ());
-            snapshot.startRotAnim();
-         }
+       for (BoneAnimationQueue boneAnimationQueue : this.getBoneAnimationQueues().values()) {
+           CoreGeoBone bone = boneAnimationQueue.bone();
+           BoneSnapshot snapshot = this.topSnapshots.get(bone.getName());
+           BoneSnapshot initialSnapshot = bone.getInitialSnapshot();
+           AnimationPoint rotXPoint = boneAnimationQueue.rotationXQueue().peek();
+           AnimationPoint rotYPoint = boneAnimationQueue.rotationYQueue().peek();
+           AnimationPoint rotZPoint = boneAnimationQueue.rotationZQueue().peek();
+           AnimationPoint posXPoint = boneAnimationQueue.positionXQueue().peek();
+           AnimationPoint posYPoint = boneAnimationQueue.positionYQueue().peek();
+           AnimationPoint posZPoint = boneAnimationQueue.positionZQueue().peek();
+           AnimationPoint scaleXPoint = boneAnimationQueue.scaleXQueue().peek();
+           AnimationPoint scaleYPoint = boneAnimationQueue.scaleYQueue().peek();
+           AnimationPoint scaleZPoint = boneAnimationQueue.scaleZQueue().peek();
+           EasingType easingType = this.overrideEasingTypeFunction.apply(this.animatable);
+           float posX;
+           float posY;
+           float posZ;
+           if (rotXPoint != null && rotYPoint != null && rotZPoint != null) {
+               posX = (float) EasingType.lerpWithOverride(rotXPoint, easingType);
+               posY = (float) EasingType.lerpWithOverride(rotYPoint, easingType);
+               posZ = (float) EasingType.lerpWithOverride(rotZPoint, easingType);
+               snapshot.updateRotation(posX + initialSnapshot.getRotX(), posY + initialSnapshot.getRotY(), posZ + initialSnapshot.getRotZ());
+               snapshot.startRotAnim();
+           }
 
-         if (posXPoint != null && posYPoint != null && posZPoint != null) {
-            posX = (float)EasingType.lerpWithOverride(posXPoint, easingType);
-            posY = (float)EasingType.lerpWithOverride(posYPoint, easingType);
-            posZ = (float)EasingType.lerpWithOverride(posZPoint, easingType);
-            snapshot.updateOffset(posX, posY, posZ);
-            snapshot.startPosAnim();
-         }
+           if (posXPoint != null && posYPoint != null && posZPoint != null) {
+               posX = (float) EasingType.lerpWithOverride(posXPoint, easingType);
+               posY = (float) EasingType.lerpWithOverride(posYPoint, easingType);
+               posZ = (float) EasingType.lerpWithOverride(posZPoint, easingType);
+               snapshot.updateOffset(posX, posY, posZ);
+               snapshot.startPosAnim();
+           }
 
-         if (scaleXPoint != null && scaleYPoint != null && scaleZPoint != null) {
-            snapshot.updateScale((float)EasingType.lerpWithOverride(scaleXPoint, easingType), (float)EasingType.lerpWithOverride(scaleYPoint, easingType), (float)EasingType.lerpWithOverride(scaleZPoint, easingType));
-            snapshot.startScaleAnim();
-         }
-      }
+           if (scaleXPoint != null && scaleYPoint != null && scaleZPoint != null) {
+               snapshot.updateScale((float) EasingType.lerpWithOverride(scaleXPoint, easingType), (float) EasingType.lerpWithOverride(scaleYPoint, easingType), (float) EasingType.lerpWithOverride(scaleZPoint, easingType));
+               snapshot.startScaleAnim();
+           }
+       }
 
    }
 
    public double getAnimationSpeed() {
-      double targetSpeed = (Double)this.speedProvider.apply(ClientUtil.getClientPlayer(), this);
-      return (double)this.currentSpeed.update((float)targetSpeed);
+      double targetSpeed = this.speedProvider.apply(ClientUtil.getClientPlayer(), this);
+      return this.currentSpeed.update((float)targetSpeed);
    }
 
    protected double adjustTick(double tick) {
@@ -293,55 +281,52 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
             if (this.lastPollTime != seekTime && (adjustedTick == 0.0D || this.isJustStarting)) {
                this.justStartedTransition = false;
                this.lastPollTime = seekTime;
-               this.currentAnimation = (QueuedAnimation)this.animationQueue.poll();
+               this.currentAnimation = this.animationQueue.poll();
                this.resetEventKeyFrames();
                if (this.currentAnimation == null) {
                   return;
                }
 
                TransitionDescriptor transitionDescriptor = this.getCurrentTransitionDescriptor();
-               this.transitionLength = (double)transitionDescriptor.length;
+               this.transitionLength = transitionDescriptor.length;
                this.shouldResetTickOnTransition = transitionDescriptor.resetTickOnTransition;
                this.saveSnapshotsForAnimation(this.currentAnimation, snapshots);
             }
 
             if (this.currentAnimation != null) {
-               MolangParser.INSTANCE.setValue("query.anim_time", () -> {
-                  return 0.0D;
-               });
+               MolangParser.INSTANCE.setValue("query.anim_time", () -> 0.0D);
                BoneAnimation[] var25 = this.currentAnimation.animation().boneAnimations();
                int var12 = var25.length;
 
-               for(int var13 = 0; var13 < var12; ++var13) {
-                  BoneAnimation boneAnimation = var25[var13];
-                  BoneAnimationQueue boneAnimationQueue = (BoneAnimationQueue)this.boneAnimationQueues.get(boneAnimation.boneName());
-                  BoneSnapshot boneSnapshot = (BoneSnapshot)this.boneSnapshots.get(boneAnimation.boneName());
-                  if (boneSnapshot != null) {
-                     KeyframeStack<Keyframe<IValue>> rotationKeyFrames = boneAnimation.rotationKeyFrames();
-                     KeyframeStack<Keyframe<IValue>> positionKeyFrames = boneAnimation.positionKeyFrames();
-                     KeyframeStack<Keyframe<IValue>> scaleKeyFrames = boneAnimation.scaleKeyFrames();
-                     double startTick = this.shouldResetTickOnTransition ? 0.0D : this.transitionLength;
-                     if (!rotationKeyFrames.xKeyframes().isEmpty()) {
-                        AnimationPoint xPointNext = getAnimationPointAtTick(rotationKeyFrames.xKeyframes(), startTick, true, Axis.X);
-                        AnimationPoint yPointNext = getAnimationPointAtTick(rotationKeyFrames.yKeyframes(), startTick, true, Axis.Y);
-                        AnimationPoint zPointNext = getAnimationPointAtTick(rotationKeyFrames.zKeyframes(), startTick, true, Axis.Z);
-                        this.addNextRotation(boneAnimationQueue, (Keyframe)null, adjustedTick, this.transitionLength, boneSnapshot, boneSnapshot.getBone().getInitialSnapshot(), xPointNext, yPointNext, zPointNext);
-                     }
+                for (BoneAnimation boneAnimation : var25) {
+                    BoneAnimationQueue boneAnimationQueue = this.boneAnimationQueues.get(boneAnimation.boneName());
+                    BoneSnapshot boneSnapshot = this.boneSnapshots.get(boneAnimation.boneName());
+                    if (boneSnapshot != null) {
+                        KeyframeStack<Keyframe<IValue>> rotationKeyFrames = boneAnimation.rotationKeyFrames();
+                        KeyframeStack<Keyframe<IValue>> positionKeyFrames = boneAnimation.positionKeyFrames();
+                        KeyframeStack<Keyframe<IValue>> scaleKeyFrames = boneAnimation.scaleKeyFrames();
+                        double startTick = this.shouldResetTickOnTransition ? 0.0D : this.transitionLength;
+                        if (!rotationKeyFrames.xKeyframes().isEmpty()) {
+                            AnimationPoint xPointNext = getAnimationPointAtTick(rotationKeyFrames.xKeyframes(), startTick, true, Axis.X);
+                            AnimationPoint yPointNext = getAnimationPointAtTick(rotationKeyFrames.yKeyframes(), startTick, true, Axis.Y);
+                            AnimationPoint zPointNext = getAnimationPointAtTick(rotationKeyFrames.zKeyframes(), startTick, true, Axis.Z);
+                            this.addNextRotation(boneAnimationQueue, null, adjustedTick, this.transitionLength, boneSnapshot, boneSnapshot.getBone().getInitialSnapshot(), xPointNext, yPointNext, zPointNext);
+                        }
 
-                     if (!positionKeyFrames.xKeyframes().isEmpty()) {
-                        this.addNextPosition(boneAnimationQueue, (Keyframe)null, adjustedTick, this.transitionLength, boneSnapshot, getAnimationPointAtTick(positionKeyFrames.xKeyframes(), startTick, false, Axis.X), getAnimationPointAtTick(positionKeyFrames.yKeyframes(), startTick, false, Axis.Y), getAnimationPointAtTick(positionKeyFrames.zKeyframes(), startTick, false, Axis.Z));
-                     }
+                        if (!positionKeyFrames.xKeyframes().isEmpty()) {
+                            this.addNextPosition(boneAnimationQueue, null, adjustedTick, this.transitionLength, boneSnapshot, getAnimationPointAtTick(positionKeyFrames.xKeyframes(), startTick, false, Axis.X), getAnimationPointAtTick(positionKeyFrames.yKeyframes(), startTick, false, Axis.Y), getAnimationPointAtTick(positionKeyFrames.zKeyframes(), startTick, false, Axis.Z));
+                        }
 
-                     if (!scaleKeyFrames.xKeyframes().isEmpty()) {
-                        this.addNextScale(boneAnimationQueue, (Keyframe)null, adjustedTick, this.transitionLength, boneSnapshot, getAnimationPointAtTick(scaleKeyFrames.xKeyframes(), startTick, false, Axis.X), getAnimationPointAtTick(scaleKeyFrames.yKeyframes(), startTick, false, Axis.Y), getAnimationPointAtTick(scaleKeyFrames.zKeyframes(), startTick, false, Axis.Z));
-                     }
-                  }
-               }
+                        if (!scaleKeyFrames.xKeyframes().isEmpty()) {
+                            this.addNextScale(boneAnimationQueue, null, adjustedTick, this.transitionLength, boneSnapshot, getAnimationPointAtTick(scaleKeyFrames.xKeyframes(), startTick, false, Axis.X), getAnimationPointAtTick(scaleKeyFrames.yKeyframes(), startTick, false, Axis.Y), getAnimationPointAtTick(scaleKeyFrames.zKeyframes(), startTick, false, Axis.Z));
+                        }
+                    }
+                }
             }
          }
 
          if (this.currentAnimation != null) {
-            this.animationProgress = Mth.m_14008_(adjustedTick / this.currentAnimation.animation().length(), 0.0D, 1.0D);
+            this.animationProgress = Mth.clamp(adjustedTick / this.currentAnimation.animation().length(), 0.0D, 1.0D);
          } else {
             this.animationProgress = 0.0D;
          }
@@ -357,37 +342,37 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
    }
 
    public void addNextRotation(BoneAnimationQueue boneAnimationQueue, Keyframe<?> keyFrame, double lerpedTick, double transitionLength, BoneSnapshot startSnapshot, BoneSnapshot initialSnapshot, AnimationPoint nextXPoint, AnimationPoint nextYPoint, AnimationPoint nextZPoint) {
-      EasingType easingType = (EasingType)this.overrideEasingTypeFunction.apply(this.animatable);
+      EasingType easingType = this.overrideEasingTypeFunction.apply(this.animatable);
       float nextX = (float)EasingType.lerpWithOverride(nextXPoint, easingType);
       float nextY = (float)EasingType.lerpWithOverride(nextYPoint, easingType);
       float nextZ = (float)EasingType.lerpWithOverride(nextZPoint, easingType);
-      boneAnimationQueue.addRotationXPoint(keyFrame, lerpedTick, transitionLength, (double)(startSnapshot.getRotX() - initialSnapshot.getRotX()), (double)nextX);
-      boneAnimationQueue.addRotationYPoint(keyFrame, lerpedTick, transitionLength, (double)(startSnapshot.getRotY() - initialSnapshot.getRotY()), (double)nextY);
-      boneAnimationQueue.addRotationZPoint(keyFrame, lerpedTick, transitionLength, (double)(startSnapshot.getRotZ() - initialSnapshot.getRotZ()), (double)nextZ);
+      boneAnimationQueue.addRotationXPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getRotX() - initialSnapshot.getRotX(), nextX);
+      boneAnimationQueue.addRotationYPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getRotY() - initialSnapshot.getRotY(), nextY);
+      boneAnimationQueue.addRotationZPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getRotZ() - initialSnapshot.getRotZ(), nextZ);
    }
 
    public void addNextPosition(BoneAnimationQueue boneAnimationQueue, Keyframe<?> keyFrame, double lerpedTick, double transitionLength, BoneSnapshot startSnapshot, AnimationPoint nextXPoint, AnimationPoint nextYPoint, AnimationPoint nextZPoint) {
-      EasingType easingType = (EasingType)this.overrideEasingTypeFunction.apply(this.animatable);
+      EasingType easingType = this.overrideEasingTypeFunction.apply(this.animatable);
       float nextX = (float)EasingType.lerpWithOverride(nextXPoint, easingType);
       float nextY = (float)EasingType.lerpWithOverride(nextYPoint, easingType);
       float nextZ = (float)EasingType.lerpWithOverride(nextZPoint, easingType);
-      boneAnimationQueue.addPosXPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getOffsetX(), (double)nextX);
-      boneAnimationQueue.addPosYPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getOffsetY(), (double)nextY);
-      boneAnimationQueue.addPosZPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getOffsetZ(), (double)nextZ);
+      boneAnimationQueue.addPosXPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getOffsetX(), nextX);
+      boneAnimationQueue.addPosYPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getOffsetY(), nextY);
+      boneAnimationQueue.addPosZPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getOffsetZ(), nextZ);
    }
 
    public void addNextScale(BoneAnimationQueue boneAnimationQueue, Keyframe<?> keyFrame, double lerpedTick, double transitionLength, BoneSnapshot startSnapshot, AnimationPoint nextXPoint, AnimationPoint nextYPoint, AnimationPoint nextZPoint) {
-      EasingType easingType = (EasingType)this.overrideEasingTypeFunction.apply(this.animatable);
+      EasingType easingType = this.overrideEasingTypeFunction.apply(this.animatable);
       float nextX = (float)EasingType.lerpWithOverride(nextXPoint, easingType);
       float nextY = (float)EasingType.lerpWithOverride(nextYPoint, easingType);
       float nextZ = (float)EasingType.lerpWithOverride(nextZPoint, easingType);
-      boneAnimationQueue.addScaleXPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getScaleX(), (double)nextX);
-      boneAnimationQueue.addScaleYPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getScaleY(), (double)nextY);
-      boneAnimationQueue.addScaleZPoint(keyFrame, lerpedTick, transitionLength, (double)startSnapshot.getScaleZ(), (double)nextZ);
+      boneAnimationQueue.addScaleXPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getScaleX(), nextX);
+      boneAnimationQueue.addScaleYPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getScaleY(), nextY);
+      boneAnimationQueue.addScaleZPoint(keyFrame, lerpedTick, transitionLength, startSnapshot.getScaleZ(), nextZ);
    }
 
    private void saveSnapshotsForAnimation(QueuedAnimation animation, Map<String, BoneSnapshot> snapshots) {
-      Iterator var3 = snapshots.values().iterator();
+      Iterator<BoneSnapshot> var3 = snapshots.values().iterator();
 
       while(true) {
          while(true) {
@@ -397,31 +382,28 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                   return;
                }
 
-               snapshot = (BoneSnapshot)var3.next();
+               snapshot = var3.next();
             } while(animation.animation().boneAnimations() == null);
 
             BoneAnimation[] var5 = animation.animation().boneAnimations();
             int var6 = var5.length;
 
-            for(int var7 = 0; var7 < var6; ++var7) {
-               BoneAnimation boneAnimation = var5[var7];
-               if (boneAnimation.boneName().equals(snapshot.getBone().getName())) {
-                  this.boneSnapshots.put(boneAnimation.boneName(), BoneSnapshot.copy(snapshot));
-                  break;
-               }
-            }
+             for (BoneAnimation boneAnimation : var5) {
+                 if (boneAnimation.boneName().equals(snapshot.getBone().getName())) {
+                     this.boneSnapshots.put(boneAnimation.boneName(), BoneSnapshot.copy(snapshot));
+                     break;
+                 }
+             }
          }
       }
    }
 
    private void createInitialQueues(Collection<CoreGeoBone> modelRendererList) {
       this.boneAnimationQueues.clear();
-      Iterator var2 = modelRendererList.iterator();
 
-      while(var2.hasNext()) {
-         CoreGeoBone bone = (CoreGeoBone)var2.next();
-         this.boneAnimationQueues.put(bone.getName(), new BoneAnimationQueue(bone));
-      }
+       for (CoreGeoBone bone : modelRendererList) {
+           this.boneAnimationQueues.put(bone.getName(), new BoneAnimationQueue(bone));
+       }
 
    }
 
@@ -434,7 +416,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                this.resetEventKeyFrames();
             }
          } else {
-            QueuedAnimation nextAnimation = (QueuedAnimation)this.animationQueue.peek();
+            QueuedAnimation nextAnimation = this.animationQueue.peek();
             this.resetEventKeyFrames();
             if (nextAnimation == null) {
                this.animationState = State.STOPPED;
@@ -448,24 +430,23 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                this.previousAnimation = this.currentAnimation;
             }
 
-            this.currentAnimation = (QueuedAnimation)this.animationQueue.poll();
+            this.currentAnimation = this.animationQueue.poll();
             TransitionDescriptor transitionDescriptor = this.getCurrentTransitionDescriptor();
-            this.transitionLength = (double)transitionDescriptor.length;
+            this.transitionLength = transitionDescriptor.length;
             this.shouldResetTickOnTransition = transitionDescriptor.resetTickOnTransition;
             this.saveSnapshotsForAnimation(this.currentAnimation, snapshots);
          }
       }
 
-      MolangParser.INSTANCE.setMemoizedValue("query.anim_time", () -> {
-         return adjustedTick / 20.0D;
-      });
+      final double finalAdjustedTick = adjustedTick;
+      MolangParser.INSTANCE.setMemoizedValue("query.anim_time", () -> finalAdjustedTick / 20.0D);
       BoneAnimation[] var9 = this.currentAnimation.animation().boneAnimations();
       int var10 = var9.length;
 
       int var11;
       for(var11 = 0; var11 < var10; ++var11) {
          BoneAnimation boneAnimation = var9[var11];
-         BoneAnimationQueue boneAnimationQueue = (BoneAnimationQueue)this.boneAnimationQueues.get(boneAnimation.boneName());
+         BoneAnimationQueue boneAnimationQueue = this.boneAnimationQueues.get(boneAnimation.boneName());
          if (boneAnimationQueue == null) {
             if (crashWhenCantFindBone) {
                throw new RuntimeException("Could not find bone: " + boneAnimation.boneName());
@@ -508,7 +489,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                break;
             }
 
-            this.soundKeyframeHandler.handle(new SoundKeyframeEvent(this.animatable, adjustedTick, this, keyframeData));
+            this.soundKeyframeHandler.handle(new SoundKeyframeEvent<>(this.animatable, adjustedTick, this, keyframeData));
          }
       }
 
@@ -522,7 +503,7 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                break;
             }
 
-            this.particleKeyframeHandler.handle(new ParticleKeyframeEvent(this.animatable, adjustedTick, this, keyframeData));
+            this.particleKeyframeHandler.handle(new ParticleKeyframeEvent<>(this.animatable, adjustedTick, this, keyframeData));
          }
       }
 
@@ -536,12 +517,12 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
                break;
             }
 
-            this.customKeyframeHandler.handle(new CustomInstructionKeyframeEvent(this.animatable, adjustedTick, this, keyframeData));
+            this.customKeyframeHandler.handle(new CustomInstructionKeyframeEvent<>(this.animatable, adjustedTick, this, keyframeData));
          }
       }
 
       if (this.transitionLength == 0.0D && this.shouldResetTick && this.animationState == State.TRANSITIONING) {
-         this.currentAnimation = (QueuedAnimation)this.animationQueue.poll();
+         this.currentAnimation = this.animationQueue.poll();
       }
 
    }
@@ -572,33 +553,28 @@ public class BlendingAnimationController<T extends GeoAnimatable> extends Animat
 
    private static KeyframeLocation<Keyframe<IValue>> getCurrentKeyFrameLocation(List<Keyframe<IValue>> frames, double ageInTicks) {
       double totalFrameTime = 0.0D;
-      Iterator var5 = frames.iterator();
+      Iterator<Keyframe<IValue>> var5 = frames.iterator();
 
-      Keyframe frame;
+      Keyframe<IValue> frame;
       do {
          if (!var5.hasNext()) {
-            return new KeyframeLocation((Keyframe)frames.get(frames.size() - 1), ageInTicks);
+            return new KeyframeLocation<>(frames.get(frames.size() - 1), ageInTicks);
          }
 
-         frame = (Keyframe)var5.next();
+         frame = var5.next();
          totalFrameTime += frame.length();
       } while(!(totalFrameTime > ageInTicks));
 
-      return new KeyframeLocation(frame, ageInTicks - (totalFrameTime - frame.length()));
+      return new KeyframeLocation<>(frame, ageInTicks - (totalFrameTime - frame.length()));
    }
 
    private void resetEventKeyFrames() {
       this.executedKeyFrames.clear();
    }
 
-   private static record TransitionDescriptor(int length, boolean resetTickOnTransition, double speed) {
-      private TransitionDescriptor(int length, boolean resetTickOnTransition, double speed) {
-         this.length = length;
-         this.resetTickOnTransition = resetTickOnTransition;
-         this.speed = speed;
-      }
+   private record TransitionDescriptor(int length, boolean resetTickOnTransition, double speed) {
 
-      public int length() {
+       public int length() {
          return this.length;
       }
 

@@ -3,7 +3,7 @@ package com.vicmatskiv.pointblank.client;
 import com.mojang.blaze3d.vertex.PoseStack.Pose;
 
 public class LatchingPoseProvider implements PoseProvider {
-   private PoseProvider actualPoseProvider;
+   private final PoseProvider actualPoseProvider;
    private Pose pose;
 
    public LatchingPoseProvider(PoseProvider actualPoseProvider) {

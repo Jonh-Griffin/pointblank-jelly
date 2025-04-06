@@ -2,15 +2,14 @@ package com.vicmatskiv.pointblank.client.render;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.PoseStack.Pose;
 import com.mojang.math.Axis;
 import com.vicmatskiv.pointblank.client.EntityRendererBuilder;
 import com.vicmatskiv.pointblank.entity.ProjectileLike;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -23,44 +22,47 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class ProjectileItemEntityRenderer<T extends Entity & ProjectileLike> extends EntityRenderer<T> {
    private final ItemRenderer itemRenderer;
    private static ProjectileLike currentProjectile;
-   private static Pose currentPose;
+   private static PoseStack.Pose currentPose;
 
-   public ProjectileItemEntityRenderer(Context context) {
+   public ProjectileItemEntityRenderer(EntityRendererProvider.Context context) {
       super(context);
-      this.itemRenderer = context.m_174025_();
+      this.itemRenderer = context.getItemRenderer();
    }
 
    static ProjectileLike getCurrentProjectile() {
       return currentProjectile;
    }
 
-   static Pose getCurrentPose() {
+   static PoseStack.Pose getCurrentPose() {
       return currentPose;
    }
 
-   public void m_7392_(T projectile, float yRot, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-      poseStack.m_85836_();
-      poseStack.m_252781_(Axis.f_252436_.m_252977_(projectile.m_146908_()));
-      poseStack.m_252781_(Axis.f_252529_.m_252977_(180.0F - projectile.m_146909_()));
-      currentProjectile = (ProjectileLike)projectile;
-      currentPose = poseStack.m_85850_();
-      this.itemRenderer.m_269128_(((ProjectileLike)projectile).getItem(), ItemDisplayContext.GROUND, packedLight, OverlayTexture.f_118083_, poseStack, bufferSource, MiscUtil.getLevel(projectile), projectile.m_19879_());
+   public void render(T projectile, float yRot, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+      poseStack.pushPose();
+      poseStack.mulPose(Axis.YP.rotationDegrees(projectile.getYRot()));
+      poseStack.mulPose(Axis.XP.rotationDegrees(180.0F - projectile.getXRot()));
+      currentProjectile = projectile;
+      currentPose = poseStack.last();
+      this.itemRenderer.renderStatic(projectile.getItem(), ItemDisplayContext.GROUND, packedLight, OverlayTexture.NO_OVERLAY, poseStack, bufferSource, MiscUtil.getLevel(projectile), projectile.getId());
       currentProjectile = null;
       currentPose = null;
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
-   public ResourceLocation m_5478_(Entity entity) {
-      return InventoryMenu.f_39692_;
+   public ResourceLocation getTextureLocation(Entity entity) {
+      return InventoryMenu.BLOCK_ATLAS;
    }
 
    public static class Builder<T extends Entity & ProjectileLike> implements EntityRendererBuilder<Builder<T>, T, EntityRenderer<T>> {
+      public Builder() {
+      }
+
       public Builder<T> withJsonObject(JsonObject obj) {
          return null;
       }
 
-      public EntityRenderer<T> build(Context context) {
-         return new ProjectileItemEntityRenderer(context);
+      public EntityRenderer<T> build(EntityRendererProvider.Context context) {
+         return new ProjectileItemEntityRenderer<T>(context);
       }
    }
 }

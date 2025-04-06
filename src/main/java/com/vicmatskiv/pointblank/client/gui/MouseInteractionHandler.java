@@ -15,8 +15,8 @@ public class MouseInteractionHandler {
    private double rotationPitch;
    private boolean isInteracting;
    private int interactionButton;
-   private int rotatingButton;
-   private int translatingButton;
+   private final int rotatingButton;
+   private final int translatingButton;
    private double clickedX;
    private double clickedY;
 
@@ -32,7 +32,7 @@ public class MouseInteractionHandler {
 
    public boolean onMouseScrolled(double mouseX, double mouseY, double mouseScroll) {
       if (this.mouseInAreaPredicate.test(mouseX, mouseY)) {
-         this.zoom = Mth.m_14036_(this.zoom + this.zoomStep * Math.signum((float)mouseScroll), this.minZoom, this.maxZoom);
+         this.zoom = Mth.clamp(this.zoom + this.zoomStep * Math.signum((float)mouseScroll), this.minZoom, this.maxZoom);
          return true;
       } else {
          return false;

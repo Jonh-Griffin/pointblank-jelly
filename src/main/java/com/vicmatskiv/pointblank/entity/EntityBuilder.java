@@ -24,7 +24,7 @@ public interface EntityBuilder<T extends EntityBuilder<T, E>, E extends Entity &
       try {
          BufferedReader reader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)));
 
-         EntityBuilder var3;
+         EntityBuilder<?,?> var3;
          try {
             var3 = fromReader(reader);
          } catch (Throwable var6) {
@@ -48,7 +48,7 @@ public interface EntityBuilder<T extends EntityBuilder<T, E>, E extends Entity &
       try {
          BufferedReader br = Files.newBufferedReader(path);
 
-         EntityBuilder var2;
+         EntityBuilder<?,?> var2;
          try {
             var2 = fromReader(br);
          } catch (Throwable var5) {
@@ -107,12 +107,7 @@ public interface EntityBuilder<T extends EntityBuilder<T, E>, E extends Entity &
 
    E build(Level var1);
 
-   public static enum EntityTypeExt {
-      PROJECTILE;
-
-      // $FF: synthetic method
-      private static EntityTypeExt[] $values() {
-         return new EntityTypeExt[]{PROJECTILE};
-      }
+   enum EntityTypeExt {
+      PROJECTILE
    }
 }

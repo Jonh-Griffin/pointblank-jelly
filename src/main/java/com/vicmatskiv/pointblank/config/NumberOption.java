@@ -16,27 +16,24 @@ public class NumberOption<N extends Number> implements ConfigOption<N> {
    static <N extends Number, B extends ConfigOptionBuilder<N, B>> ConfigOptionBuilder<N, B> builder(final Class<N> cls, final Function<String, N> converter, final Function<String, Number> futureOptionResolver, final int optionIndex) {
       return new ConfigOptionBuilder<N, B>() {
          public Supplier<N> getSupplier() {
-            return () -> {
-               return (Number)cls.cast(futureOptionResolver.apply(this.getName()));
-            };
+            return () -> cls.cast(futureOptionResolver.apply(this.getName()));
          }
 
          public N normalize(Object value1) {
-            if (value1 instanceof Number) {
-               Number number = (Number)value1;
-               if (this.minValue != null && number.doubleValue() < ((Number)this.minValue).doubleValue()) {
-                  return (Number)this.defaultValue;
+            if (value1 instanceof Number number) {
+                if (this.minValue != null && number.doubleValue() < this.minValue.doubleValue()) {
+                  return this.defaultValue;
                } else {
-                  return this.maxValue != null && number.doubleValue() > ((Number)this.maxValue).doubleValue() ? (Number)this.defaultValue : number;
+                  return this.maxValue != null && number.doubleValue() > this.maxValue.doubleValue() ? this.defaultValue : (N) number;
                }
             } else {
-               return (Number)this.defaultValue;
+               return this.defaultValue;
             }
          }
 
          public ConfigOption<N> build(String value1, List<String> description, int index) {
             this.validate();
-            return new NumberOption(index >= 0 ? index : optionIndex, this, value1 != null ? (Number)converter.apply(value1) : (Number)this.defaultValue, description);
+            return new NumberOption(index >= 0 ? index : optionIndex, this, value1 != null ? converter.apply(value1) : this.defaultValue, description);
          }
       };
    }
@@ -66,7 +63,7 @@ public class NumberOption<N extends Number> implements ConfigOption<N> {
    }
 
    public ConfigOption<?> createCopy(Object newValue, int newIndex) {
-      return new NumberOption(newIndex, this.builder, (Number)this.builder.normalize(newValue), (List)null);
+      return new NumberOption(newIndex, this.builder, this.builder.normalize(newValue), null);
    }
 
    public boolean equals(Object o) {
@@ -81,6 +78,6 @@ public class NumberOption<N extends Number> implements ConfigOption<N> {
    }
 
    public int hashCode() {
-      return Objects.hash(new Object[]{this.builder, this.value, this.serialized});
+      return Objects.hash(this.builder, this.value, this.serialized);
    }
 }

@@ -11,8 +11,8 @@ import net.minecraft.world.phys.Vec3;
 
 public class GunStatePoseProvider {
    private static final GunStatePoseProvider INSTANCE = new GunStatePoseProvider();
-   private Map<Key, Pose> poses = new HashMap();
-   private Map<Key, Vec3[]> positionsAndDirections = new HashMap();
+   private final Map<Key, Pose> poses = new HashMap<>();
+   private final Map<Key, Vec3[]> positionsAndDirections = new HashMap<>();
 
    public static GunStatePoseProvider getInstance() {
       return INSTANCE;
@@ -22,7 +22,7 @@ public class GunStatePoseProvider {
    }
 
    public Pose getPose(GunClientState gunClientState, PoseContext poseContext) {
-      return (Pose)this.poses.get(new Key(gunClientState.getId(), poseContext));
+      return this.poses.get(new Key(gunClientState.getId(), poseContext));
    }
 
    public void setPose(GunClientState gunClientState, PoseContext poseContext, Pose pose) {
@@ -30,22 +30,22 @@ public class GunStatePoseProvider {
    }
 
    public void clear(UUID id) {
-      Iterator it = this.poses.entrySet().iterator();
+      var it = this.poses.entrySet().iterator();
 
       Entry e;
       while(it.hasNext()) {
-         e = (Entry)it.next();
+         e = it.next();
          if (Objects.equals(((Key)e.getKey()).id, id)) {
             it.remove();
          }
       }
 
-      it = this.positionsAndDirections.entrySet().iterator();
+      var it2 = this.positionsAndDirections.entrySet().iterator();
 
-      while(it.hasNext()) {
-         e = (Entry)it.next();
+      while(it2.hasNext()) {
+         e = it2.next();
          if (Objects.equals(((Key)e.getKey()).id, id)) {
-            it.remove();
+            it2.remove();
          }
       }
 
@@ -56,12 +56,12 @@ public class GunStatePoseProvider {
    }
 
    public Vec3 getPosition(GunClientState gunClientState, PoseContext poseContext) {
-      Vec3[] positionAndDirection = (Vec3[])this.positionsAndDirections.get(new Key(gunClientState.getId(), poseContext));
+      Vec3[] positionAndDirection = this.positionsAndDirections.get(new Key(gunClientState.getId(), poseContext));
       return positionAndDirection != null ? positionAndDirection[0] : null;
    }
 
    public Vec3[] getPositionAndDirection(GunClientState gunClientState, PoseContext poseContext) {
-      return (Vec3[])this.positionsAndDirections.get(new Key(gunClientState.getId(), poseContext));
+      return this.positionsAndDirections.get(new Key(gunClientState.getId(), poseContext));
    }
 
    private static class Key {
@@ -74,7 +74,7 @@ public class GunStatePoseProvider {
       }
 
       public int hashCode() {
-         return Objects.hash(new Object[]{this.id, this.poseContext});
+         return Objects.hash(this.id, this.poseContext);
       }
 
       public boolean equals(Object obj) {
@@ -91,7 +91,7 @@ public class GunStatePoseProvider {
       }
    }
 
-   public static enum PoseContext {
+   public enum PoseContext {
       FIRST_PERSON_MUZZLE,
       FIRST_PERSON_MUZZLE_FLASH,
       THIRD_PERSON_MUZZLE,

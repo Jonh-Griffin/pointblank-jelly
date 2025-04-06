@@ -9,7 +9,7 @@ import com.vicmatskiv.pointblank.registry.SoundRegistry;
 import com.vicmatskiv.pointblank.util.InventoryUtils;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.StateMachine;
-import java.util.Iterator;
+import com.vicmatskiv.pointblank.util.StateMachine.TransitionMode;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
@@ -36,9 +36,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
 import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.ClientUtils;
@@ -48,28 +48,28 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    private static final int OPENING_DURATION = 655;
    private static final int CLOSING_DURATION = 577;
    protected final ContainerData dataAccess = new ContainerData() {
-      public int m_6413_(int dataSlotIndex) {
-         switch(dataSlotIndex) {
-         case 0:
-            return PrinterBlockEntity.this.getState().ordinal();
-         case 1:
-            return PrinterBlockEntity.this.craftingPlayer != null ? PrinterBlockEntity.this.craftingPlayer.m_19879_() : -1;
-         default:
-            return 0;
+      public int get(int dataSlotIndex) {
+         switch (dataSlotIndex) {
+            case 0 -> {
+               return PrinterBlockEntity.this.getState().ordinal();
+            }
+            case 1 -> {
+               return PrinterBlockEntity.this.craftingPlayer != null ? PrinterBlockEntity.this.craftingPlayer.getId() : -1;
+            }
+            default -> {
+               return 0;
+            }
          }
       }
 
-      public void m_8050_(int dataSlotIndex, int value) {
-         switch(dataSlotIndex) {
-         default:
-         }
+      public void set(int dataSlotIndex, int value) {
       }
 
-      public int m_6499_() {
+      public int getCount() {
          return 2;
       }
    };
-   private static final Component CONTAINER_TITLE = Component.m_237115_("screen.pointblank.crafting");
+   private static final Component CONTAINER_TITLE = Component.translatable("screen.pointblank.crafting");
    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
    private List<Player> nearbyEntities;
    private long lastNearbyEntityUpdateTimestamp;
@@ -77,9 +77,9 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    private PointBlankRecipe craftingRecipe;
    private long craftingStartTime;
    private long craftingDuration;
-   private long openingDuration = 655L;
+   private final long openingDuration = 655L;
    private long closingStartTime;
-   private long closingDuration = 577L;
+   private final long closingDuration = 577L;
    private long openingStartTime;
    private CraftingEventHandler craftingEventHandler;
    private StateMachine<State, Context> stateMachine;
@@ -90,13 +90,13 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    private static final RawAnimation ANIMATION_CRAFTING = RawAnimation.begin().thenPlay("animation.model.crafting").thenLoop("animation.model.idle");
 
    public PrinterBlockEntity(BlockPos pos, BlockState state) {
-      super((BlockEntityType)BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), pos, state);
+      super(BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), pos, state);
    }
 
-   public void m_142339_(Level level) {
-      super.m_142339_(level);
-      if (level.f_46443_) {
-         this.clientState = State.CLOSED;
+   public void setLevel(Level level) {
+      super.setLevel(level);
+      if (level.isClientSide) {
+         this.clientState = PrinterBlockEntity.State.CLOSED;
       } else {
          this.stateMachine = this.createStateMachine();
       }
@@ -104,35 +104,27 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    }
 
    public State getState() {
-      if (this.f_58857_ == null) {
+      if (this.level == null) {
          return null;
       } else {
-         return this.f_58857_.f_46443_ ? this.clientState : (State)this.stateMachine.getCurrentState();
+         return this.level.isClientSide ? this.clientState : this.stateMachine.getCurrentState();
       }
    }
 
    private StateMachine<State, Context> createStateMachine() {
-      StateMachine.Builder<State, Context> builder = new StateMachine.Builder();
-      builder.withTransition((Enum) State.CLOSED, State.OPENING, this::predicateIsPlayerNearby, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, this::actionOpen);
-      builder.withTransition((Enum) State.OPENING, State.IDLE, this::openingTimeoutExpired, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((Enum) State.IDLE, State.CRAFTING, this::predicateIsPlayerNearby, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionStartCrafting);
-      builder.withTransition((Enum) State.CRAFTING, State.IDLE, this::predicateIsPlayerNearby, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((Enum) State.CRAFTING, State.CRAFTING_COMPLETED, (ctx) -> {
-         return this.predicateIsPlayerNearby(ctx) && this.craftingTimeoutExpired(ctx);
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, this::actionCompleteCrafting);
-      builder.withTransition((Enum) State.CRAFTING, State.CLOSING, (ctx) -> {
-         return !this.predicateIsPlayerNearby(ctx);
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, this::actionCancelCrafting);
-      builder.withTransition((Enum) State.CRAFTING_COMPLETED, State.IDLE, (ctx) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((Enum) State.IDLE, State.CLOSING, (ctx) -> {
-         return !this.predicateIsPlayerNearby(ctx);
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((Enum) State.CLOSING, State.CLOSED, this::closingTimeoutExpired, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withOnSetStateAction(State.IDLE, this::actionIdle);
+      StateMachine.Builder<State, Context> builder = new StateMachine.Builder<>();
+      builder.withTransition(PrinterBlockEntity.State.CLOSED, PrinterBlockEntity.State.OPENING, this::predicateIsPlayerNearby, TransitionMode.AUTO, null, this::actionOpen);
+      builder.withTransition(PrinterBlockEntity.State.OPENING, PrinterBlockEntity.State.IDLE, this::openingTimeoutExpired, TransitionMode.AUTO, null, null);
+      builder.withTransition(PrinterBlockEntity.State.IDLE, PrinterBlockEntity.State.CRAFTING, this::predicateIsPlayerNearby, TransitionMode.EVENT, null, this::actionStartCrafting);
+      builder.withTransition(PrinterBlockEntity.State.CRAFTING, PrinterBlockEntity.State.IDLE, this::predicateIsPlayerNearby, TransitionMode.EVENT, null, null);
+      builder.withTransition(PrinterBlockEntity.State.CRAFTING, PrinterBlockEntity.State.CRAFTING_COMPLETED, (ctx) -> this.predicateIsPlayerNearby(ctx) && this.craftingTimeoutExpired(ctx), TransitionMode.AUTO, null, this::actionCompleteCrafting);
+      builder.withTransition(PrinterBlockEntity.State.CRAFTING, PrinterBlockEntity.State.CLOSING, (ctx) -> !this.predicateIsPlayerNearby(ctx), TransitionMode.AUTO, null, this::actionCancelCrafting);
+      builder.withTransition(PrinterBlockEntity.State.CRAFTING_COMPLETED, PrinterBlockEntity.State.IDLE, (ctx) -> true, TransitionMode.AUTO, null, null);
+      builder.withTransition(PrinterBlockEntity.State.IDLE, PrinterBlockEntity.State.CLOSING, (ctx) -> !this.predicateIsPlayerNearby(ctx), TransitionMode.AUTO, null, null);
+      builder.withTransition(PrinterBlockEntity.State.CLOSING, PrinterBlockEntity.State.CLOSED, this::closingTimeoutExpired, TransitionMode.AUTO, null, null);
+      builder.withOnSetStateAction(PrinterBlockEntity.State.IDLE, this::actionIdle);
       builder.withOnChangeStateAction(this::actionOnChangeState);
-      return builder.build(State.CLOSED);
+      return builder.build(PrinterBlockEntity.State.CLOSED);
    }
 
    private boolean closingTimeoutExpired(Context ctx) {
@@ -148,14 +140,14 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    }
 
    private boolean predicateIsPlayerNearby(Context context) {
-      return isPlayerNearby(this.m_58899_(), this.nearbyEntities);
+      return isPlayerNearby(this.getBlockPos(), this.nearbyEntities);
    }
 
    private void actionStartCrafting(Context context, State fromState, State toState) {
       this.craftingPlayer = context.craftingPlayer;
       this.craftingRecipe = context.craftingRecipe;
       this.craftingStartTime = System.currentTimeMillis();
-      this.craftingDuration = ((Craftable)context.craftingRecipe.m_8043_((RegistryAccess)null).m_41720_()).getCraftingDuration();
+      this.craftingDuration = ((Craftable)context.craftingRecipe.getResultItem(null).getItem()).getCraftingDuration();
       this.craftingEventHandler = context.craftingEventHandler;
    }
 
@@ -172,34 +164,21 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    }
 
    private void actionCancelCrafting(Context context, State fromState, State toState) {
-      this.cancelCrafting(context.craftingPlayer, context.craftingRecipe.m_6423_());
+      this.cancelCrafting(context.craftingPlayer, context.craftingRecipe.getId());
    }
 
    private void actionOnChangeState(Context context, State fromState, State toState) {
-      this.f_58857_.m_7260_(this.m_58899_(), this.m_58900_(), this.m_58900_(), 3);
+      this.level.sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), 3);
    }
 
-   public void registerControllers(ControllerRegistrar controllers) {
-      controllers.add(new AnimationController[]{(new AnimationController(this, (state) -> {
+   public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+      controllers.add((new AnimationController<>(this, (state) -> {
          PlayState playState = null;
-         switch(this.getState()) {
-         case CLOSED:
-            playState = state.setAndContinue(ANIMATION_CLOSE);
-            break;
-         case OPENING:
-            playState = state.setAndContinue(ANIMATION_OPEN);
-            break;
-         case IDLE:
-            playState = state.setAndContinue(ANIMATION_IDLE);
-            break;
-         case CRAFTING:
-            playState = state.setAndContinue(ANIMATION_CRAFTING);
-            break;
-         case CRAFTING_COMPLETED:
-            playState = state.setAndContinue(ANIMATION_IDLE);
-            break;
-         case CLOSING:
-            playState = state.setAndContinue(ANIMATION_CLOSE);
+         switch (this.getState()) {
+            case CLOSED, CLOSING -> playState = state.setAndContinue(ANIMATION_CLOSE);
+            case OPENING -> playState = state.setAndContinue(ANIMATION_OPEN);
+            case IDLE, CRAFTING_COMPLETED -> playState = state.setAndContinue(ANIMATION_IDLE);
+            case CRAFTING -> playState = state.setAndContinue(ANIMATION_CRAFTING);
          }
 
          return playState;
@@ -210,12 +189,12 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               BlockPos blockPos = this.m_58899_();
-               this.f_58857_.m_7785_((double)blockPos.m_123341_(), (double)blockPos.m_123342_(), (double)blockPos.m_123343_(), soundEvent, SoundSource.BLOCKS, 2.0F, (1.0F + (this.f_58857_.f_46441_.m_188501_() - this.f_58857_.f_46441_.m_188501_()) * 0.2F) * 0.7F, false);
+               BlockPos blockPos = this.getBlockPos();
+               this.level.playLocalSound(blockPos.getX(), blockPos.getY(), blockPos.getZ(), soundEvent, SoundSource.BLOCKS, 2.0F, (1.0F + (this.level.random.nextFloat() - this.level.random.nextFloat()) * 0.2F) * 0.7F, false);
             }
          }
 
-      })});
+      }));
    }
 
    public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -226,39 +205,32 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
    }
 
    private void updateEntities() {
-      BlockPos blockpos = this.m_58899_();
-      if (this.f_58857_.m_46467_() > this.lastNearbyEntityUpdateTimestamp + 50L || this.nearbyEntities == null) {
-         this.lastNearbyEntityUpdateTimestamp = this.f_58857_.m_46467_();
-         AABB aabb = (new AABB(blockpos)).m_82400_(15.0D);
-         this.nearbyEntities = this.f_58857_.m_45976_(Player.class, aabb);
+      BlockPos blockpos = this.getBlockPos();
+      if (this.level.getGameTime() > this.lastNearbyEntityUpdateTimestamp + 50L || this.nearbyEntities == null) {
+         this.lastNearbyEntityUpdateTimestamp = this.level.getGameTime();
+         AABB aabb = (new AABB(blockpos)).inflate(15.0F);
+         this.nearbyEntities = this.level.getEntitiesOfClass(Player.class, aabb);
       }
 
    }
 
    private static boolean isPlayerNearby(BlockPos blockPos, List<Player> entities) {
-      if (entities == null) {
-         return false;
-      } else {
-         Iterator var2 = entities.iterator();
+       if (entities != null) {
+           for (LivingEntity entity : entities) {
+               if (entity instanceof Player && entity.isAlive() && !entity.isRemoved() && blockPos.closerToCenterThan(entity.position(), 6.0F)) {
+                   return true;
+               }
+           }
 
-         LivingEntity entity;
-         do {
-            if (!var2.hasNext()) {
-               return false;
-            }
-
-            entity = (LivingEntity)var2.next();
-         } while(!(entity instanceof Player) || !entity.m_6084_() || entity.m_213877_() || !blockPos.m_203195_(entity.m_20182_(), 6.0D));
-
-         return true;
-      }
+       }
+       return false;
    }
 
-   public AbstractContainerMenu m_7208_(int containerId, Inventory inventory, Player player) {
+   public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
       return new CraftingContainerMenu(containerId, inventory, this, this.dataAccess);
    }
 
-   public Component m_5446_() {
+   public Component getDisplayName() {
       return CONTAINER_TITLE;
    }
 
@@ -280,14 +252,14 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
 
       try {
          if (this.craftingRecipe.canBeCrafted(this.craftingPlayer)) {
-            craftedStack = this.craftingRecipe.m_8043_((RegistryAccess)null);
-            if (craftedStack != null && !craftedStack.m_41619_()) {
+            craftedStack = this.craftingRecipe.getResultItem(null);
+            if (craftedStack != null && !craftedStack.isEmpty()) {
                this.craftingRecipe.removeIngredients(this.craftingPlayer);
-               int remaingCount = InventoryUtils.addItem(this.craftingPlayer, craftedStack.m_41720_(), craftedStack.m_41613_());
+               int remaingCount = InventoryUtils.addItem(this.craftingPlayer, craftedStack.getItem(), craftedStack.getCount());
                if (remaingCount > 0) {
-                  BlockPos blockPos = this.m_58899_();
+                  BlockPos blockPos = this.getBlockPos();
                   if (blockPos != null) {
-                     Containers.m_18992_(MiscUtil.getLevel(this.craftingPlayer), (double)blockPos.m_123341_(), (double)((float)blockPos.m_123342_() + 1.25F), (double)blockPos.m_123343_(), craftedStack.m_41777_());
+                     Containers.dropItemStack(MiscUtil.getLevel(this.craftingPlayer), blockPos.getX(), (float)blockPos.getY() + 1.25F, blockPos.getZ(), craftedStack.copy());
                      isCraftingSuccessful = true;
                   }
                } else {
@@ -296,13 +268,13 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
                }
             }
          }
-      } catch (Exception var7) {
-         craftingException = var7;
-         System.err.println("Caught exception during crafting " + var7);
+      } catch (Exception e) {
+         craftingException = e;
+         System.err.println("Caught exception during crafting " + e);
       }
 
       if (craftedStack == null) {
-         craftedStack = ItemStack.f_41583_;
+         craftedStack = ItemStack.EMPTY;
       }
 
       if (this.craftingEventHandler != null) {
@@ -331,35 +303,34 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
          if (craftingRecipe == null) {
             return false;
          } else {
-            ItemStack craftingItemStack = craftingRecipe.m_8043_((RegistryAccess)null);
-            if (craftingItemStack != null && !craftingItemStack.m_41619_() && craftingItemStack.m_41720_() instanceof Craftable) {
-               Item var7 = craftingItemStack.m_41720_();
-               if (!(var7 instanceof Enableable)) {
-                  return this.stateMachine.setState(new Context(player, craftingRecipe, craftingEventHandler), (Enum) State.CRAFTING) == State.CRAFTING;
+            ItemStack craftingItemStack = craftingRecipe.getResultItem(null);
+            if (craftingItemStack != null && !craftingItemStack.isEmpty() && craftingItemStack.getItem() instanceof Craftable) {
+               Item var7 = craftingItemStack.getItem();
+               if (var7 instanceof Enableable e) {
+                   if (!e.isEnabled()) {
+                     return false;
+                  }
                }
 
-               Enableable e = (Enableable)var7;
-               if (e.isEnabled()) {
-                  return this.stateMachine.setState(new Context(player, craftingRecipe, craftingEventHandler), (Enum) State.CRAFTING) == State.CRAFTING;
-               }
+               return this.stateMachine.setState(new Context(player, craftingRecipe, craftingEventHandler), PrinterBlockEntity.State.CRAFTING) == PrinterBlockEntity.State.CRAFTING;
+            } else {
+               return false;
             }
-
-            return false;
          }
       }
    }
 
    public boolean cancelCrafting(Player player, ResourceLocation recipeId) {
-      if (this.stateMachine.getCurrentState() != State.CRAFTING) {
+      if (this.stateMachine.getCurrentState() != PrinterBlockEntity.State.CRAFTING) {
          return false;
       } else if (player != this.craftingPlayer) {
          return false;
-      } else if (!recipeId.equals(this.craftingRecipe.m_6423_())) {
+      } else if (!recipeId.equals(this.craftingRecipe.getId())) {
          return false;
       } else {
-         this.stateMachine.setState(new Context(player, this.craftingRecipe, this.craftingEventHandler), (Enum) State.IDLE);
+         this.stateMachine.setState(new Context(player, this.craftingRecipe, this.craftingEventHandler), PrinterBlockEntity.State.IDLE);
          if (this.craftingEventHandler != null) {
-            this.craftingEventHandler.onCraftingCancelled(this.craftingPlayer, this.craftingRecipe.m_8043_((RegistryAccess)null));
+            this.craftingEventHandler.onCraftingCancelled(this.craftingPlayer, this.craftingRecipe.getResultItem(null));
          }
 
          return true;
@@ -368,45 +339,17 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
 
    public ClientboundBlockEntityDataPacket getUpdatePacket() {
       CompoundTag tag = new CompoundTag();
-      tag.m_128405_("clientState", ((State)this.stateMachine.getCurrentState()).ordinal());
-      return ClientboundBlockEntityDataPacket.m_195642_(this, (e) -> {
-         return tag;
-      });
+      tag.putInt("clientState", this.stateMachine.getCurrentState().ordinal());
+      return ClientboundBlockEntityDataPacket.create(this, (e) -> tag);
    }
 
    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
-      CompoundTag tag = packet.m_131708_();
+      CompoundTag tag = packet.getTag();
       if (tag != null) {
-         int ordinal = tag.m_128451_("clientState");
-         this.clientState = State.values()[ordinal];
+         int ordinal = tag.getInt("clientState");
+         this.clientState = PrinterBlockEntity.State.values()[ordinal];
       }
 
-   }
-
-   public static enum State {
-      CLOSED,
-      OPENING,
-      CLOSING,
-      IDLE,
-      CRAFTING,
-      CRAFTING_COMPLETED;
-
-      // $FF: synthetic method
-      private static State[] $values() {
-         return new State[]{CLOSED, OPENING, CLOSING, IDLE, CRAFTING, CRAFTING_COMPLETED};
-      }
-   }
-
-   private static class Context {
-      private Player craftingPlayer;
-      private PointBlankRecipe craftingRecipe;
-      private CraftingEventHandler craftingEventHandler;
-
-      public Context(Player craftingPlayer, PointBlankRecipe craftingRecipe, CraftingEventHandler craftingEventHandler) {
-         this.craftingPlayer = craftingPlayer;
-         this.craftingRecipe = craftingRecipe;
-         this.craftingEventHandler = craftingEventHandler;
-      }
    }
 
    public interface CraftingEventHandler {
@@ -418,5 +361,21 @@ public class PrinterBlockEntity extends BlockEntity implements GeoBlockEntity, M
 
       default void onCraftingFailed(Player player, ItemStack craftingItemStack, Exception craftingException) {
       }
+   }
+
+   public enum State {
+      CLOSED,
+      OPENING,
+      CLOSING,
+      IDLE,
+      CRAFTING,
+      CRAFTING_COMPLETED;
+
+      State() {
+      }
+   }
+
+   private record Context(Player craftingPlayer, PointBlankRecipe craftingRecipe,
+                          CraftingEventHandler craftingEventHandler) {
    }
 }

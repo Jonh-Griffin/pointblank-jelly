@@ -2,7 +2,6 @@ package com.vicmatskiv.pointblank.client.render;
 
 import com.vicmatskiv.pointblank.feature.Feature;
 import com.vicmatskiv.pointblank.feature.Features;
-import java.util.Iterator;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
@@ -22,15 +21,13 @@ public interface RenderApprover {
             return true;
          } else {
             boolean isApproved = false;
-            Iterator var9 = Features.getEnabledFeatures(rootStack, approvedFeatureType).iterator();
 
-            while(var9.hasNext()) {
-               Features.EnabledFeature enabledFeature = (Features.EnabledFeature)var9.next();
-               if (enabledFeature.ownerPath().equals(path)) {
-                  isApproved = true;
-                  break;
-               }
-            }
+             for (Features.EnabledFeature enabledFeature : Features.getEnabledFeatures(rootStack, approvedFeatureType)) {
+                 if (enabledFeature.ownerPath().equals(path)) {
+                     isApproved = true;
+                     break;
+                 }
+             }
 
             return isApproved;
          }

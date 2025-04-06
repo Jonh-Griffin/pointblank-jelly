@@ -29,45 +29,41 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 public final class ItemRegistry {
-   private Map<String, Supplier<? extends Item>> itemsByName = new LinkedHashMap();
-   private Map<String, List<Supplier<? extends Item>>> itemsByGroup = new LinkedHashMap();
-   private ConfigManager.Builder gunConfigBuilder = new ConfigManager.Builder();
-   private List<DeferredRegistration> deferredRegistrations = new ArrayList();
+   private final Map<String, Supplier<? extends Item>> itemsByName = new LinkedHashMap<>();
+   private final Map<String, List<Supplier<? extends Item>>> itemsByGroup = new LinkedHashMap<>();
+   private final ConfigManager.Builder gunConfigBuilder = new ConfigManager.Builder();
+   private final List<DeferredRegistration> deferredRegistrations = new ArrayList<>();
    public static final ItemRegistry ITEMS = new ItemRegistry();
    public static final DeferredRegister<Item> itemRegistry;
    public static final DeferredRegister<CreativeModeTab> TABS;
    public static final Supplier<CreativeModeTab> POINTBLANK_TAB;
+
+   public ItemRegistry() {
+   }
 
    public Map<String, Supplier<? extends Item>> getItemsByName() {
       return Collections.unmodifiableMap(this.itemsByName);
    }
 
    public List<Supplier<? extends Item>> getAttachmentsForGroup(String group) {
-      List<Supplier<? extends Item>> groupAttachments = (List)this.itemsByGroup.get(group);
+      List<Supplier<? extends Item>> groupAttachments = this.itemsByGroup.get(group);
       return groupAttachments != null ? Collections.unmodifiableList(groupAttachments) : Collections.emptyList();
    }
 
-   public <I extends Item, T extends ItemBuilder<T> & Nameable> Supplier<I> register(ItemBuilder<?> itemBuilder) {
+   public <I extends Item> Supplier<I> register(ItemBuilder<?> itemBuilder) {
       String name = itemBuilder.getName();
-      if (itemBuilder instanceof Configurable) {
-         Configurable configurable = (Configurable)itemBuilder;
+      if (itemBuilder instanceof Configurable configurable) {
          configurable.configure(this.gunConfigBuilder);
       }
 
       DeferredRegistration ro = new DeferredRegistration(itemBuilder);
       this.deferredRegistrations.add(ro);
-      Map var10000 = this.itemsByName;
+      var itemNameMap = this.itemsByName;
       Objects.requireNonNull(ro);
-      var10000.put(name, ro::get);
-      if (itemBuilder instanceof AttachmentItem.Builder) {
-         AttachmentItem.Builder attachmentBuilder = (AttachmentItem.Builder)itemBuilder;
-         Iterator var5 = attachmentBuilder.getGroups().iterator();
-
-         while(var5.hasNext()) {
-            String group = (String)var5.next();
-            List<Supplier<? extends Item>> groupMembers = (List)this.itemsByGroup.computeIfAbsent(group, (g) -> {
-               return new ArrayList();
-            });
+      itemNameMap.put(name, ro::get);
+      if (itemBuilder instanceof AttachmentItem.Builder attachmentBuilder) {
+         for(String group : attachmentBuilder.getGroups()) {
+            List<Supplier<? extends Item>> groupMembers = this.itemsByGroup.computeIfAbsent(group, (g) -> new ArrayList<>());
             Objects.requireNonNull(ro);
             groupMembers.add(ro::get);
          }
@@ -75,20 +71,16 @@ public final class ItemRegistry {
 
       EntityBuilderProvider entityBuilderProvider = itemBuilder.getEntityBuilderProvider();
       if (entityBuilderProvider != null) {
-         EntityRegistry.registerItemEntity(name, () -> {
-            return entityBuilderProvider.getEntityBuilder();
-         });
+         EntityRegistry.registerItemEntity(name, entityBuilderProvider::getEntityBuilder);
       }
 
-      return () -> {
-         return ro.get();
-      };
+      return () -> (I) ro.get(); //TODO: check if this is correct
    }
 
    public <I extends Item> Supplier<I> getDeferredRegisteredObject(String name) {
       return () -> {
-         Supplier<?> registryObject = (Supplier)this.itemsByName.get(name);
-         return registryObject != null ? (Item)registryObject.get() : null;
+         Supplier<?> registryObject = this.itemsByName.get(name);
+         return registryObject != null ? (I) registryObject.get() : null;
       };
    }
 
@@ -101,65 +93,54 @@ public final class ItemRegistry {
 
    public void complete() {
       this.gunConfigBuilder.build();
-      Iterator it = this.deferredRegistrations.iterator();
+      Iterator<DeferredRegistration> it = this.deferredRegistrations.iterator();
 
-      while(true) {
-         while(it.hasNext()) {
-            DeferredRegistration dr = (DeferredRegistration)it.next();
-            ItemBuilder var4 = dr.itemBuilder;
-            if (var4 instanceof Enableable) {
-               Enableable e = (Enableable)var4;
-               if (!e.isEnabled()) {
-                  it.remove();
-                  dr.resolve(false);
-                  continue;
-               }
+      while(it.hasNext()) {
+         DeferredRegistration dr = it.next();
+         var itemBuilder = dr.itemBuilder;
+         if (itemBuilder instanceof Enableable e) {
+            if (!e.isEnabled()) {
+               it.remove();
+               dr.resolve(false);
+               continue;
             }
-
-            dr.resolve(true);
          }
 
-         return;
+         dr.resolve(true);
       }
+
    }
 
    static {
       itemRegistry = DeferredRegister.create(ForgeRegistries.ITEMS, "pointblank");
-      TABS = DeferredRegister.create(Registries.f_279569_, "pointblank");
+      TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, "pointblank");
       MiscItemRegistry.init();
       AmmoRegistry.init();
       AttachmentRegistry.init();
       GunRegistry.init();
-      POINTBLANK_TAB = TABS.register("pointblank", () -> {
-         return CreativeModeTab.builder().m_257941_(Component.m_237115_("itemGroup.pointblank.items")).m_257737_(() -> {
-            return new ItemStack((ItemLike)(GunRegistry.M4A1.get() != null ? (ItemLike)GunRegistry.M4A1.get() : Items.f_41852_));
-         }).m_257501_((enabledFeatures, entries) -> {
-            Consumer<ItemLike> output = new Consumer<ItemLike>() {
-               public void accept(ItemLike itemLike) {
-                  if (itemLike != null && itemLike != Items.f_41852_) {
-                     if (itemLike instanceof Enableable) {
-                        Enableable e = (Enableable)itemLike;
-                        if (!e.isEnabled()) {
-                           return;
-                        }
-                     }
-
-                     entries.m_246326_(itemLike);
+      POINTBLANK_TAB = TABS.register("pointblank", () -> CreativeModeTab.builder().title(Component.translatable("itemGroup.pointblank.items")).icon(() -> new ItemStack(GunRegistry.M4A1.get() != null ? GunRegistry.M4A1.get() : Items.AIR)).displayItems((enabledFeatures, entries) -> {
+         Consumer<ItemLike> output = itemLike -> {
+            if (itemLike != null && itemLike != Items.AIR) {
+               if (itemLike instanceof Enableable e) {
+                   if (!e.isEnabled()) {
+                     return;
                   }
-
                }
-            };
-            GunRegistry.registerTabItems(output);
-            AttachmentRegistry.registerTabItems(output);
-            AmmoRegistry.registerTabItems(output);
-            MiscItemRegistry.registerTabItems(output);
-         }).m_257652_();
-      });
+
+               entries.accept(itemLike);
+            }
+
+         };
+         GunRegistry.registerTabItems(output);
+         AttachmentRegistry.registerTabItems(output);
+         AmmoRegistry.registerTabItems(output);
+         MiscItemRegistry.registerTabItems(output);
+      }).build());
    }
 
-   private class DeferredRegistration {
+   private static class DeferredRegistration {
       private Supplier<Item> supplier;
-      private ItemBuilder<?> itemBuilder;
+      private final ItemBuilder<?> itemBuilder;
 
       DeferredRegistration(ItemBuilder<?> itemBuilder) {
          this.itemBuilder = itemBuilder;
@@ -168,22 +149,16 @@ public final class ItemRegistry {
       void resolve(boolean register) {
          String name = this.itemBuilder.getName();
          if (register) {
-            RegistryObject<Item> ro = ItemRegistry.itemRegistry.register(name, () -> {
-               return this.itemBuilder.build();
-            });
-            this.supplier = () -> {
-               return (Item)ro.orElse((Object)null);
-            };
+            RegistryObject<Item> ro = ItemRegistry.itemRegistry.register(name, this.itemBuilder::build);
+            this.supplier = () -> (Item)ro.orElse(null);
          } else {
-            this.supplier = () -> {
-               return null;
-            };
+            this.supplier = () -> null;
          }
 
       }
 
       public Item get() {
-         return (Item)this.supplier.get();
+         return this.supplier.get();
       }
    }
 }

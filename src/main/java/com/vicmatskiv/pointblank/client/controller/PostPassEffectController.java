@@ -16,17 +16,17 @@ public class PostPassEffectController extends AbstractProceduralAnimationControl
    public void reset() {
       super.reset();
       this.nanoDuration = 300000000L;
-      Minecraft mc = Minecraft.m_91087_();
-      mc.f_91063_.m_109128_(new ResourceLocation("pointblank", "shaders/post/ripple.json"));
+      Minecraft mc = Minecraft.getInstance();
+      mc.gameRenderer.loadEffect(new ResourceLocation("pointblank", "shaders/post/ripple.json"));
    }
 
    public void onRenderTick(LivingEntity player, GunClientState state, ItemStack itemStack, ItemDisplayContext itemDisplayContext, float partialTicks) {
       super.onRenderTick(player, state, itemStack, itemDisplayContext, partialTicks);
       if (this.isDone) {
-         Minecraft mc = Minecraft.m_91087_();
-         PostChain postChain = mc.f_91063_.m_109149_();
-         if (postChain != null && postChain.m_110022_().startsWith("pointblank:")) {
-            mc.f_91063_.m_109086_();
+         Minecraft mc = Minecraft.getInstance();
+         PostChain postChain = mc.gameRenderer.currentEffect();
+         if (postChain != null && postChain.getName().startsWith("pointblank:")) {
+            mc.gameRenderer.shutdownEffect();
          }
       }
 
@@ -36,6 +36,6 @@ public class PostPassEffectController extends AbstractProceduralAnimationControl
    }
 
    public double getProgress() {
-      return super.getProgress((GunClientState)null, 0.0F);
+      return super.getProgress(null, 0.0F);
    }
 }

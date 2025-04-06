@@ -6,7 +6,7 @@ import net.minecraft.world.entity.Entity;
 public class LockableTarget {
    private static final int DEFAULT_LOCK_TIME_TICKS = 10;
    private Entity targetEntity;
-   private UpDownCounter targetLockCounter;
+   private final UpDownCounter targetLockCounter;
    private long lockTimeTicks = 10L;
    private TargetLocker targetLocker;
 

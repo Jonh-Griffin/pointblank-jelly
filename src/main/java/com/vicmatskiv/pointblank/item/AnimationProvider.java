@@ -11,13 +11,11 @@ import net.minecraft.world.item.ItemStack;
 public interface AnimationProvider {
    Descriptor getDescriptor(LivingEntity var1, ItemStack var2, GunClientState var3);
 
-   public static class Simple implements AnimationProvider {
+   class Simple implements AnimationProvider {
       public Descriptor descriptor;
 
       public Simple(String animationName) {
-         this.descriptor = new Descriptor((ctx) -> {
-            return true;
-         }, 0L, TimeUnit.MILLISECOND, animationName);
+         this.descriptor = new Descriptor((ctx) -> true, 0L, TimeUnit.MILLISECOND, animationName);
       }
 
       public Descriptor getDescriptor(LivingEntity player, ItemStack itemStack, GunClientState gunClientState) {
@@ -25,15 +23,9 @@ public interface AnimationProvider {
       }
    }
 
-   public static record Descriptor(Predicate<ConditionContext> predicate, long duration, TimeUnit timeUnit, String animationName) {
-      public Descriptor(Predicate<ConditionContext> predicate, long duration, TimeUnit timeUnit, String animationName) {
-         this.predicate = predicate;
-         this.duration = duration;
-         this.timeUnit = timeUnit;
-         this.animationName = animationName;
-      }
+    record Descriptor(Predicate<ConditionContext> predicate, long duration, TimeUnit timeUnit, String animationName) {
 
-      public Predicate<ConditionContext> predicate() {
+        public Predicate<ConditionContext> predicate() {
          return this.predicate;
       }
 

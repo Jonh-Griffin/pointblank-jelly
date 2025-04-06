@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.client;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -11,7 +16,6 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.ReloadableMemoize;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -27,10 +31,10 @@ import software.bernie.geckolib.util.ClientUtils;
 
 public class ClientSystem {
    private static ClientSystem instance;
-   private AuxLevelRenderer auxLevelRenderer;
-   private ShaderInstance texColorShaderInstance;
-   private ShaderInstance colorTexLightmapShaderInstance;
-   private List<ResourceManagerReloadListener> resourceManagerReloadListeners;
+   private final AuxLevelRenderer auxLevelRenderer;
+   private final ShaderInstance texColorShaderInstance;
+   private final ShaderInstance colorTexLightmapShaderInstance;
+   private final List<ResourceManagerReloadListener> resourceManagerReloadListeners;
 
    public static ClientSystem getInstance() {
       if (RenderSystem.isOnRenderThreadOrInit()) {
@@ -38,37 +42,36 @@ public class ClientSystem {
             instance = new ClientSystem();
          }
       } else {
-         new IllegalStateException("getInstance() called from wrong thread");
+          throw new IllegalStateException("getInstance() called from wrong thread");
       }
 
       return instance;
    }
 
    private ClientSystem() {
-      Minecraft mc = Minecraft.m_91087_();
-      RenderTarget mainRenderTarget = mc.m_91385_();
-      this.auxLevelRenderer = new AuxLevelRenderer(mainRenderTarget.f_83915_, mainRenderTarget.f_83916_);
+      Minecraft mc = Minecraft.getInstance();
+      RenderTarget mainRenderTarget = mc.getMainRenderTarget();
+      this.auxLevelRenderer = new AuxLevelRenderer(mainRenderTarget.width, mainRenderTarget.height);
       String texColorShaderName = "pointblank_position_tex_color";
 
       try {
-         this.texColorShaderInstance = new ShaderInstance(mc.m_91098_(), texColorShaderName, DefaultVertexFormat.f_85819_);
-      } catch (Exception var8) {
-         throw new IllegalStateException("could not preload shader " + texColorShaderName, var8);
+         this.texColorShaderInstance = new ShaderInstance(mc.getResourceManager(), texColorShaderName, DefaultVertexFormat.POSITION_TEX_COLOR);
+      } catch (Exception exception) {
+         throw new IllegalStateException("could not preload shader " + texColorShaderName, exception);
       }
 
       String colorTexLightmapShaderName = "pointblank_position_color_tex_lightmap";
 
       try {
-         this.colorTexLightmapShaderInstance = new ShaderInstance(mc.m_91098_(), colorTexLightmapShaderName, DefaultVertexFormat.f_85820_);
-      } catch (Exception var7) {
-         throw new IllegalStateException("could not preload shader " + colorTexLightmapShaderName, var7);
+         this.colorTexLightmapShaderInstance = new ShaderInstance(mc.getResourceManager(), colorTexLightmapShaderName, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+      } catch (Exception exception) {
+         throw new IllegalStateException("could not preload shader " + colorTexLightmapShaderName, exception);
       }
 
-      this.resourceManagerReloadListeners = new ArrayList();
-      ResourceManager var6 = Minecraft.m_91087_().m_91098_();
-      if (var6 instanceof ReloadableResourceManager) {
-         ReloadableResourceManager rrm = (ReloadableResourceManager)var6;
-         rrm.m_7217_(this.resourceManagerReloadListener());
+      this.resourceManagerReloadListeners = new ArrayList<>();
+      ResourceManager var6 = Minecraft.getInstance().getResourceManager();
+      if (var6 instanceof ReloadableResourceManager rrm) {
+         rrm.registerReloadListener(this.resourceManagerReloadListener());
       }
 
       this.addReloadListener(PlayerAnimatorCompat.getInstance());
@@ -79,11 +82,8 @@ public class ClientSystem {
    }
 
    private void onResourceManagerReload(ResourceManager resourceManager) {
-      Iterator var2 = this.resourceManagerReloadListeners.iterator();
-
-      while(var2.hasNext()) {
-         ResourceManagerReloadListener reloadListener = (ResourceManagerReloadListener)var2.next();
-         reloadListener.m_6213_(resourceManager);
+      for(ResourceManagerReloadListener reloadListener : this.resourceManagerReloadListeners) {
+         reloadListener.onResourceManagerReload(resourceManager);
       }
 
    }
@@ -97,7 +97,7 @@ public class ClientSystem {
    }
 
    public <T, U, R> BiFunction<T, U, R> createReloadableMemoize(BiFunction<T, U, R> f) {
-      ReloadableMemoize<T, U, R> reloadable = new ReloadableMemoize(f);
+      ReloadableMemoize<T, U, R> reloadable = new ReloadableMemoize<>(f);
       this.resourceManagerReloadListeners.add(reloadable);
       return reloadable.getMemoizedFunction();
    }
@@ -107,32 +107,29 @@ public class ClientSystem {
    }
 
    public ShaderInstance getTexColorShaderInstance() {
-      return Config.customShadersEnabled ? this.texColorShaderInstance : GameRenderer.m_172820_();
+      return Config.customShadersEnabled ? this.texColorShaderInstance : GameRenderer.getPositionTexColorShader();
    }
 
    public ShaderInstance getColorTexLightmapShaderInstance() {
-      return Config.customShadersEnabled ? this.colorTexLightmapShaderInstance : GameRenderer.m_172835_();
+      return Config.customShadersEnabled ? this.colorTexLightmapShaderInstance : GameRenderer.getPositionColorTexLightmapShader();
    }
 
    public void renderAux(GunClientState state, float partialTick, long time) {
-      Minecraft mc = Minecraft.m_91087_();
-      Optional<Float> pipZoom = PipFeature.getZoom(mc.f_91074_.m_21205_());
+      Minecraft mc = Minecraft.getInstance();
+      Optional<Float> pipZoom = PipFeature.getZoom(mc.player.getMainHandItem());
       if (pipZoom.isPresent() && state.isAiming()) {
-         getInstance().getAuxLevelRenderer().renderToTarget(partialTick, time, (Float)pipZoom.get());
+         getInstance().getAuxLevelRenderer().renderToTarget(partialTick, time, pipZoom.get());
       }
 
    }
 
    public static double modifyMouseSensitivity(double originalValue) {
       GunClientState state = GunClientState.getMainHeldState();
-      ItemStack mainHeldItem = ClientUtils.getClientPlayer().m_21205_();
+      ItemStack mainHeldItem = ClientUtils.getClientPlayer().getMainHandItem();
       if (mainHeldItem != null) {
-         Item var5 = mainHeldItem.m_41720_();
-         if (var5 instanceof GunItem) {
-            GunItem gunItem = (GunItem)var5;
-            if (state != null && state.isAiming() && (gunItem.getScopeOverlay() != null || MiscUtil.isGreaterThanZero(gunItem.getPipScopeZoom()) || (Boolean)ClientEventHandler.runSyncCompute(() -> {
-               return !PipFeature.getZoom(mainHeldItem).isEmpty();
-            }))) {
+         Item var5 = mainHeldItem.getItem();
+         if (var5 instanceof GunItem gunItem) {
+             if (state != null && state.isAiming() && (gunItem.getScopeOverlay() != null || MiscUtil.isGreaterThanZero(gunItem.getPipScopeZoom()) || ClientEventHandler.runSyncCompute(() -> PipFeature.getZoom(mainHeldItem).isPresent()))) {
                return originalValue * Config.scopeAimingMouseSensitivity;
             }
          }

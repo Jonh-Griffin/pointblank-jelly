@@ -10,11 +10,11 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class HierarchicalRenderContext implements AutoCloseable {
-   private static Deque<HierarchicalRenderContext> contextStack = new ArrayDeque();
-   private ItemStack itemStack;
+   private static final Deque<HierarchicalRenderContext> contextStack = new ArrayDeque<>();
+   private final ItemStack itemStack;
    private String path;
-   private ItemDisplayContext itemDisplayContext;
-   private Map<String, Object> attributes = new HashMap();
+   private final ItemDisplayContext itemDisplayContext;
+   private final Map<String, Object> attributes = new HashMap<>();
 
    private HierarchicalRenderContext(ItemStack itemStack, HierarchicalRenderContext parent, ItemDisplayContext itemDisplayContext) {
       this.itemStack = itemStack;
@@ -22,13 +22,12 @@ public class HierarchicalRenderContext implements AutoCloseable {
       if (parent == null) {
          this.path = "/";
       } else {
-         Item var6 = itemStack.m_41720_();
+         Item var6 = itemStack.getItem();
          String var10000;
-         if (var6 instanceof Nameable) {
-            Nameable nameable = (Nameable)var6;
-            var10000 = nameable.getName();
+         if (var6 instanceof Nameable nameable) {
+             var10000 = nameable.getName();
          } else {
-            var10000 = itemStack.m_41720_().toString();
+            var10000 = itemStack.getItem().toString();
          }
 
          String name = var10000;
@@ -59,11 +58,11 @@ public class HierarchicalRenderContext implements AutoCloseable {
    }
 
    public <T> T getAttribute(String name, T _default) {
-      return this.attributes.containsKey(name) ? this.attributes.get(name) : _default;
+      return (T)(this.attributes.getOrDefault(name, _default));
    }
 
    public static HierarchicalRenderContext push(ItemStack itemStack, ItemDisplayContext itemDisplayContext) {
-      HierarchicalRenderContext parent = (HierarchicalRenderContext)contextStack.peekFirst();
+      HierarchicalRenderContext parent = contextStack.peekFirst();
       HierarchicalRenderContext context = new HierarchicalRenderContext(itemStack, parent, itemDisplayContext);
       contextStack.addFirst(context);
       return context;
@@ -86,11 +85,11 @@ public class HierarchicalRenderContext implements AutoCloseable {
    }
 
    public static HierarchicalRenderContext current() {
-      return (HierarchicalRenderContext)contextStack.peekFirst();
+      return contextStack.peekFirst();
    }
 
    public static HierarchicalRenderContext getRoot() {
-      return (HierarchicalRenderContext)contextStack.peekLast();
+      return contextStack.peekLast();
    }
 
    public static ItemStack getRootItemStack() {

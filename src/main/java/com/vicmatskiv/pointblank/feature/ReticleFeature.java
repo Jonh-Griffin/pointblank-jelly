@@ -9,7 +9,7 @@ import net.minecraft.util.Mth;
 
 public final class ReticleFeature extends ConditionalFeature {
    public static final float DEFAULT_MAX_ANGULAR_OFFSET_DEGREES = 5.0F;
-   public static final float DEFAULT_MAX_ANGULAR_OFFSET_COS = Mth.m_14089_(0.08726646F);
+   public static final float DEFAULT_MAX_ANGULAR_OFFSET_COS = Mth.cos(0.08726646F);
    private final ResourceLocation texture;
    private final boolean isParallaxEnabled;
    private final float maxAngularOffsetCos;
@@ -34,9 +34,7 @@ public final class ReticleFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, ReticleFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private boolean isParallaxEnabled;
       private float maxAngularOffsetCos;
       private ResourceLocation texture;
@@ -61,7 +59,7 @@ public final class ReticleFeature extends ConditionalFeature {
       }
 
       public Builder withMaxAngularOffset(float maxAngularOffsetDegrees) {
-         this.maxAngularOffsetCos = Mth.m_14089_(0.017453292F * Mth.m_14036_(maxAngularOffsetDegrees, 0.0F, 45.0F));
+         this.maxAngularOffsetCos = Mth.cos(((float)Math.PI / 180F) * Mth.clamp(maxAngularOffsetDegrees, 0.0F, 45.0F));
          return this;
       }
 

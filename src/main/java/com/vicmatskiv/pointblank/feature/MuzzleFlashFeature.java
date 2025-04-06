@@ -19,25 +19,20 @@ import java.util.function.Supplier;
 import net.minecraft.world.item.ItemStack;
 
 public final class MuzzleFlashFeature extends ConditionalFeature {
-   private List<Pair<MuzzleFlashEffect.Builder, Predicate<ConditionContext>>> muzzleEffectBuilders = new ArrayList();
+   private final List<Pair<MuzzleFlashEffect.Builder, Predicate<ConditionContext>>> muzzleEffectBuilders = new ArrayList<>();
 
    public MuzzleFlashFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders) {
       super(owner, predicate, effectBuilders);
-      Iterator var4 = effectBuilders.entrySet().iterator();
 
-      while(var4.hasNext()) {
-         Entry<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> e = (Entry)var4.next();
-         Iterator var6 = ((List)e.getValue()).iterator();
+       for (Entry<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> firePhaseListEntry : effectBuilders.entrySet()) {
 
-         while(var6.hasNext()) {
-            Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>> ebs = (Pair)var6.next();
-            EffectBuilder<? extends EffectBuilder<?, ?>, ?> eb = (EffectBuilder)((Supplier)ebs.getFirst()).get();
-            if (eb instanceof MuzzleFlashEffect.Builder) {
-               MuzzleFlashEffect.Builder mfeb = (MuzzleFlashEffect.Builder)eb;
-               this.muzzleEffectBuilders.add(Pair.of(mfeb, (Predicate)ebs.getSecond()));
-            }
-         }
-      }
+           for (Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>> o : firePhaseListEntry.getValue()) {
+               EffectBuilder<? extends EffectBuilder<?, ?>, ?> eb = o.getFirst().get();
+               if (eb instanceof MuzzleFlashEffect.Builder mfeb) {
+                   this.muzzleEffectBuilders.add(Pair.of(mfeb, o.getSecond()));
+               }
+           }
+       }
 
    }
 
@@ -50,25 +45,17 @@ public final class MuzzleFlashFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, MuzzleFlashFeature> {
-      private Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders = new HashMap();
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private final Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders = new HashMap<>();
+      private Predicate<ConditionContext> condition = (ctx) -> true;
 
       public Builder withEffect(GunItem.FirePhase firePhase, Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> effectBuilder) {
-         List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>> builders = (List)this.effectBuilders.computeIfAbsent(firePhase, (k) -> {
-            return new ArrayList();
-         });
-         builders.add(Pair.of(effectBuilder, (ctx) -> {
-            return true;
-         }));
+         List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>> builders = this.effectBuilders.computeIfAbsent(firePhase, (k) -> new ArrayList<>());
+         builders.add(Pair.of(effectBuilder, (ctx) -> true));
          return this;
       }
 
       public Builder withEffect(GunItem.FirePhase firePhase, Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> effectBuilder, Predicate<ConditionContext> condition) {
-         List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>> builders = (List)this.effectBuilders.computeIfAbsent(firePhase, (k) -> {
-            return new ArrayList();
-         });
+         List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>> builders = this.effectBuilders.computeIfAbsent(firePhase, (k) -> new ArrayList<>());
          builders.add(Pair.of(effectBuilder, condition));
          return this;
       }
@@ -84,22 +71,18 @@ public final class MuzzleFlashFeature extends ConditionalFeature {
          }
 
          GunItem.FirePhase firePhase;
-         Supplier supplier;
-         Predicate condition;
-         for(Iterator var2 = JsonUtil.getJsonObjects(obj, "effects").iterator(); var2.hasNext(); this.withEffect(firePhase, supplier, condition)) {
-            JsonObject effect = (JsonObject)var2.next();
-            firePhase = (GunItem.FirePhase)JsonUtil.getEnum(effect, "phase", GunItem.FirePhase.class, (Enum)null, true);
+         Supplier<EffectBuilder<?,?>> supplier;
+         Predicate<ConditionContext> condition;
+         for(Iterator<JsonObject> var2 = JsonUtil.getJsonObjects(obj, "effects").iterator(); var2.hasNext(); this.withEffect(firePhase, supplier, condition)) {
+            JsonObject effect = var2.next();
+            firePhase = (GunItem.FirePhase)JsonUtil.getEnum(effect, "phase", GunItem.FirePhase.class, null, true);
             String effectName = JsonUtil.getJsonString(effect, "name");
-            supplier = () -> {
-               return (EffectBuilder)EffectRegistry.getEffectBuilderSupplier(effectName).get();
-            };
+            supplier = () -> EffectRegistry.getEffectBuilderSupplier(effectName).get();
             if (effect.has("condition")) {
                JsonObject conditionObj = effect.getAsJsonObject("condition");
                condition = Conditions.fromJson(conditionObj);
             } else {
-               condition = (ctx) -> {
-                  return true;
-               };
+               condition = (ctx) -> true;
             }
          }
 

@@ -2,7 +2,7 @@ package com.vicmatskiv.pointblank.registry;
 
 import com.vicmatskiv.pointblank.compat.playeranimator.PlayerAnimationRegistry;
 import com.vicmatskiv.pointblank.compat.playeranimator.PlayerAnimatorCompat;
-import java.io.InputStream;
+
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Objects;
@@ -14,7 +14,7 @@ public class ThirdPersonAnimationRegistry {
    private static final PlayerAnimationRegistry<?> REGISTRY = PlayerAnimatorCompat.getInstance().getAnimationRegistry();
 
    private static Reader getResourceReader(String resourceName) {
-      return new InputStreamReader((InputStream)Objects.requireNonNull(ThirdPersonAnimationRegistry.class.getResourceAsStream(resourceName)));
+      return new InputStreamReader(Objects.requireNonNull(ThirdPersonAnimationRegistry.class.getResourceAsStream(resourceName)));
    }
 
    public static void register(String ownerId, Supplier<Reader> resourceReaderFactory) {
@@ -22,9 +22,7 @@ public class ThirdPersonAnimationRegistry {
    }
 
    public static void register(String ownerId, String resourceName) {
-      register(ownerId, () -> {
-         return getResourceReader(resourceName);
-      });
+      register(ownerId, () -> getResourceReader(resourceName));
    }
 
    public static void init() {

@@ -11,9 +11,7 @@ public class ParticleRegistry {
    public static final RegistryObject<SimpleParticleType> IMPACT_PARTICLE;
 
    private static RegistryObject<SimpleParticleType> register(String name, boolean overrideLimiter) {
-      return PARTICLES.register(name, () -> {
-         return new SimpleParticleType(overrideLimiter);
-      });
+      return PARTICLES.register(name, () -> new SimpleParticleType(overrideLimiter));
    }
 
    static {

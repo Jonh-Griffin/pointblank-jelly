@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.util;
 
 import java.util.function.Predicate;
@@ -9,7 +14,7 @@ import net.minecraft.world.entity.player.Player;
 
 public final class CancellableSound extends AbstractTickableSoundInstance {
    private Predicate<CancellableSound> predicate;
-   private Player player;
+   private final Player player;
 
    public CancellableSound(Player player, SoundEvent soundEvent, SoundSource soundSource, RandomSource randomSource, Predicate<CancellableSound> predicate) {
       super(soundEvent, soundSource, randomSource);
@@ -17,22 +22,22 @@ public final class CancellableSound extends AbstractTickableSoundInstance {
       this.predicate = predicate;
    }
 
-   public void m_7788_() {
+   public void tick() {
       if (!this.predicate.test(this)) {
-         this.m_119609_();
+         this.stop();
       }
 
    }
 
-   public double m_7772_() {
-      return this.player.m_20185_();
+   public double getX() {
+      return this.player.getX();
    }
 
-   public double m_7780_() {
-      return this.player.m_20186_();
+   public double getY() {
+      return this.player.getY();
    }
 
-   public double m_7778_() {
-      return this.player.m_20189_();
+   public double getZ() {
+      return this.player.getZ();
    }
 }

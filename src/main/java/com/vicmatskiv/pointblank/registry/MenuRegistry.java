@@ -16,9 +16,7 @@ public class MenuRegistry {
    public static final RegistryObject<MenuType<AttachmentContainerMenu>> ATTACHMENTS;
 
    private static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> register(String id, MenuSupplier<T> factory) {
-      return MENU_TYPES.register(id, () -> {
-         return new MenuType(factory, FeatureFlags.f_244332_);
-      });
+      return MENU_TYPES.register(id, () -> new MenuType<>(factory, FeatureFlags.DEFAULT_FLAGS));
    }
 
    static {

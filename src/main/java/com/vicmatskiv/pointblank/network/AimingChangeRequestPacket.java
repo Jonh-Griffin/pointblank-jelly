@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.network;
 
 import com.vicmatskiv.pointblank.item.GunItem;
@@ -7,7 +12,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,15 +37,14 @@ public class AimingChangeRequestPacket extends GunStateRequestPacket {
       buffer.writeBoolean(this.isAimingEnabled);
    }
 
-   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
-      ServerPlayer player = ((Context)ctx.get()).getSender();
+   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
+      ServerPlayer player = ctx.get().getSender();
       if (player != null) {
-         ItemStack itemStack = player.m_150109_().m_8020_(this.slotIndex);
+         ItemStack itemStack = player.getInventory().getItem(this.slotIndex);
          if (itemStack != null) {
-            Item var5 = itemStack.m_41720_();
-            if (var5 instanceof GunItem) {
-               GunItem gunItem = (GunItem)var5;
-               gunItem.handleAimingChangeRequest(player, itemStack, this.stateId, this.slotIndex, this.isAimingEnabled);
+            Item var5 = itemStack.getItem();
+            if (var5 instanceof GunItem gunItem) {
+                gunItem.handleAimingChangeRequest(player, itemStack, this.stateId, this.slotIndex, this.isAimingEnabled);
                return;
             }
          }

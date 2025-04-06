@@ -12,6 +12,7 @@ import com.vicmatskiv.pointblank.client.ClientEventHandler;
 import com.vicmatskiv.pointblank.client.ClientSystem;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.GunStatePoseProvider;
+import com.vicmatskiv.pointblank.client.GunStatePoseProvider.PoseContext;
 import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
 import com.vicmatskiv.pointblank.client.controller.RotationAnimationController;
 import com.vicmatskiv.pointblank.client.effect.EffectRenderContext;
@@ -37,8 +38,6 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.mixin.BakedModelMixin;
 import com.vicmatskiv.pointblank.registry.EffectRegistry;
 import com.vicmatskiv.pointblank.util.MiscUtil;
-import java.nio.IntBuffer;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -60,7 +59,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.model.SeparateTransformsModel.Baked;
+import net.minecraftforge.client.model.SeparateTransformsModel;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -94,14 +93,14 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    public static final String BONE_MUZZLEFLASH2 = "muzzleflash2";
    public static final String BONE_MUZZLEFLASH3 = "muzzleflash3";
    public static final String BONE_CAMERA = "_camera_";
-   public static final float DEFAULT_MAX_ANGULAR_RETICLE_OFFSET = Mth.m_14089_(0.08726646F);
-   public static final float DEFAULT_MAX_ANGULAR_RETICLE_OFFSET_NOT_AIMED = Mth.m_14089_(0.034906585F);
+   public static final float DEFAULT_MAX_ANGULAR_RETICLE_OFFSET = Mth.cos(0.08726646F);
+   public static final float DEFAULT_MAX_ANGULAR_RETICLE_OFFSET_NOT_AIMED = Mth.cos(0.034906585F);
    private GunClientState gunClientState;
    private boolean hasScopeOverlay;
    private ItemTransforms transforms;
-   private ResourceLocation leftHandModelResource = new ResourceLocation("pointblank", "geo/item/left_arm.geo.json");
-   private ResourceLocation rightHandModelResource = new ResourceLocation("pointblank", "geo/item/right_arm.geo.json");
-   private ResourceLocation reticleModelResource = new ResourceLocation("pointblank", "geo/item/reticle.geo.json");
+   private final ResourceLocation leftHandModelResource = new ResourceLocation("pointblank", "geo/item/left_arm.geo.json");
+   private final ResourceLocation rightHandModelResource = new ResourceLocation("pointblank", "geo/item/right_arm.geo.json");
+   private final ResourceLocation reticleModelResource = new ResourceLocation("pointblank", "geo/item/reticle.geo.json");
    private boolean useCustomGlowingTexture;
    private Set<Direction> glowDirections;
    private Supplier<SpriteUVProvider> glowingSpriteUVProviderSupplier;
@@ -109,19 +108,18 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
 
    public GunItemRenderer(ResourceLocation modelResource, List<ResourceLocation> fallbackAnimations, List<GlowAnimationController.Builder> glowEffectBuilders) {
       super(new GunGeoModel(modelResource, fallbackAnimations));
-      this.addRenderLayer(new AttachmentLayer(this));
+      this.addRenderLayer(new AttachmentLayer<>(this));
 
-      GlowAnimationController.Builder glowEffectBuilder;
-      ResourceLocation glowTexture;
-      for(Iterator var4 = glowEffectBuilders.iterator(); var4.hasNext(); this.addRenderLayer(new GlowingItemLayer(this, glowEffectBuilder.getEffectId(), glowTexture))) {
-         glowEffectBuilder = (GlowAnimationController.Builder)var4.next();
-         glowTexture = glowEffectBuilder.getTexture();
+      for(GlowAnimationController.Builder glowEffectBuilder : glowEffectBuilders) {
+         ResourceLocation glowTexture = glowEffectBuilder.getTexture();
          if (glowTexture == null) {
-            glowTexture = this.getGeoModel().getTextureResource((GunItem)this.animatable);
+            glowTexture = this.getGeoModel().getTextureResource(this.animatable);
          }
+
+         this.addRenderLayer(new GlowingItemLayer<>(this, glowEffectBuilder.getEffectId(), glowTexture));
       }
 
-      this.addRenderLayer(new GunHandsItemLayer(this));
+      this.addRenderLayer(new GunHandsItemLayer<>(this));
       this.addRenderLayer(new PipItemLayer(this));
       this.addRenderLayer(new ReticleItemLayer(this));
       this.addRenderLayer(new MuzzleFlashItemLayer(this));
@@ -151,15 +149,15 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    }
 
    private BakedGeoModel getLeftHandModel() {
-      return (BakedGeoModel)GeckoLibCache.getBakedModels().get(this.leftHandModelResource);
+      return GeckoLibCache.getBakedModels().get(this.leftHandModelResource);
    }
 
    private BakedGeoModel getRightHandModel() {
-      return (BakedGeoModel)GeckoLibCache.getBakedModels().get(this.rightHandModelResource);
+      return GeckoLibCache.getBakedModels().get(this.rightHandModelResource);
    }
 
    private BakedGeoModel getReticleModel() {
-      return (BakedGeoModel)GeckoLibCache.getBakedModels().get(this.reticleModelResource);
+      return GeckoLibCache.getBakedModels().get(this.reticleModelResource);
    }
 
    private Player getPlayer(ItemDisplayContext itemDisplayContext) {
@@ -171,13 +169,13 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
       }
    }
 
-   public void m_108829_(ItemStack stack, ItemDisplayContext itemDisplayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+   public void renderByItem(ItemStack stack, ItemDisplayContext itemDisplayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
       if (!IrisCompat.getInstance().isRenderingShadows()) {
-         Minecraft mc = Minecraft.m_91087_();
-         if (!(mc.f_91080_ instanceof AttachmentManagerScreen) || itemDisplayContext == ItemDisplayContext.GROUND) {
+         Minecraft mc = Minecraft.getInstance();
+         if (!(mc.screen instanceof AttachmentManagerScreen) || itemDisplayContext == ItemDisplayContext.GROUND) {
             Player player = this.getPlayer(itemDisplayContext);
             if (player != null) {
-               Minecraft.m_91087_().m_91385_().enableStencil();
+               Minecraft.getInstance().getMainRenderTarget().enableStencil();
                int depthTextureId = GL30.glGetFramebufferAttachmentParameteri(36160, 36096, 36049);
                int stencilTextureId = GL30.glGetFramebufferAttachmentParameteri(36160, 36128, 36048);
                if (depthTextureId != 0 && stencilTextureId == 0) {
@@ -186,52 +184,37 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
                   if (dataType == 35863) {
                      int width = GL30.glGetTexLevelParameteri(3553, 0, 4096);
                      int height = GL30.glGetTexLevelParameteri(3553, 0, 4097);
-                     GlStateManager._texImage2D(3553, 0, 35056, width, height, 0, 34041, 34042, (IntBuffer)null);
+                     GlStateManager._texImage2D(3553, 0, 35056, width, height, 0, 34041, 34042, null);
                      GlStateManager._glFramebufferTexture2D(36160, 33306, 3553, depthTextureId, 0);
                   }
                }
 
                MultiBufferSource wrappedBufferSource = RenderTypeProvider.getInstance().wrapBufferSource(bufferSource);
-               HierarchicalRenderContext hrc = HierarchicalRenderContext.push(stack, itemDisplayContext);
 
-               try {
+               try (HierarchicalRenderContext hrc = HierarchicalRenderContext.push(stack, itemDisplayContext)) {
                   this.renderPass(() -> {
-                     int slotIndex = player.m_150109_().m_36030_(stack);
-                     boolean isOffhand = player != null && player.m_21206_() == stack;
+                     int slotIndex = player.getInventory().findSlotMatchingItem(stack);
+                     boolean isOffhand = player != null && player.getOffhandItem() == stack;
                      GunClientState state = GunClientState.getState(player, stack, slotIndex, isOffhand);
                      if (state != null) {
                         GunStatePoseProvider.getInstance().clear(state.getId());
                      }
 
                      boolean isFirstPerson = itemDisplayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || itemDisplayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND;
-                     poseStack.m_85836_();
-                     GunItem gunItem = (GunItem)stack.m_41720_();
+                     poseStack.pushPose();
+                     GunItem gunItem = (GunItem)stack.getItem();
                      this.hasScopeOverlay = gunItem.getScopeOverlay() != null;
                      GeoModel<GunItem> geoModel = this.getGeoModel();
                      if (isFirstPerson) {
-                        GeoBone scopeBone = (GeoBone)geoModel.getBone("scope").orElse((Object)null);
+                        GeoBone scopeBone = geoModel.getBone("scope").orElse(null);
                         this.initTransforms(player, stack, itemDisplayContext);
                         this.adjustFirstPersonPose(stack, gunItem, state, poseStack, geoModel, scopeBone);
                      }
 
                      this.gunClientState = state;
-                     super.m_108829_(stack, itemDisplayContext, poseStack, wrappedBufferSource, packedLight, packedOverlay);
-                     poseStack.m_85849_();
+                     super.renderByItem(stack, itemDisplayContext, poseStack, wrappedBufferSource, packedLight, packedOverlay);
+                     poseStack.popPose();
                   });
-               } catch (Throwable var16) {
-                  if (hrc != null) {
-                     try {
-                        hrc.close();
-                     } catch (Throwable var15) {
-                        var16.addSuppressed(var15);
-                     }
-                  }
-
-                  throw var16;
-               }
-
-               if (hrc != null) {
-                  hrc.close();
                }
 
             }
@@ -252,7 +235,7 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
 
    private void adjustFirstPersonPose(ItemStack itemStack, GunItem gunItem, GunClientState state, PoseStack poseStack, GeoModel<GunItem> geoModel, GeoBone scopeBone) {
       if (this.transforms != null) {
-         ItemTransform fprt = this.transforms.f_111790_;
+         ItemTransform fprt = this.transforms.firstPersonRightHand;
          if (fprt != null) {
             float aimingProgress = 0.0F;
             if (state != null) {
@@ -262,39 +245,39 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
 
             float v = 1.0F - aimingProgress;
             float rescale = gunItem.getModelScale();
-            poseStack.m_252880_(0.5F, 0.5F, 0.5F);
-            poseStack.m_252781_((new Quaternionf()).rotationXYZ(-fprt.f_111755_.x * 0.017453292F, -fprt.f_111755_.y * 0.017453292F, -fprt.f_111755_.z * 0.017453292F));
-            poseStack.m_252880_(-fprt.f_111756_.x, -fprt.f_111756_.y, -fprt.f_111756_.z);
-            poseStack.m_252880_(fprt.f_111756_.x * rescale, fprt.f_111756_.y * rescale, fprt.f_111756_.z * rescale);
-            poseStack.m_252781_((new Quaternionf()).rotationXYZ(v * fprt.f_111755_.x * 0.017453292F, v * fprt.f_111755_.y * 0.017453292F, v * fprt.f_111755_.z * 0.017453292F));
-            poseStack.m_252880_(aimingProgress * -fprt.f_111756_.x * rescale, aimingProgress * -fprt.f_111756_.y * rescale, aimingProgress * -fprt.f_111756_.z * rescale);
+            poseStack.translate(0.5F, 0.5F, 0.5F);
+            poseStack.mulPose((new Quaternionf()).rotationXYZ(-fprt.rotation.x * ((float)Math.PI / 180F), -fprt.rotation.y * ((float)Math.PI / 180F), -fprt.rotation.z * ((float)Math.PI / 180F)));
+            poseStack.translate(-fprt.translation.x, -fprt.translation.y, -fprt.translation.z);
+            poseStack.translate(fprt.translation.x * rescale, fprt.translation.y * rescale, fprt.translation.z * rescale);
+            poseStack.mulPose((new Quaternionf()).rotationXYZ(v * fprt.rotation.x * ((float)Math.PI / 180F), v * fprt.rotation.y * ((float)Math.PI / 180F), v * fprt.rotation.z * ((float)Math.PI / 180F)));
+            poseStack.translate(aimingProgress * -fprt.translation.x * rescale, aimingProgress * -fprt.translation.y * rescale, aimingProgress * -fprt.translation.z * rescale);
             AimingFeature.applyAimingPosition(itemStack, poseStack, rescale, aimingProgress);
-            poseStack.m_85841_(rescale, rescale, rescale);
-            poseStack.m_252880_(-0.5F, -0.5F, -0.5F);
-            float curve = Mth.m_14031_(3.1415927F * aimingProgress);
+            poseStack.scale(rescale, rescale, rescale);
+            poseStack.translate(-0.5F, -0.5F, -0.5F);
+            float curve = Mth.sin((float)Math.PI * aimingProgress);
             double aimingCurveX = gunItem.getAimingCurveX();
             double aimingCurveY = gunItem.getAimingCurveY();
             double aimingCurveZ = gunItem.getAimingCurveZ();
             double aimingCurvePitch = gunItem.getAimingCurvePitch();
             double aimingCurveYaw = gunItem.getAimingCurveYaw();
             double aimingCurveRoll = gunItem.getAimingCurveRoll();
-            poseStack.m_85837_((double)curve * aimingCurveX, (double)curve * aimingCurveY, (double)curve * aimingCurveZ);
-            poseStack.m_252781_(new Quaternionf((double)curve * aimingCurvePitch * 0.01745329238474369D, (double)curve * aimingCurveYaw * 0.01745329238474369D, (double)curve * aimingCurveRoll * 0.01745329238474369D, 1.0D));
-            poseStack.m_252880_(0.48F * v, -1.12F * v, -0.72F * v);
-            poseStack.m_252880_(-0.006F, 0.6F, 0.0F);
+            poseStack.translate((double)curve * aimingCurveX, (double)curve * aimingCurveY, (double)curve * aimingCurveZ);
+            poseStack.mulPose(new Quaternionf((double)curve * aimingCurvePitch * (double)((float)Math.PI / 180F), (double)curve * aimingCurveYaw * (double)((float)Math.PI / 180F), (double)curve * aimingCurveRoll * (double)((float)Math.PI / 180F), 1.0F));
+            poseStack.translate(0.48F * v, -1.12F * v, -0.72F * v);
+            poseStack.translate(-0.006F, 0.6F, 0.0F);
          }
       }
    }
 
    private void initTransforms(Player player, ItemStack stack, ItemDisplayContext itemDisplayContext) {
       if (this.transforms == null) {
-         Minecraft minecraft = Minecraft.m_91087_();
-         BakedModel bakedModel = minecraft.m_91291_().m_174264_(stack, MiscUtil.getLevel(player), player, player.m_19879_() + itemDisplayContext.ordinal());
-         if (bakedModel instanceof Baked) {
+         Minecraft minecraft = Minecraft.getInstance();
+         BakedModel bakedModel = minecraft.getItemRenderer().getModel(stack, MiscUtil.getLevel(player), player, player.getId() + itemDisplayContext.ordinal());
+         if (bakedModel instanceof SeparateTransformsModel.Baked) {
             BakedModel baseModel = ((BakedModelMixin)bakedModel).getBaseModel();
-            this.transforms = baseModel.m_7442_();
+            this.transforms = baseModel.getTransforms();
          } else {
-            this.transforms = bakedModel.m_7442_();
+            this.transforms = bakedModel.getTransforms();
          }
       }
 
@@ -304,16 +287,14 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
       if (RenderPass.current() != RenderPass.RETICLE || quad.direction() == Direction.SOUTH) {
          GeoVertex[] vertices = quad.vertices();
          float[][] texUV;
-         float texU;
-         float texV;
          if (this.glowingSpriteUVProviderSupplier != null) {
-            SpriteUVProvider spriteUVProvider = (SpriteUVProvider)this.glowingSpriteUVProviderSupplier.get();
+            SpriteUVProvider spriteUVProvider = this.glowingSpriteUVProviderSupplier.get();
             float[] uv = spriteUVProvider.getSpriteUV(this.glowingProgress);
             float minU = uv[0];
             float minV = uv[1];
-            texU = uv[2];
-            texV = uv[3];
-            texUV = new float[][]{{minU, minV}, {texU, minV}, {texU, texV}, {minU, texV}};
+            float maxU = uv[2];
+            float maxV = uv[3];
+            texUV = new float[][]{{minU, minV}, {maxU, minV}, {maxU, maxV}, {minU, maxV}};
          } else {
             texUV = new float[][]{{0.0F, 0.0F}, {1.0F, 0.0F}, {1.0F, 1.0F}, {0.0F, 1.0F}};
          }
@@ -323,6 +304,8 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
             Vector3f position = vertex.position();
             Vector4f vector4f = poseState.transform(new Vector4f(position.x(), position.y(), position.z(), 1.0F));
             RenderPass renderPass = RenderPass.current();
+            float texU;
+            float texV;
             if (renderPass == RenderPass.GLOW && this.useCustomGlowingTexture) {
                texU = texUV[i][0];
                texV = texUV[i][1];
@@ -331,7 +314,7 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
                texV = vertex.texV();
             }
 
-            buffer.m_5954_(vector4f.x(), vector4f.y(), vector4f.z(), red, green, blue, alpha, texU, texV, packedOverlay, packedLight, normal.x(), normal.y(), normal.z());
+            buffer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), red, green, blue, alpha, texU, texV, packedOverlay, packedLight, normal.x(), normal.y(), normal.z());
          }
 
       }
@@ -344,16 +327,12 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
          HierarchicalRenderContext current = HierarchicalRenderContext.current();
          ItemStack rootStack = HierarchicalRenderContext.getRoot().getItemStack();
          boolean shouldRender = true;
-         Iterator var5 = this.getRenderLayers().iterator();
 
-         while(var5.hasNext()) {
-            GeoRenderLayer<GunItem> layer = (GeoRenderLayer)var5.next();
-            if (layer instanceof RenderApprover) {
-               RenderApprover renderApprover = (RenderApprover)layer;
-               RenderPass var10000;
-               if (layer instanceof RenderPassProvider) {
-                  RenderPassProvider rp = (RenderPassProvider)layer;
-                  var10000 = rp.getRenderPass();
+         for(GeoRenderLayer<GunItem> layer : this.getRenderLayers()) {
+            if (layer instanceof RenderApprover renderApprover) {
+                RenderPass var10000;
+               if (layer instanceof RenderPassProvider rp) {
+                   var10000 = rp.getRenderPass();
                } else {
                   var10000 = null;
                }
@@ -387,25 +366,9 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
          };
          boolean isGlowEnabled = glowEffect != null && glowEffect.getGlowingPartNames().contains(bone.getName());
          if (isGlowEnabled) {
-            HierarchicalRenderContext subHrc = HierarchicalRenderContext.push(current.getItemStack(), current.getItemDisplayContext());
-
-            try {
+            try (HierarchicalRenderContext subHrc = HierarchicalRenderContext.push(current.getItemStack(), current.getItemDisplayContext())) {
                GlowingItemLayer.setGlowEnabled(isGlowEnabled);
                r.run();
-            } catch (Throwable var25) {
-               if (subHrc != null) {
-                  try {
-                     subHrc.close();
-                  } catch (Throwable var24) {
-                     var25.addSuppressed(var24);
-                  }
-               }
-
-               throw var25;
-            }
-
-            if (subHrc != null) {
-               subHrc.close();
             }
          } else {
             r.run();
@@ -424,63 +387,63 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
          HierarchicalRenderContext hrc = HierarchicalRenderContext.current();
          ItemDisplayContext itemDisplayContext = hrc.getItemDisplayContext();
          boolean isFirstPerson = itemDisplayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || itemDisplayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND;
-         double aimingProgress = 0.0D;
+         double aimingProgress = 0.0F;
          if (this.gunClientState != null) {
             BiDirectionalInterpolator aimingController = (BiDirectionalInterpolator)this.gunClientState.getAnimationController("aiming");
             aimingProgress = aimingController.getValue();
-            if ((!MiscUtil.isGreaterThanZero(this.gunClientState.getGunItem().getPipScopeZoom()) || !Config.pipScopesEnabled) && this.hasScopeOverlay && !this.gunClientState.isReloading() && isFirstPerson && aimingProgress > 0.4D) {
+            if ((!MiscUtil.isGreaterThanZero(this.gunClientState.getGunItem().getPipScopeZoom()) || !Config.pipScopesEnabled) && this.hasScopeOverlay && !this.gunClientState.isReloading() && isFirstPerson && aimingProgress > 0.4) {
                return;
             }
          }
 
-         switch(renderPass) {
-         case GLOW:
-            this.renderGlow(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
-            break;
-         case HANDS:
-            if (bone.getName().equals("rightarm")) {
-               this.renderRightArm(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
-            } else if (bone.getName().equals("leftarm")) {
-               this.renderLeftArm(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
-            }
-            break;
-         case PIP:
-            if (bone.getName().equals("scopepip")) {
-               this.renderPip(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress);
-            }
-            break;
-         case PIP_OVERLAY:
-            if (bone.getName().equals("scopepip")) {
-               this.renderPipOverlay(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress, PipItemLayer.isParallaxEnabled());
-            }
-            break;
-         case PIP_MASK:
-            if (bone.getName().equals("scopepip")) {
-               this.renderPipMask(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress);
-            }
-            break;
-         case RETICLE:
-            boolean isParallaxEnabled = ReticleItemLayer.isParallaxEnabled();
-            if (isParallaxEnabled && bone.getName().equals("reticle")) {
-               this.renderReticleWithParallax(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress, (Float)hrc.getAttribute("max_angular_offset_cos", DEFAULT_MAX_ANGULAR_RETICLE_OFFSET));
-            } else if (!isParallaxEnabled && bone.getName().equals("scope")) {
-               this.renderReticle(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, aimingProgress);
-            }
-            break;
-         case MUZZLE_FLASH:
-            if (bone.getName().equals("muzzleflash") || bone.getName().equals("muzzleflash2") || bone.getName().equals("muzzleflash3")) {
-               this.renderMuzzleFlash(poseStack, bone, buffer, packedLight);
-            }
-            break;
-         case MAIN_ITEM:
-         case ATTACHMENTS:
-            if (!bone.getName().equals("muzzleflash") && !bone.getName().equals("muzzleflash2") && !bone.getName().equals("muzzleflash3") && !bone.getName().equals("muzzle") && !bone.getName().equals("muzzle2") && !bone.getName().equals("muzzle3")) {
-               if (this.canRenderPart(bone.getName())) {
-                  super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+         switch (renderPass) {
+            case GLOW:
+               this.renderGlow(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+               break;
+            case HANDS:
+               if (bone.getName().equals("rightarm")) {
+                  this.renderRightArm(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+               } else if (bone.getName().equals("leftarm")) {
+                  this.renderLeftArm(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
                }
-            } else if (ActiveMuzzleFeature.isActiveMuzzle(HierarchicalRenderContext.getRootItemStack(), hrc.getItemStack(), itemDisplayContext, bone.getName())) {
-               this.captureMuzzlePose(bone, poseStack, itemDisplayContext);
-            }
+               break;
+            case PIP:
+               if (bone.getName().equals("scopepip")) {
+                  this.renderPip(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress);
+               }
+               break;
+            case PIP_OVERLAY:
+               if (bone.getName().equals("scopepip")) {
+                  this.renderPipOverlay(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress, PipItemLayer.isParallaxEnabled());
+               }
+               break;
+            case PIP_MASK:
+               if (bone.getName().equals("scopepip")) {
+                  this.renderPipMask(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress);
+               }
+               break;
+            case RETICLE:
+               boolean isParallaxEnabled = ReticleItemLayer.isParallaxEnabled();
+               if (isParallaxEnabled && bone.getName().equals("reticle")) {
+                  this.renderReticleWithParallax(poseStack, bone, buffer, packedLight, red, green, blue, aimingProgress, hrc.getAttribute("max_angular_offset_cos", DEFAULT_MAX_ANGULAR_RETICLE_OFFSET));
+               } else if (!isParallaxEnabled && bone.getName().equals("scope")) {
+                  this.renderReticle(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, aimingProgress);
+               }
+               break;
+            case MUZZLE_FLASH:
+               if (bone.getName().equals("muzzleflash") || bone.getName().equals("muzzleflash2") || bone.getName().equals("muzzleflash3")) {
+                  this.renderMuzzleFlash(poseStack, bone, buffer, packedLight);
+               }
+               break;
+            case MAIN_ITEM:
+            case ATTACHMENTS:
+               if (!bone.getName().equals("muzzleflash") && !bone.getName().equals("muzzleflash2") && !bone.getName().equals("muzzleflash3") && !bone.getName().equals("muzzle") && !bone.getName().equals("muzzle2") && !bone.getName().equals("muzzle3")) {
+                  if (this.canRenderPart(bone.getName())) {
+                     super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+                  }
+               } else if (ActiveMuzzleFeature.isActiveMuzzle(HierarchicalRenderContext.getRootItemStack(), hrc.getItemStack(), itemDisplayContext, bone.getName())) {
+                  this.captureMuzzlePose(bone, poseStack, itemDisplayContext);
+               }
          }
 
       }
@@ -502,7 +465,7 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
       if (this.gunClientState != null && !this.gunClientState.isReloading() && !this.gunClientState.isInspecting()) {
          List<GeoCube> cubes = bone.getCubes();
          if (cubes != null && !cubes.isEmpty()) {
-            GeoCube cube = (GeoCube)cubes.get(0);
+            GeoCube cube = cubes.get(0);
             GeoQuad quad1 = cube.quads()[0];
             Vector3f v1Position = quad1.vertices()[0].position();
             GeoQuad quad2 = cube.quads()[2];
@@ -511,11 +474,9 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
             position = v3Position.sub(v1Position, position);
             position = position.mul(0.5F);
             position = position.add(v1Position);
-            EffectRenderContext context = (new EffectRenderContext()).withPoseStack(poseStack).withPosition(new Vec3((double)position.x, (double)position.y, (double)position.z)).withVertexBuffer(buffer).withLightColor(packedLight);
-            Iterator var13 = this.gunClientState.getMuzzleFlashEffects().iterator();
+            EffectRenderContext context = (new EffectRenderContext()).withPoseStack(poseStack).withPosition(new Vec3(position.x, position.y, position.z)).withVertexBuffer(buffer).withLightColor(packedLight);
 
-            while(var13.hasNext()) {
-               MuzzleFlashEffect effect = (MuzzleFlashEffect)var13.next();
+            for(MuzzleFlashEffect effect : this.gunClientState.getMuzzleFlashEffects()) {
                UUID effectId = EffectRegistry.getEffectId(effect.getName());
                if (Objects.equal(effectId, RenderPass.getEffectId())) {
                   effect.render(context);
@@ -529,36 +490,36 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    private void renderReticleWithParallax(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, float red, float green, float blue, double aimingProgress, float maxAngularOffsetCos) {
       if (bone != null) {
          if (this.gunClientState != null) {
-            if (!(aimingProgress < 0.8D)) {
+            if (!(aimingProgress < 0.8)) {
                List<GeoCube> cubes = bone.getCubes();
                if (cubes != null && !cubes.isEmpty()) {
-                  GeoCube cube = (GeoCube)cubes.get(0);
+                  GeoCube cube = cubes.get(0);
                   GeoQuad northQuad = cube.quads()[3];
                   Matrix4f modelMatrix = this.captureCubeMatrix(poseStack, cube, 3);
                   Vector4f p0 = new Vector4f(0.0F, 0.0F, 0.0F, 1.0F);
                   Vector4f n = new Vector4f(0.0F, 0.0F, -1.0F, 1.0F);
                   Pair<Vector4f, Float> intersection = getPlayerViewIntersection(modelMatrix, p0, n);
-                  Vector4f intersectionPoint = (Vector4f)intersection.getFirst();
+                  Vector4f intersectionPoint = intersection.getFirst();
                   if (intersectionPoint == null) {
                      return;
                   }
 
-                  float angularOffsetCos = (Float)intersection.getSecond();
-                  float threshold = !(aimingProgress < 1.0D) && !this.gunClientState.isReloading() && !this.gunClientState.isInspecting() ? maxAngularOffsetCos : DEFAULT_MAX_ANGULAR_RETICLE_OFFSET_NOT_AIMED;
+                  float angularOffsetCos = intersection.getSecond();
+                  float threshold = !(aimingProgress < (double)1.0F) && !this.gunClientState.isReloading() && !this.gunClientState.isInspecting() ? maxAngularOffsetCos : DEFAULT_MAX_ANGULAR_RETICLE_OFFSET_NOT_AIMED;
                   if (angularOffsetCos > threshold) {
-                     poseStack.m_85836_();
+                     poseStack.pushPose();
                      float maxOffsetFromTheCenter = 1.0F;
                      Player player = ClientUtils.getClientPlayer();
                      float smoothFactor = 1.0F;
-                     Vec3 mv = player.m_20184_();
-                     if (mv.f_82479_ != 0.0D && mv.f_82481_ != 0.0D) {
+                     Vec3 mv = player.getDeltaMovement();
+                     if (mv.x != (double)0.0F && mv.z != (double)0.0F) {
                         smoothFactor = 0.8F;
                      }
 
-                     poseStack.m_252880_(Mth.m_14036_(intersectionPoint.x() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.m_14036_(intersectionPoint.y() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.m_14036_(intersectionPoint.z() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter));
+                     poseStack.translate(Mth.clamp(intersectionPoint.x() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.clamp(intersectionPoint.y() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.clamp(intersectionPoint.z() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter));
                      float alpha = (float)aimingProgress;
                      RenderUtil.renderQuad(poseStack, northQuad, buffer, 0.0F, 0.0F, red, green, blue, alpha);
-                     poseStack.m_85849_();
+                     poseStack.popPose();
                   }
                }
 
@@ -570,63 +531,63 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    private void renderReticle(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, double aimingProgress) {
       if (this.gunClientState != null && !this.gunClientState.isReloading() && !this.gunClientState.isInspecting()) {
          BakedGeoModel reticleBakedGeoModel = this.getReticleModel();
-         GeoBone reticleBone = (GeoBone)reticleBakedGeoModel.getBone("scope").get();
+         GeoBone reticleBone = reticleBakedGeoModel.getBone("scope").get();
          if (reticleBone != null) {
-            poseStack.m_85836_();
-            if (aimingProgress > 0.9D && !this.gunClientState.isReloading()) {
+            poseStack.pushPose();
+            if (aimingProgress > 0.9 && !this.gunClientState.isReloading()) {
                float alpha = 0.7F;
                this.applyRefTransforms(poseStack, bone, reticleBone);
                double yaw = ClientEventHandler.reticleInertiaController.getYaw();
                double pitch = ClientEventHandler.reticleInertiaController.getPitch();
-               Quaternionf q = new Quaternionf(pitch, yaw, 0.0D, 1.0D);
-               poseStack.m_85837_(-yaw * 25.0D, pitch * 25.0D, -8.0D);
-               poseStack.m_252781_(q);
+               Quaternionf q = new Quaternionf(pitch, yaw, 0.0F, 1.0F);
+               poseStack.translate(-yaw * (double)25.0F, pitch * (double)25.0F, -8.0F);
+               poseStack.mulPose(q);
                super.renderCubesOfBone(poseStack, reticleBone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
             }
 
-            poseStack.m_85849_();
+            poseStack.popPose();
          }
 
       }
    }
 
    private void renderPip(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, float red, float green, float blue, double aimingProgress) {
-      poseStack.m_85836_();
-      if (aimingProgress > 0.9D && this.gunClientState != null && !this.gunClientState.isReloading()) {
+      poseStack.pushPose();
+      if (aimingProgress > 0.9 && this.gunClientState != null && !this.gunClientState.isReloading()) {
          List<GeoCube> cubes = bone.getCubes();
          if (cubes != null && !cubes.isEmpty()) {
-            GeoCube cube = (GeoCube)cubes.get(0);
+            GeoCube cube = cubes.get(0);
             GeoQuad northQuad = cube.quads()[3];
             ClientSystem.getInstance().getAuxLevelRenderer().renderToBuffer(poseStack, northQuad, buffer, packedLight);
          }
       }
 
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    private void renderPipOverlay(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, float red, float green, float blue, double aimingProgress, boolean isParallaxEnabled) {
       List<GeoCube> cubes = bone.getCubes();
       if (cubes != null && !cubes.isEmpty()) {
-         GeoCube cube = (GeoCube)cubes.get(0);
+         GeoCube cube = cubes.get(0);
          GeoQuad northQuad = cube.quads()[3];
          if (isParallaxEnabled) {
             Matrix4f modelMatrix = this.captureCubeMatrix(poseStack, cube, 3);
             Vector4f p0 = new Vector4f(0.0F, 0.0F, 0.01F, 1.0F);
             Vector4f n = new Vector4f(0.0F, 0.0F, -1.0F, 1.0F);
             Pair<Vector4f, Float> intersection = getPlayerViewIntersection(modelMatrix, p0, n);
-            Vector4f intersectionPoint = (Vector4f)intersection.getFirst();
+            Vector4f intersectionPoint = intersection.getFirst();
             if (intersectionPoint != null) {
                float maxOffsetFromTheCenter = 1.0F;
                float smoothFactor = 0.8F;
-               poseStack.m_252880_(Mth.m_14036_(intersectionPoint.x() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.m_14036_(intersectionPoint.y() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.m_14036_(intersectionPoint.z() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter));
+               poseStack.translate(Mth.clamp(intersectionPoint.x() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.clamp(intersectionPoint.y() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter), Mth.clamp(intersectionPoint.z() * smoothFactor, -maxOffsetFromTheCenter, maxOffsetFromTheCenter));
             }
          }
 
          float alpha = (float)aimingProgress;
-         poseStack.m_85836_();
-         poseStack.m_252880_(0.0F, 0.0F, 0.001F);
+         poseStack.pushPose();
+         poseStack.translate(0.0F, 0.0F, 0.001F);
          RenderUtil.renderQuad(poseStack, northQuad, buffer, 0.0F, 0.0F, red, green, blue, alpha);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
    }
@@ -634,100 +595,99 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    private void renderPipMask(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, float red, float green, float blue, double aimingProgress) {
       List<GeoCube> cubes = bone.getCubes();
       if (cubes != null && !cubes.isEmpty()) {
-         GeoCube cube = (GeoCube)cubes.get(0);
+         GeoCube cube = cubes.get(0);
          GeoQuad northQuad = cube.quads()[3];
          float alpha = (float)aimingProgress;
-         poseStack.m_85836_();
+         poseStack.pushPose();
          RenderUtil.renderQuad(poseStack, northQuad, buffer, 0.0F, 0.0F, red, green, blue, alpha);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
    }
 
    private void renderLeftArm(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
       BakedGeoModel handsBakedGeoModel = this.getLeftHandModel();
-      GeoBone leftArmBone = (GeoBone)handsBakedGeoModel.getBone("leftarm").orElse((Object)null);
+      GeoBone leftArmBone = handsBakedGeoModel.getBone("leftarm").orElse(null);
       if (leftArmBone != null) {
-         poseStack.m_85836_();
+         poseStack.pushPose();
          this.applyArmRefTransforms(poseStack, bone, leftArmBone);
          super.renderCubesOfBone(poseStack, leftArmBone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
    }
 
    private void renderRightArm(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
       BakedGeoModel handsBakedGeoModel = this.getRightHandModel();
-      GeoBone rightArmBone = (GeoBone)handsBakedGeoModel.getBone("rightarm").orElse((Object)null);
+      GeoBone rightArmBone = handsBakedGeoModel.getBone("rightarm").orElse(null);
       if (rightArmBone != null) {
-         poseStack.m_85836_();
+         poseStack.pushPose();
          this.applyArmRefTransforms(poseStack, bone, rightArmBone);
          super.renderCubesOfBone(poseStack, rightArmBone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
 
    }
 
    private void captureMuzzlePose(GeoBone refBone, PoseStack poseStack, ItemDisplayContext itemDisplayContext) {
       if (this.gunClientState != null) {
-         poseStack.m_85836_();
-         GeoCube refCube = (GeoCube)refBone.getCubes().get(0);
+         poseStack.pushPose();
+         GeoCube refCube = refBone.getCubes().get(0);
          RenderUtils.translateToPivotPoint(poseStack, refCube);
          RenderUtils.rotateMatrixAroundCube(poseStack, refCube);
          RenderUtils.translateAwayFromPivotPoint(poseStack, refCube);
-         poseStack.m_252880_(refBone.getPivotX() / 16.0F, refBone.getPivotY() / 16.0F, refBone.getPivotZ() / 16.0F);
+         poseStack.translate(refBone.getPivotX() / 16.0F, refBone.getPivotY() / 16.0F, refBone.getPivotZ() / 16.0F);
          GunStatePoseProvider gunStatePoseProvider = GunStatePoseProvider.getInstance();
-         GunStatePoseProvider.PoseContext poseContext;
          if (itemDisplayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND) {
-            poseContext = null;
+            GunStatePoseProvider.PoseContext poseContext = null;
             if (!refBone.getName().equals("muzzle") && !refBone.getName().equals("muzzle2")) {
                if (refBone.getName().equals("muzzleflash") || refBone.getName().equals("muzzleflash2")) {
-                  poseContext = GunStatePoseProvider.PoseContext.FIRST_PERSON_MUZZLE_FLASH;
+                  poseContext = PoseContext.FIRST_PERSON_MUZZLE_FLASH;
                }
             } else {
-               poseContext = GunStatePoseProvider.PoseContext.FIRST_PERSON_MUZZLE;
+               poseContext = PoseContext.FIRST_PERSON_MUZZLE;
             }
 
             if (poseContext != null) {
-               gunStatePoseProvider.setPose(this.gunClientState, poseContext, poseStack.m_85850_());
+               gunStatePoseProvider.setPose(this.gunClientState, poseContext, poseStack.last());
                this.setCurrentMuzzlePosition(poseStack, poseContext);
             }
          } else if (itemDisplayContext == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND) {
-            poseContext = null;
+            GunStatePoseProvider.PoseContext poseContext = null;
             if (!refBone.getName().equals("muzzle") && !refBone.getName().equals("muzzle2")) {
                if (refBone.getName().equals("muzzleflash") || refBone.getName().equals("muzzleflash2")) {
-                  poseContext = GunStatePoseProvider.PoseContext.THIRD_PERSON_MUZZLE_FLASH;
+                  poseContext = PoseContext.THIRD_PERSON_MUZZLE_FLASH;
                }
             } else {
-               poseContext = GunStatePoseProvider.PoseContext.THIRD_PERSON_MUZZLE;
+               poseContext = PoseContext.THIRD_PERSON_MUZZLE;
             }
 
             if (poseContext != null) {
-               gunStatePoseProvider.setPose(this.gunClientState, poseContext, poseStack.m_85850_());
+               gunStatePoseProvider.setPose(this.gunClientState, poseContext, poseStack.last());
                this.setCurrentMuzzlePosition(poseStack, poseContext);
             }
          }
 
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
    private void setCurrentMuzzlePosition(PoseStack poseStack, GunStatePoseProvider.PoseContext poseContext) {
-      poseStack.m_85836_();
-      Minecraft mc = Minecraft.m_91087_();
-      Camera camera = mc.f_91063_.m_109153_();
-      Vec3 cameraPos = camera.m_90583_();
-      double fov = ((Integer)mc.f_91066_.m_231837_().m_231551_()).doubleValue();
-      Matrix4f fovProjectionMatrix = mc.f_91063_.m_253088_(fov);
-      Matrix4f transform = (new Matrix4f(RenderSystem.getInverseViewRotationMatrix())).mul(fovProjectionMatrix.invert()).mul(RenderSystem.getProjectionMatrix()).mul(poseStack.m_85850_().m_252922_());
+      poseStack.pushPose();
+      Minecraft mc = Minecraft.getInstance();
+      Camera camera = mc.gameRenderer.getMainCamera();
+      Vec3 cameraPos = camera.getPosition();
+      double fov = mc.options.fov().get().doubleValue();
+      Matrix4f fovProjectionMatrix = mc.gameRenderer.getProjectionMatrix(fov);
+      Matrix4f transform = (new Matrix4f(RenderSystem.getInverseViewRotationMatrix())).mul(fovProjectionMatrix.invert()).mul(RenderSystem.getProjectionMatrix()).mul(poseStack.last().pose());
       Vector4f relPos = transform.transform(new Vector4f(0.0F, 0.0F, 0.0F, 1.0F));
       Vector4f pos = new Vector4f(relPos);
-      pos.add((float)cameraPos.f_82479_, (float)cameraPos.f_82480_, (float)cameraPos.f_82481_, 1.0F);
+      pos.add((float)cameraPos.x, (float)cameraPos.y, (float)cameraPos.z, 1.0F);
       Vector4f direction = transform.transform(new Vector4f(0.0F, 0.0F, -1.0F, 1.0F));
       direction.sub(relPos);
       direction.normalize();
-      GunStatePoseProvider.getInstance().setPositionAndDirection(this.gunClientState, poseContext, new Vec3((double)pos.x, (double)pos.y, (double)pos.z), new Vec3((double)direction.x, (double)direction.y, (double)direction.z));
-      poseStack.m_85849_();
+      GunStatePoseProvider.getInstance().setPositionAndDirection(this.gunClientState, poseContext, new Vec3(pos.x, pos.y, pos.z), new Vec3(direction.x, direction.y, direction.z));
+      poseStack.popPose();
    }
 
    public void renderCubesOfBoneParent(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
@@ -749,13 +709,10 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
       RenderUtils.translateToPivotPoint(poseStack, cube);
       RenderUtils.rotateMatrixAroundCube(poseStack, cube);
       RenderUtils.translateAwayFromPivotPoint(poseStack, cube);
-      Matrix3f normalisedPoseState = poseStack.m_85850_().m_252943_();
-      Matrix4f poseState = poseStack.m_85850_().m_252922_();
-      GeoQuad[] var12 = cube.quads();
-      int var13 = var12.length;
+      Matrix3f normalisedPoseState = poseStack.last().normal();
+      Matrix4f poseState = poseStack.last().pose();
 
-      for(int var14 = 0; var14 < var13; ++var14) {
-         GeoQuad quad = var12[var14];
+      for(GeoQuad quad : cube.quads()) {
          if (quad != null && (this.glowDirections == null || this.glowDirections.contains(quad.direction()))) {
             Vector3f normal = normalisedPoseState.transform(new Vector3f(quad.normal()));
             RenderUtils.fixInvertedFlatCube(cube, normal);
@@ -766,19 +723,19 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    }
 
    private void applyArmRefTransforms(PoseStack poseStack, GeoBone refBone, GeoBone leftArmBone) {
-      GeoCube leftArmBoneCube = (GeoCube)leftArmBone.getCubes().get(0);
-      GeoCube refCube = (GeoCube)refBone.getCubes().get(0);
+      GeoCube leftArmBoneCube = leftArmBone.getCubes().get(0);
+      GeoCube refCube = refBone.getCubes().get(0);
       GeoVertex leftArmBoneVertex = leftArmBoneCube.quads()[0].vertices()[0];
       GeoVertex refVertex = refCube.quads()[0].vertices()[0];
       float dx = refVertex.position().x() - leftArmBoneVertex.position().x();
       float dy = refVertex.position().y() - leftArmBoneVertex.position().y();
       float dz = refVertex.position().z() - leftArmBoneVertex.position().z();
-      poseStack.m_252880_(dx, dy, dz);
+      poseStack.translate(dx, dy, dz);
    }
 
    private void applyRefTransforms(PoseStack poseStack, GeoBone refBone, GeoBone actualBone) {
-      GeoCube actualArmBoneCube = (GeoCube)actualBone.getCubes().get(0);
-      GeoCube refCube = (GeoCube)refBone.getCubes().get(0);
+      GeoCube actualArmBoneCube = actualBone.getCubes().get(0);
+      GeoCube refCube = refBone.getCubes().get(0);
       GeoVertex refQ0v0 = refCube.quads()[2].vertices()[0];
       GeoVertex refQ0v2 = refCube.quads()[2].vertices()[2];
       GeoVertex actualQ0v0 = actualArmBoneCube.quads()[2].vertices()[0];
@@ -796,25 +753,21 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
       float dx = -(actualXLeft + (refXLeft - (refSizeX - actualSizeX) / 2.0F));
       float dy = refYTop + (actualSizeY - refSizeY) / 2.0F - actualYTop;
       float dz = refZLeft - actualZLeft;
-      poseStack.m_252880_(dx, dy, dz);
+      poseStack.translate(dx, dy, dz);
    }
 
    public boolean approveRendering(RenderPass renderPass, String boneName, ItemStack rootStack, ItemStack currentStack, String path, ItemDisplayContext itemDisplayContext) {
       List<Features.EnabledFeature> enabledVisibilityFeatures = Features.getEnabledFeatures(rootStack, PartVisibilityFeature.class);
-      ConditionContext conditionContext = new ConditionContext((LivingEntity)null, rootStack, currentStack, this.gunClientState, itemDisplayContext);
-      Iterator var9 = enabledVisibilityFeatures.iterator();
+      ConditionContext conditionContext = new ConditionContext(null, rootStack, currentStack, this.gunClientState, itemDisplayContext);
 
-      PartVisibilityFeature visibilityFeature;
-      do {
-         if (!var9.hasNext()) {
-            return true;
+      for(Features.EnabledFeature enabledVisibilityFeature : enabledVisibilityFeatures) {
+         PartVisibilityFeature visibilityFeature = (PartVisibilityFeature)enabledVisibilityFeature.feature();
+         if (!visibilityFeature.isPartVisible(currentStack.getItem(), boneName, conditionContext)) {
+            return false;
          }
+      }
 
-         Features.EnabledFeature enabledVisibilityFeature = (Features.EnabledFeature)var9.next();
-         visibilityFeature = (PartVisibilityFeature)enabledVisibilityFeature.feature();
-      } while(visibilityFeature.isPartVisible(currentStack.m_41720_(), boneName, conditionContext));
-
-      return false;
+      return true;
    }
 
    public boolean isEffectLayer() {
@@ -842,18 +795,18 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
    }
 
    private static Pair<Vector4f, Float> getPlayerViewIntersection(Matrix4f modelMatrix, Vector4f p0, Vector4f n) {
-      Minecraft mc = Minecraft.m_91087_();
+      Minecraft mc = Minecraft.getInstance();
       Player player = ClientUtils.getClientPlayer();
       float partialTicks = mc.getPartialTick();
-      Vec3 playerEyePositionRelativeToCamera = new Vec3(0.0D, 0.0D, 0.0D);
-      Vec3 playerViewVector = player.m_20252_(partialTicks);
+      Vec3 playerEyePositionRelativeToCamera = new Vec3(0.0F, 0.0F, 0.0F);
+      Vec3 playerViewVector = player.getViewVector(partialTicks);
       Matrix4f transform3 = (new Matrix4f(modelMatrix)).invert().mul((new Matrix4f(RenderSystem.getInverseViewRotationMatrix())).invert());
-      double farDistance = 5.0D;
-      Vec3 farPointWorld = playerEyePositionRelativeToCamera.m_82549_(playerViewVector.m_82490_(farDistance));
+      double farDistance = 5.0F;
+      Vec3 farPointWorld = playerEyePositionRelativeToCamera.add(playerViewVector.scale(farDistance));
       Vector4f eyePositionModel = new Vector4f();
-      transform3.transform((float)playerEyePositionRelativeToCamera.f_82479_, (float)playerEyePositionRelativeToCamera.f_82480_, (float)playerEyePositionRelativeToCamera.f_82481_, 1.0F, eyePositionModel);
+      transform3.transform((float)playerEyePositionRelativeToCamera.x, (float)playerEyePositionRelativeToCamera.y, (float)playerEyePositionRelativeToCamera.z, 1.0F, eyePositionModel);
       Vector4f farPointModel = new Vector4f();
-      transform3.transform((float)farPointWorld.f_82479_, (float)farPointWorld.f_82480_, (float)farPointWorld.f_82481_, 1.0F, farPointModel);
+      transform3.transform((float)farPointWorld.x, (float)farPointWorld.y, (float)farPointWorld.z, 1.0F, farPointModel);
       Vector4f l = (new Vector4f(farPointModel)).sub(eyePositionModel).normalize();
       Vector4f p0MinusL0 = (new Vector4f(p0.x, p0.y, p0.z, 1.0F)).sub(eyePositionModel);
       float numerator = p0MinusL0.dot(n.x, n.y, n.z, 1.0F);
@@ -869,15 +822,15 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
 
    public Matrix4f captureCubeMatrix(PoseStack poseStack, GeoCube cube, int side) {
       GeoQuad quad = cube.quads()[side];
-      poseStack.m_85836_();
+      poseStack.pushPose();
       RenderUtils.translateToPivotPoint(poseStack, cube);
       RenderUtils.rotateMatrixAroundCube(poseStack, cube);
       RenderUtils.translateAwayFromPivotPoint(poseStack, cube);
       Vector3f v0Pos = quad.vertices()[0].position();
       Vector3f v2Pos = quad.vertices()[2].position();
-      poseStack.m_252880_((v0Pos.x + v2Pos.x) * 0.5F, (v0Pos.y + v2Pos.y) * 0.5F, (v0Pos.z + v2Pos.z) * 0.5F);
-      Matrix4f cubeMatrix = poseStack.m_85850_().m_252922_();
-      poseStack.m_85849_();
+      poseStack.translate((v0Pos.x + v2Pos.x) * 0.5F, (v0Pos.y + v2Pos.y) * 0.5F, (v0Pos.z + v2Pos.z) * 0.5F);
+      Matrix4f cubeMatrix = poseStack.last().pose();
+      poseStack.popPose();
       return cubeMatrix;
    }
 }

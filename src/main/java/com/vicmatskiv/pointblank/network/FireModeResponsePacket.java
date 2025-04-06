@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 
 public class FireModeResponsePacket extends GunStateResponsePacket {
    private FireModeInstance fireModeInstance;
@@ -30,7 +30,7 @@ public class FireModeResponsePacket extends GunStateResponsePacket {
       return new FireModeResponsePacket(header.stateId, header.slotIndex, header.correlationId, header.isSuccess, fireModeInstance);
    }
 
-   protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
-      ((GunItem)itemStack.m_41720_()).processServerFireModeResponse(this.stateId, this.correlationId, this.isSuccess, itemStack, gunClientState, this.fireModeInstance);
+   protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
+      ((GunItem)itemStack.getItem()).processServerFireModeResponse(this.stateId, this.correlationId, this.isSuccess, itemStack, gunClientState, this.fireModeInstance);
    }
 }

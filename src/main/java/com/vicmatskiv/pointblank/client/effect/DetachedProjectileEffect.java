@@ -7,6 +7,7 @@ import com.vicmatskiv.pointblank.client.VertexConsumers;
 import com.vicmatskiv.pointblank.client.particle.EffectParticles;
 import com.vicmatskiv.pointblank.client.uv.SpriteUVProvider;
 import com.vicmatskiv.pointblank.item.GunItem;
+import com.vicmatskiv.pointblank.item.GunItem.FirePhase;
 import com.vicmatskiv.pointblank.util.Interpolators;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.MiscUtil;
@@ -29,9 +30,9 @@ public class DetachedProjectileEffect extends AbstractEffect {
    private Vec3 targetPosition;
    private int numBlades;
    private boolean isFaceEnabled;
-   private float rCol = 1.0F;
-   private float gCol = 1.0F;
-   private float bCol = 1.0F;
+   private final float rCol = 1.0F;
+   private final float gCol = 1.0F;
+   private final float bCol = 1.0F;
    private int bladeBrightness;
    private int faceBrightness;
    private float bladeTextureMinU;
@@ -55,33 +56,33 @@ public class DetachedProjectileEffect extends AbstractEffect {
    public void render(EffectRenderContext effectRenderContext) {
       float progress = effectRenderContext.getProgress();
       if (!(progress < 0.0F)) {
-         VertexConsumer vertexBuffer = (VertexConsumer)this.vertexConsumerTransformer.apply(effectRenderContext.getVertexBuffer());
+         VertexConsumer vertexBuffer = this.vertexConsumerTransformer.apply(effectRenderContext.getVertexBuffer());
          float[][] segments = this.segmentsProvider.getSegments(this.distanceToTarget, progress, this.lifetimeNanos);
          float distanceSoFar = segments[0][0] + (segments[0][1] - segments[0][0]) * 0.5F;
          if (!(distanceSoFar >= this.distanceToTarget)) {
-            Minecraft mc = Minecraft.m_91087_();
-            Camera camera = mc.f_91063_.m_109153_();
+            Minecraft mc = Minecraft.getInstance();
+            Camera camera = mc.gameRenderer.getMainCamera();
             if (this.initialRotation == null) {
-               Vec3 direction = this.targetPosition.m_82546_(this.startPosition);
-               this.initialRotation = (new Quaternionf()).rotateTo(0.0F, 0.0F, -1.0F, (float)direction.f_82479_, (float)direction.f_82480_, (float)direction.f_82481_);
+               Vec3 direction = this.targetPosition.subtract(this.startPosition);
+               this.initialRotation = (new Quaternionf()).rotateTo(0.0F, 0.0F, -1.0F, (float)direction.x, (float)direction.y, (float)direction.z);
             }
 
-            Quaternionf faceRotation = new Quaternionf(camera.m_253121_());
+            Quaternionf faceRotation = new Quaternionf(camera.rotation());
             float distanceProgress = distanceSoFar / this.distanceToTarget;
-            float currentPosX = (float)Mth.m_14139_((double)distanceProgress, this.startPosition.f_82479_, this.targetPosition.f_82479_);
-            float currentPosY = (float)Mth.m_14139_((double)distanceProgress, this.startPosition.f_82480_, this.targetPosition.f_82480_);
-            float currentPosZ = (float)Mth.m_14139_((double)distanceProgress, this.startPosition.f_82481_, this.targetPosition.f_82481_);
-            Vec3 cameraPosition = camera.m_90583_();
-            float dx = (float)((double)currentPosX - cameraPosition.m_7096_());
-            float dy = (float)((double)currentPosY - cameraPosition.m_7098_());
-            float dz = (float)((double)currentPosZ - cameraPosition.m_7094_());
+            float currentPosX = (float)Mth.lerp(distanceProgress, this.startPosition.x, this.targetPosition.x);
+            float currentPosY = (float)Mth.lerp(distanceProgress, this.startPosition.y, this.targetPosition.y);
+            float currentPosZ = (float)Mth.lerp(distanceProgress, this.startPosition.z, this.targetPosition.z);
+            Vec3 cameraPosition = camera.getPosition();
+            float dx = (float)((double)currentPosX - cameraPosition.x());
+            float dy = (float)((double)currentPosY - cameraPosition.y());
+            float dz = (float)((double)currentPosZ - cameraPosition.z());
             int lightColor = this.isGlowEnabled ? 240 : effectRenderContext.getLightColor();
             Quaternionf rotation = new Quaternionf(this.initialRotation);
             float roll = -(effectRenderContext.getInitialAngle() + this.numRotations * 360.0F * progress);
-            rotation.rotateZ(-roll * 0.017453292F);
+            rotation.rotateZ(-roll * ((float)Math.PI / 180F));
             SpriteUVProvider spriteUVProvider = effectRenderContext.getSpriteUVProvider();
             if (this.isFaceEnabled) {
-               faceRotation.rotateZ(-roll * 0.017453292F);
+               faceRotation.rotateZ(-roll * ((float)Math.PI / 180F));
                this.renderFace(dx, dy, dz, faceRotation, vertexBuffer, progress, lightColor, spriteUVProvider);
             }
 
@@ -91,7 +92,7 @@ public class DetachedProjectileEffect extends AbstractEffect {
                for(int k = 0; k < this.numBlades; ++k) {
                   Quaternionf bladeQuaternion = new Quaternionf(rotation);
                   float bladeRoll = (float)k * bladeStep;
-                  bladeQuaternion.rotateZ(bladeRoll * 0.017453292F);
+                  bladeQuaternion.rotateZ(bladeRoll * ((float)Math.PI / 180F));
                   this.renderBlade(dx, dy, dz, bladeQuaternion, segments, vertexBuffer, progress, lightColor, spriteUVProvider);
                }
             }
@@ -111,18 +112,17 @@ public class DetachedProjectileEffect extends AbstractEffect {
       float v1 = uv[3];
       Vector3f[] avector3f = new Vector3f[]{new Vector3f(-halfWidth, -halfWidth, 0.0F), new Vector3f(-halfWidth, halfWidth, 0.0F), new Vector3f(halfWidth, halfWidth, 0.0F), new Vector3f(halfWidth, -halfWidth, 0.0F)};
 
-      int k;
-      for(k = 0; k < 4; ++k) {
-         Vector3f vector3f = avector3f[k];
+      for(int i = 0; i < 4; ++i) {
+         Vector3f vector3f = avector3f[i];
          vector3f.rotate(rotation);
          vector3f.add(dx, dy, dz);
       }
 
-      for(k = 0; k < this.faceBrightness; ++k) {
-         vertexConsumer.m_5483_((double)avector3f[0].x(), (double)avector3f[0].y(), (double)avector3f[0].z()).m_7421_(u1, v1).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-         vertexConsumer.m_5483_((double)avector3f[1].x(), (double)avector3f[1].y(), (double)avector3f[1].z()).m_7421_(u1, v0).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-         vertexConsumer.m_5483_((double)avector3f[2].x(), (double)avector3f[2].y(), (double)avector3f[2].z()).m_7421_(u0, v0).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-         vertexConsumer.m_5483_((double)avector3f[3].x(), (double)avector3f[3].y(), (double)avector3f[3].z()).m_7421_(u0, v1).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
+      for(int k = 0; k < this.faceBrightness; ++k) {
+         vertexConsumer.vertex(avector3f[0].x(), avector3f[0].y(), avector3f[0].z()).uv(u1, v1).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+         vertexConsumer.vertex(avector3f[1].x(), avector3f[1].y(), avector3f[1].z()).uv(u1, v0).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+         vertexConsumer.vertex(avector3f[2].x(), avector3f[2].y(), avector3f[2].z()).uv(u0, v0).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+         vertexConsumer.vertex(avector3f[3].x(), avector3f[3].y(), avector3f[3].z()).uv(u0, v1).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
       }
 
    }
@@ -145,18 +145,17 @@ public class DetachedProjectileEffect extends AbstractEffect {
          float beamSegmentLengthHalf = (beamSegmentEnd - beamSegmentStart) * 0.5F;
          Vector3f[] avector3f = new Vector3f[]{new Vector3f(0.0F, beamSegmentWidth, beamSegmentLengthHalf), new Vector3f(0.0F, beamSegmentWidth, -beamSegmentLengthHalf), new Vector3f(0.0F, -beamSegmentWidth, -beamSegmentLengthHalf), new Vector3f(0.0F, -beamSegmentWidth, beamSegmentLengthHalf)};
 
-         int k;
-         for(k = 0; k < 4; ++k) {
-            Vector3f vector3f = avector3f[k];
+         for(int i = 0; i < 4; ++i) {
+            Vector3f vector3f = avector3f[i];
             vector3f.rotate(rotation);
             vector3f.add(dx, dy, dz);
          }
 
-         for(k = 0; k < this.bladeBrightness; ++k) {
-            vertexConsumer.m_5483_((double)avector3f[0].x(), (double)avector3f[0].y(), (double)avector3f[0].z()).m_7421_(u1, v1).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-            vertexConsumer.m_5483_((double)avector3f[1].x(), (double)avector3f[1].y(), (double)avector3f[1].z()).m_7421_(u1, v0).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-            vertexConsumer.m_5483_((double)avector3f[2].x(), (double)avector3f[2].y(), (double)avector3f[2].z()).m_7421_(u0, v0).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
-            vertexConsumer.m_5483_((double)avector3f[3].x(), (double)avector3f[3].y(), (double)avector3f[3].z()).m_7421_(u0, v1).m_85950_(this.rCol, this.gCol, this.bCol, alpha).m_85969_(lightColor).m_5752_();
+         for(int k = 0; k < this.bladeBrightness; ++k) {
+            vertexConsumer.vertex(avector3f[0].x(), avector3f[0].y(), avector3f[0].z()).uv(u1, v1).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+            vertexConsumer.vertex(avector3f[1].x(), avector3f[1].y(), avector3f[1].z()).uv(u1, v0).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+            vertexConsumer.vertex(avector3f[2].x(), avector3f[2].y(), avector3f[2].z()).uv(u0, v0).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
+            vertexConsumer.vertex(avector3f[3].x(), avector3f[3].y(), avector3f[3].z()).uv(u0, v1).color(this.rCol, this.gCol, this.bCol, alpha).uv2(lightColor).endVertex();
          }
       }
 
@@ -164,11 +163,11 @@ public class DetachedProjectileEffect extends AbstractEffect {
 
    public void launch(Entity player) {
       EffectParticles.EffectParticle particle = new EffectParticles.EffectParticle(player, this);
-      Minecraft mc = Minecraft.m_91087_();
-      mc.f_91061_.m_107344_(particle);
+      Minecraft mc = Minecraft.getInstance();
+      mc.particleEngine.add(particle);
    }
 
-   public static class Builder extends AbstractEffectBuilder<Builder, DetachedProjectileEffect> {
+   public static class Builder extends AbstractEffect.AbstractEffectBuilder<Builder, DetachedProjectileEffect> {
       private static final Set<GunItem.FirePhase> COMPATIBLE_PHASES;
       public static final long DEFAULT_DURATION = 250L;
       public static final float MAX_DISTANCE = 200.0F;
@@ -255,12 +254,12 @@ public class DetachedProjectileEffect extends AbstractEffect {
       }
 
       public Builder withFaceBrightness(int brightness) {
-         this.faceBrightness = Mth.m_14045_(brightness, 0, 5);
+         this.faceBrightness = Mth.clamp(brightness, 0, 5);
          return this;
       }
 
       public Builder withBladeBrightness(int brightness) {
-         this.bladeBrightness = Mth.m_14045_(brightness, 0, 5);
+         this.bladeBrightness = Mth.clamp(brightness, 0, 5);
          return this;
       }
 
@@ -272,11 +271,10 @@ public class DetachedProjectileEffect extends AbstractEffect {
       public Builder withJsonObject(JsonObject obj) {
          super.withJsonObject(obj);
          JsonObject faceObj = obj.getAsJsonObject("face");
-         float initialSpeed;
          if (faceObj != null) {
             float minU = JsonUtil.getJsonFloat(faceObj, "minU", 0.0F);
-            initialSpeed = JsonUtil.getJsonFloat(faceObj, "maxU", 1.0F);
-            this.withFace(minU, initialSpeed);
+            float maxU = JsonUtil.getJsonFloat(faceObj, "maxU", 1.0F);
+            this.withFace(minU, maxU);
             int brightness = JsonUtil.getJsonInt(faceObj, "brightness", 1);
             this.withFaceBrightness(brightness);
             Interpolators.FloatInterpolator widthInt = JsonUtil.getJsonInterpolator(faceObj, "width");
@@ -286,12 +284,11 @@ public class DetachedProjectileEffect extends AbstractEffect {
          }
 
          JsonObject bladeObj = obj.getAsJsonObject("blade");
-         float acceleration;
          if (bladeObj != null) {
             int count = JsonUtil.getJsonInt(bladeObj, "count", 1);
-            acceleration = JsonUtil.getJsonFloat(bladeObj, "minU", 0.0F);
+            float minU = JsonUtil.getJsonFloat(bladeObj, "minU", 0.0F);
             float maxU = JsonUtil.getJsonFloat(bladeObj, "maxU", 1.0F);
-            this.withBlades(count, acceleration, maxU);
+            this.withBlades(count, minU, maxU);
             int brightness = JsonUtil.getJsonInt(bladeObj, "brightness", 1);
             this.withBladeBrightness(brightness);
             Interpolators.FloatInterpolator widthInt = JsonUtil.getJsonInterpolator(bladeObj, "width");
@@ -300,15 +297,15 @@ public class DetachedProjectileEffect extends AbstractEffect {
             }
          }
 
-         initialSpeed = JsonUtil.getJsonFloat(obj, "initialSpeed", 0.0F);
-         acceleration = JsonUtil.getJsonFloat(obj, "acceleration", 0.0F);
+         float initialSpeed = JsonUtil.getJsonFloat(obj, "initialSpeed", 0.0F);
+         float acceleration = JsonUtil.getJsonFloat(obj, "acceleration", 0.0F);
          if (this.numBlades > 0) {
-            if (MiscUtil.isNearlyZero((double)initialSpeed) && MiscUtil.isNearlyZero((double)acceleration)) {
+            if (MiscUtil.isNearlyZero(initialSpeed) && MiscUtil.isNearlyZero(acceleration)) {
                this.withSegmentsProvider(new SegmentsProviders.StaticBeamSegmentsProvider());
             } else {
                this.withSegmentsProvider(new SegmentsProviders.MovingSegmentsProvider(initialSpeed, acceleration));
             }
-         } else if (MiscUtil.isNearlyZero((double)initialSpeed) && MiscUtil.isNearlyZero((double)acceleration)) {
+         } else if (MiscUtil.isNearlyZero(initialSpeed) && MiscUtil.isNearlyZero(acceleration)) {
             this.withSegmentsProvider(SegmentsProviders.ZERO_PROVIDER);
          } else {
             this.withSegmentsProvider(new SegmentsProviders.MovingPointProvider(initialSpeed, acceleration));
@@ -322,12 +319,12 @@ public class DetachedProjectileEffect extends AbstractEffect {
       }
 
       @OnlyIn(Dist.CLIENT)
-      public DetachedProjectileEffect build(Context context) {
+      public DetachedProjectileEffect build(EffectBuilder.Context context) {
          DetachedProjectileEffect effect = new DetachedProjectileEffect();
          super.apply(effect, context);
-         effect.startPosition = (Vec3)effect.startPositionProvider.get();
-         effect.targetPosition = context.getHitResult().m_82450_();
-         effect.distanceToTarget = (float)effect.startPosition.m_82554_(effect.targetPosition);
+         effect.startPosition = effect.startPositionProvider.get();
+         effect.targetPosition = context.getHitResult().getLocation();
+         effect.distanceToTarget = (float)effect.startPosition.distanceTo(effect.targetPosition);
          effect.faceWidthProvider = this.faceWidthProvider;
          effect.bladeWidthProvider = this.bladeWidthProvider;
          effect.isFaceEnabled = this.isFaceEnabled;
@@ -350,7 +347,7 @@ public class DetachedProjectileEffect extends AbstractEffect {
       }
 
       static {
-         COMPATIBLE_PHASES = Set.of(GunItem.FirePhase.PREPARING, GunItem.FirePhase.FIRING, GunItem.FirePhase.HIT_SCAN_ACQUIRED, GunItem.FirePhase.COMPLETETING);
+         COMPATIBLE_PHASES = Set.of(FirePhase.PREPARING, FirePhase.FIRING, FirePhase.HIT_SCAN_ACQUIRED, FirePhase.COMPLETETING);
          DEFAULT_SEGMENTS_PROVIDER = new SegmentsProviders.MovingSegmentsProvider(200.0F, -10.0F);
       }
    }

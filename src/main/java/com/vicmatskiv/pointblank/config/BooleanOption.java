@@ -14,26 +14,23 @@ public class BooleanOption implements ConfigOption<Boolean> {
 
    @NotNull
    static <B extends ConfigOptionBuilder<Boolean, B>> ConfigOptionBuilder<Boolean, B> builder(final Function<String, Boolean> futureOptionResolver, final int optionIndex) {
-      return new ConfigOptionBuilder<Boolean, B>() {
-         public Supplier<Boolean> getSupplier() {
-            return () -> {
-               return (Boolean)futureOptionResolver.apply(this.getName());
-            };
-         }
+      return new ConfigOptionBuilder<>() {
+          public Supplier<Boolean> getSupplier() {
+              return () -> (Boolean) futureOptionResolver.apply(this.getName());
+          }
 
-         public Boolean normalize(Object value1) {
-            if (value1 instanceof Boolean) {
-               Boolean b = (Boolean)value1;
-               return b;
-            } else {
-               return (Boolean)this.defaultValue;
-            }
-         }
+          public Boolean normalize(Object value1) {
+              if (value1 instanceof Boolean) {
+                  return (Boolean) value1;
+              } else {
+                  return this.defaultValue;
+              }
+          }
 
-         public ConfigOption<Boolean> build(String value1, List<String> description, int index) {
-            this.validate();
-            return new BooleanOption(index >= 0 ? index : optionIndex, this, value1 != null ? Boolean.parseBoolean(value1) : (Boolean)this.defaultValue, description);
-         }
+          public ConfigOption<Boolean> build(String value1, List<String> description, int index) {
+              this.validate();
+              return new BooleanOption(index >= 0 ? index : optionIndex, this, value1 != null ? Boolean.parseBoolean(value1) : this.defaultValue, description);
+          }
       };
    }
 
@@ -62,7 +59,7 @@ public class BooleanOption implements ConfigOption<Boolean> {
    }
 
    public ConfigOption<?> createCopy(Object newValue, int newIndex) {
-      return new BooleanOption(newIndex, this.builder, (Boolean)this.builder.normalize(newValue), (List)null);
+      return new BooleanOption(newIndex, this.builder, this.builder.normalize(newValue), null);
    }
 
    public boolean equals(Object o) {
@@ -77,6 +74,6 @@ public class BooleanOption implements ConfigOption<Boolean> {
    }
 
    public int hashCode() {
-      return Objects.hash(new Object[]{this.builder, this.value, this.serialized});
+      return Objects.hash(this.builder, this.value, this.serialized);
    }
 }

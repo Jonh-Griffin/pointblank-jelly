@@ -45,7 +45,7 @@ public class GlslPatcher {
 
    public static List<String> extractVec3LayoutVariables(String glslSource) {
       Matcher matcher = LAYOUT_VEC3_VAR_MARKER.matcher(glslSource);
-      ArrayList variableNames = new ArrayList();
+      ArrayList<String> variableNames = new ArrayList<>();
 
       while(matcher.find()) {
          variableNames.add(matcher.group(1));

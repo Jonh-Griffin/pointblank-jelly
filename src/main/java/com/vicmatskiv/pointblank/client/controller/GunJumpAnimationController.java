@@ -9,15 +9,15 @@ import net.minecraft.world.item.ItemStack;
 
 public class GunJumpAnimationController extends AbstractProceduralAnimationController implements GunStateListener {
    private double roll;
-   private double initialAmplitude;
+   private final double initialAmplitude;
    private double initialAmplitudeAdj;
-   private double rateOfAmplitudeDecay;
+   private final double rateOfAmplitudeDecay;
    private double rateOfAmplitudeDecayAdj;
-   private double initialAngularFrequency;
+   private final double initialAngularFrequency;
    private double initialAngularFrequencyAdj;
-   private double rateOfFrequencyIncrease;
+   private final double rateOfFrequencyIncrease;
    private double rateOfFrequencyIncreaseAdj;
-   private Random random = new Random();
+   private final Random random = new Random();
    private boolean rollDirection;
    private boolean yawDirection;
 

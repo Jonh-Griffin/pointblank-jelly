@@ -90,13 +90,13 @@ import org.apache.logging.log4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
 @Mod("pointblank")
-public class PointBlankReloaded {
+public class PointBlankJelly {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private ExtensionRegistry extensionRegistry;
    private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
 
-   public PointBlankReloaded() {
+   public PointBlankJelly() {
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();

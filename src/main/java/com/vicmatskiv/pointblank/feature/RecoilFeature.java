@@ -3,7 +3,6 @@ package com.vicmatskiv.pointblank.feature;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.network.chat.Component;
@@ -20,9 +19,9 @@ public class RecoilFeature extends ConditionalFeature {
       super(owner, predicate);
       this.recoilModifier = recoilModifier;
       if (recoilModifier < 1.0F) {
-         this.description = Component.m_237115_("description.pointblank.reducesRecoil").m_7220_(Component.m_237113_(String.format(" %.0f%%", 100.0F * (1.0F - recoilModifier))));
+         this.description = Component.translatable("description.pointblank.reducesRecoil").append(Component.literal(String.format(" %.0f%%", 100.0F * (1.0F - recoilModifier))));
       } else {
-         this.description = Component.m_237115_("description.pointblank.increasesRecoil").m_7220_(Component.m_237113_(String.format(" %.0f%%", 100.0F * (recoilModifier - 1.0F))));
+         this.description = Component.translatable("description.pointblank.increasesRecoil").append(Component.literal(String.format(" %.0f%%", 100.0F * (recoilModifier - 1.0F))));
       }
 
    }
@@ -39,20 +38,20 @@ public class RecoilFeature extends ConditionalFeature {
       List<Features.EnabledFeature> enabledRecoilFeatures = Features.getEnabledFeatures(itemStack, RecoilFeature.class);
       float recoilModifier = 1.0F;
 
-      RecoilFeature recoilFeature;
-      for(Iterator var3 = enabledRecoilFeatures.iterator(); var3.hasNext(); recoilModifier *= recoilFeature.getRecoilModifier()) {
-         Features.EnabledFeature enabledFeature = (Features.EnabledFeature)var3.next();
-         recoilFeature = (RecoilFeature)enabledFeature.feature();
+      for(Features.EnabledFeature enabledFeature : enabledRecoilFeatures) {
+         RecoilFeature recoilFeature = (RecoilFeature)enabledFeature.feature();
+         recoilModifier *= recoilFeature.getRecoilModifier();
       }
 
-      return Mth.m_14036_(recoilModifier, 0.01F, 10.0F);
+      return Mth.clamp(recoilModifier, 0.01F, 10.0F);
    }
 
    public static class Builder implements FeatureBuilder<Builder, RecoilFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private float recoilModifier;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -69,7 +68,7 @@ public class RecoilFeature extends ConditionalFeature {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
 
-         this.withRecoilModifier((double)JsonUtil.getJsonFloat(obj, "recoilModifier"));
+         this.withRecoilModifier(JsonUtil.getJsonFloat(obj, "recoilModifier"));
          return this;
       }
 

@@ -1,23 +1,20 @@
 package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonObject;
-import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Predicate;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class ActiveMuzzleFeature extends ConditionalFeature {
-   private Map<String, Predicate<ConditionContext>> muzzleParts;
+   private final Map<String, Predicate<ConditionContext>> muzzleParts;
 
    private ActiveMuzzleFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, Map<String, Predicate<ConditionContext>> muzzleParts) {
       super(owner, predicate);
@@ -25,23 +22,22 @@ public class ActiveMuzzleFeature extends ConditionalFeature {
    }
 
    public MutableComponent getDescription() {
-      return Component.m_237119_();
+      return Component.empty();
    }
 
    public static boolean isActiveMuzzle(ItemStack rootStack, ItemStack currentStack, ItemDisplayContext itemDisplayContext, String partName) {
-      Item var5 = currentStack.m_41720_();
-      if (var5 instanceof FeatureProvider) {
-         FeatureProvider featureProvider = (FeatureProvider)var5;
-         ActiveMuzzleFeature feature = (ActiveMuzzleFeature)featureProvider.getFeature(ActiveMuzzleFeature.class);
+      Item item = currentStack.getItem();
+      if (item instanceof FeatureProvider featureProvider) {
+         ActiveMuzzleFeature feature = featureProvider.getFeature(ActiveMuzzleFeature.class);
          if (feature == null) {
             return rootStack == currentStack;
          } else {
-            Predicate<ConditionContext> predicate = (Predicate)feature.muzzleParts.get(partName);
+            Predicate<ConditionContext> predicate = feature.muzzleParts.get(partName);
             if (predicate == null) {
                predicate = feature.predicate;
             }
 
-            return feature.predicate.test(new ConditionContext((LivingEntity)null, rootStack, currentStack, (GunClientState)null, itemDisplayContext));
+            return feature.predicate.test(new ConditionContext(null, rootStack, currentStack, null, itemDisplayContext));
          }
       } else {
          return rootStack == currentStack;
@@ -49,10 +45,11 @@ public class ActiveMuzzleFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, ActiveMuzzleFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
-      private Map<String, Predicate<ConditionContext>> muzzleParts = new HashMap();
+      private Predicate<ConditionContext> condition = (ctx) -> true;
+      private final Map<String, Predicate<ConditionContext>> muzzleParts = new HashMap<>();
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -69,26 +66,24 @@ public class ActiveMuzzleFeature extends ConditionalFeature {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
 
-         String partName;
-         Predicate condition;
-         for(Iterator var2 = JsonUtil.getJsonObjects(obj, "parts").iterator(); var2.hasNext(); this.withPart(partName, condition)) {
-            JsonObject partObj = (JsonObject)var2.next();
-            partName = JsonUtil.getJsonString(partObj, "name");
+         for(JsonObject partObj : JsonUtil.getJsonObjects(obj, "parts")) {
+            String partName = JsonUtil.getJsonString(partObj, "name");
+            Predicate<ConditionContext> condition;
             if (partObj.has("condition")) {
                JsonObject conditionObj = partObj.getAsJsonObject("condition");
                condition = Conditions.fromJson(conditionObj);
             } else {
-               condition = (ctx) -> {
-                  return true;
-               };
+               condition = (ctx) -> true;
             }
+
+            this.withPart(partName, condition);
          }
 
          return this;
       }
 
       public ActiveMuzzleFeature build(FeatureProvider featureProvider) {
-         Map<String, Predicate<ConditionContext>> muzzleParts = new HashMap(this.muzzleParts);
+         Map<String, Predicate<ConditionContext>> muzzleParts = new HashMap<>(this.muzzleParts);
          if (muzzleParts.isEmpty()) {
             muzzleParts.put("muzzleflash", this.condition);
             muzzleParts.put("muzzle", this.condition);

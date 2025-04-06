@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.client;
 
 import com.vicmatskiv.pointblank.item.Drawable;
@@ -7,14 +12,13 @@ import com.vicmatskiv.pointblank.item.ThrowableLike;
 import com.vicmatskiv.pointblank.util.ClientUtil;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.StateMachine;
+import com.vicmatskiv.pointblank.util.StateMachine.TransitionMode;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.WeakHashMap;
-import java.util.Map.Entry;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,10 +30,10 @@ import org.apache.logging.log4j.Logger;
 
 public class ThrowableClientState {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
-   private static final Map<PlayerSlot, ThrowableClientState> localSlotStates = new HashMap();
-   private static final Map<UUID, ThrowableClientState> noSlotStates = new WeakHashMap();
-   private UUID id;
-   private ThrowableLike item;
+   private static final Map<PlayerSlot, ThrowableClientState> localSlotStates = new HashMap<>();
+   private static final Map<UUID, ThrowableClientState> noSlotStates = new WeakHashMap<>();
+   private final UUID id;
+   private final ThrowableLike item;
    private long prepareThrowCooldownStartTime;
    private long completeThrowCooldownStartTime;
    private long drawCooldownDuration;
@@ -44,12 +48,10 @@ public class ThrowableClientState {
    protected long throwCooldownStartTime;
    protected long lastThrowTime;
    protected boolean isTriggerOn;
-   private Predicate<Context> isValidGameMode = (context) -> {
-      return context.player != null && !context.player.m_5833_();
-   };
+   private final Predicate<Context> isValidGameMode = (context) -> context.player != null && !context.player.isSpectator();
    private State simplifiedThrowState;
-   private StateMachine<State, Context> stateMachine;
-   private static final Map<UUID, ThrowableClientState> statesById = new HashMap();
+   private final StateMachine<State, Context> stateMachine;
+   private static final Map<UUID, ThrowableClientState> statesById = new HashMap<>();
 
    public ThrowableClientState(UUID id, ThrowableLike item) {
       this.id = id;
@@ -59,79 +61,43 @@ public class ThrowableClientState {
    }
 
    private StateMachine<State, Context> createStateMachine() {
-      StateMachine.Builder<State, Context> builder = new StateMachine.Builder();
-      builder.withTransition((List)List.of(State.PREPARE_IDLE, State.IDLE, State.IDLE_COOLDOWN), State.DRAW, this.isValidGameMode, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionDraw);
-      builder.withTransition((Enum) State.DRAW, State.DRAW_COOLDOWN, (context) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
+      StateMachine.Builder<State, Context> builder = new StateMachine.Builder<>();
+      builder.withTransition(List.of(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN), ThrowableClientState.State.DRAW, this.isValidGameMode, TransitionMode.EVENT, null, this::actionDraw);
+      builder.withTransition(ThrowableClientState.State.DRAW, ThrowableClientState.State.DRAW_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> {
          this.drawCooldownStartTime = System.nanoTime();
          this.drawCooldownDuration = this.item.getDrawCooldownDuration(ctx.player, this, ctx.itemStack) * 1000000L;
       });
-      builder.withTransition(State.DRAW_COOLDOWN, State.PREPARE_IDLE, Predicate.not(this::isDrawCooldownInProgress));
-      builder.withTransition((Enum) State.PREPARE_IDLE, State.IDLE, (ctx) -> {
-         return !this.isPrepareIdleCooldownInProgress(ctx) && this.item.hasIdleAnimations();
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((Enum) State.IDLE, State.IDLE_COOLDOWN, (ctx) -> {
-         return this.item.hasIdleAnimations();
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
+      builder.withTransition(ThrowableClientState.State.DRAW_COOLDOWN, ThrowableClientState.State.PREPARE_IDLE, Predicate.not(this::isDrawCooldownInProgress));
+      builder.withTransition(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.IDLE, (ctx) -> !this.isPrepareIdleCooldownInProgress(ctx) && this.item.hasIdleAnimations(), TransitionMode.AUTO, null, null);
+      builder.withTransition(ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN, (ctx) -> this.item.hasIdleAnimations(), TransitionMode.AUTO, null, (ctx, f, t) -> {
          this.idleCooldownStartTime = System.nanoTime();
          this.idleCooldownDuration = this.item.getIdleCooldownDuration(ctx.player, this, ctx.itemStack) * 1000000L;
       });
-      builder.withTransition(State.IDLE_COOLDOWN, State.IDLE, Predicate.not(this::isIdleCooldownInProgress));
-      builder.withTransition((List)List.of(State.IDLE, State.IDLE_COOLDOWN), State.PREPARE_IDLE, (ctx) -> {
-         return true;
-      }, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withTransition((List)List.of(State.PREPARE_IDLE, State.IDLE, State.IDLE_COOLDOWN), State.INSPECT, this.isValidGameMode, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionInspect);
-      builder.withTransition((Enum) State.INSPECT, State.INSPECT_COOLDOWN, (context) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
+      builder.withTransition(ThrowableClientState.State.IDLE_COOLDOWN, ThrowableClientState.State.IDLE, Predicate.not(this::isIdleCooldownInProgress));
+      builder.withTransition(List.of(ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN), ThrowableClientState.State.PREPARE_IDLE, (ctx) -> true, TransitionMode.EVENT, null, null);
+      builder.withTransition(List.of(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN), ThrowableClientState.State.INSPECT, this.isValidGameMode, TransitionMode.EVENT, null, this::actionInspect);
+      builder.withTransition(ThrowableClientState.State.INSPECT, ThrowableClientState.State.INSPECT_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> {
          this.inspectCooldownStartTime = System.nanoTime();
          this.inspectCooldownDuration = this.item.getInspectCooldownDuration(ctx.player, this, ctx.itemStack) * 1000000L;
       });
-      builder.withTransition(State.INSPECT_COOLDOWN, State.PREPARE_IDLE, Predicate.not(this::inspectCooldownInProgress));
-      builder.withTransition((Enum) State.PREPARE_IDLE, State.PREPARE_THROW, this.isValidGameMode.and((context) -> {
-         return this.isTriggerOn && context.itemStack == ((Player)context.player).m_21205_();
-      }), StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionPrepareThrow);
-      builder.withTransition((List)List.of(State.PREPARE_IDLE, State.IDLE, State.IDLE_COOLDOWN), State.PREPARE_THROW, this.isValidGameMode.and((context) -> {
-         return this.isTriggerOn && context.itemStack == ((Player)context.player).m_21205_();
-      }), StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionPrepareThrow);
-      builder.withTransition((List)List.of(State.PREPARE_IDLE, State.IDLE, State.IDLE_COOLDOWN), State.PREPARE_THROW, this.isValidGameMode.and((context) -> {
-         return this.isTriggerOn && context.itemStack == ((Player)context.player).m_21205_();
-      }), StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionPrepareThrow);
-      builder.withTransition((Enum) State.INSPECT_COOLDOWN, State.PREPARE_THROW, (context) -> {
-         return this.isTriggerOn && context.itemStack == ((Player)context.player).m_21205_();
-      }, StateMachine.TransitionMode.EVENT, (StateMachine.Action)null, this::actionPrepareThrow);
-      builder.withTransition((Enum) State.PREPARE_THROW, State.PREPARE_THROW_COOLDOWN, (context) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
-         this.prepareThrowCooldownStartTime = System.nanoTime();
-      });
-      builder.withTransition((Enum) State.PREPARE_THROW_COOLDOWN, State.THROW, (context) -> {
-         return !this.isPrepareThrowCooldownInProgress(context);
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, this::actionThrow);
-      builder.withTransition((Enum) State.THROW, State.THROW_COOLDOWN, (context) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
+      builder.withTransition(ThrowableClientState.State.INSPECT_COOLDOWN, ThrowableClientState.State.PREPARE_IDLE, Predicate.not(this::inspectCooldownInProgress));
+      builder.withTransition(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.PREPARE_THROW, this.isValidGameMode.and((context) -> this.isTriggerOn && context.itemStack == context.player.getMainHandItem()), TransitionMode.EVENT, null, this::actionPrepareThrow);
+      builder.withTransition(List.of(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN), ThrowableClientState.State.PREPARE_THROW, this.isValidGameMode.and((context) -> this.isTriggerOn && context.itemStack == context.player.getMainHandItem()), TransitionMode.EVENT, null, this::actionPrepareThrow);
+      builder.withTransition(List.of(ThrowableClientState.State.PREPARE_IDLE, ThrowableClientState.State.IDLE, ThrowableClientState.State.IDLE_COOLDOWN), ThrowableClientState.State.PREPARE_THROW, this.isValidGameMode.and((context) -> this.isTriggerOn && context.itemStack == context.player.getMainHandItem()), TransitionMode.EVENT, null, this::actionPrepareThrow);
+      builder.withTransition(ThrowableClientState.State.INSPECT_COOLDOWN, ThrowableClientState.State.PREPARE_THROW, (context) -> this.isTriggerOn && context.itemStack == context.player.getMainHandItem(), TransitionMode.EVENT, null, this::actionPrepareThrow);
+      builder.withTransition(ThrowableClientState.State.PREPARE_THROW, ThrowableClientState.State.PREPARE_THROW_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> this.prepareThrowCooldownStartTime = System.nanoTime());
+      builder.withTransition(ThrowableClientState.State.PREPARE_THROW_COOLDOWN, ThrowableClientState.State.THROW, (context) -> !this.isPrepareThrowCooldownInProgress(context), TransitionMode.AUTO, null, this::actionThrow);
+      builder.withTransition(ThrowableClientState.State.THROW, ThrowableClientState.State.THROW_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> {
          this.throwCooldownStartTime = System.nanoTime();
          this.throwCooldownDuration = this.item.getThrowCooldownDuration(ctx.player, this, ctx.itemStack) * 1000000L;
       });
-      builder.withTransition((Enum) State.THROW_COOLDOWN, State.COMPLETE_THROW, Predicate.not(this::isThrowCooldownInProgress), StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, this::actionCompleteThrow);
-      builder.withTransition((Enum) State.COMPLETE_THROW, State.COMPLETE_THROW_COOLDOWN, (context) -> {
-         return true;
-      }, StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (ctx, f, t) -> {
-         this.completeThrowCooldownStartTime = System.nanoTime();
-      });
-      builder.withTransition((Enum) State.COMPLETE_THROW_COOLDOWN, State.PREPARE_IDLE, Predicate.not(this::isCompleteFireCooldownInProgress), StateMachine.TransitionMode.AUTO, (StateMachine.Action)null, (StateMachine.Action)null);
-      builder.withOnSetStateAction(State.PREPARE_IDLE, (ctx, f, t) -> {
-         this.actionPrepareIdle(ctx);
-      });
-      builder.withOnSetStateAction(State.IDLE, (ctx, f, t) -> {
-         this.actionFiddle(ctx);
-      });
-      builder.withOnChangeStateAction((ctx, f, t) -> {
-         LOGGER.debug("Throwable state changed from {} to {}", f, t);
-      });
-      return builder.build(State.PREPARE_IDLE);
+      builder.withTransition(ThrowableClientState.State.THROW_COOLDOWN, ThrowableClientState.State.COMPLETE_THROW, Predicate.not(this::isThrowCooldownInProgress), TransitionMode.AUTO, null, this::actionCompleteThrow);
+      builder.withTransition(ThrowableClientState.State.COMPLETE_THROW, ThrowableClientState.State.COMPLETE_THROW_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> this.completeThrowCooldownStartTime = System.nanoTime());
+      builder.withTransition(ThrowableClientState.State.COMPLETE_THROW_COOLDOWN, ThrowableClientState.State.PREPARE_IDLE, Predicate.not(this::isCompleteFireCooldownInProgress), TransitionMode.AUTO, null, null);
+      builder.withOnSetStateAction(ThrowableClientState.State.PREPARE_IDLE, (ctx, f, t) -> this.actionPrepareIdle(ctx));
+      builder.withOnSetStateAction(ThrowableClientState.State.IDLE, (ctx, f, t) -> this.actionFiddle(ctx));
+      builder.withOnChangeStateAction((ctx, f, t) -> LOGGER.debug("Throwable state changed from {} to {}", f, t));
+      return builder.build(ThrowableClientState.State.PREPARE_IDLE);
    }
 
    private boolean isPrepareIdleCooldownInProgress(Context context) {
@@ -151,7 +117,7 @@ public class ThrowableClientState {
    }
 
    private boolean isCompleteFireCooldownInProgress(Context context) {
-      return (double)(System.nanoTime() - this.completeThrowCooldownStartTime) <= 1000000.0D * (double)this.item.getCompleteThrowCooldownDuration(context.player, this, context.itemStack);
+      return (double)(System.nanoTime() - this.completeThrowCooldownStartTime) <= (double)1000000.0F * (double)this.item.getCompleteThrowCooldownDuration(context.player, this, context.itemStack);
    }
 
    private boolean isThrowCooldownInProgress(Context context) {
@@ -159,7 +125,7 @@ public class ThrowableClientState {
    }
 
    private boolean isPrepareThrowCooldownInProgress(Context context) {
-      return (double)(System.nanoTime() - this.prepareThrowCooldownStartTime) <= 1000000.0D * (double)this.item.getPrepareThrowCooldownDuration(context.player, this, context.itemStack);
+      return (double)(System.nanoTime() - this.prepareThrowCooldownStartTime) <= (double)1000000.0F * (double)this.item.getPrepareThrowCooldownDuration(context.player, this, context.itemStack);
    }
 
    private void actionPrepareThrow(Context context, State fromState, State toState) {
@@ -168,13 +134,11 @@ public class ThrowableClientState {
 
    private void actionThrow(Context context, State fromState, State toState) {
       this.item.requestThrowFromServer(this, (Player)context.player, context.itemStack, context.targetEntity);
-      this.lastThrowTime = MiscUtil.getLevel(context.player).m_46467_();
+      this.lastThrowTime = MiscUtil.getLevel(context.player).getGameTime();
    }
 
    private void actionDraw(Context context, State fromState, State toState) {
-      ThrowableLike var5 = this.item;
-      if (var5 instanceof Drawable) {
-         Drawable drawable = (Drawable)var5;
+       if (this.item instanceof Drawable drawable) {
          drawable.draw((Player)context.player, context.itemStack);
       }
 
@@ -197,22 +161,22 @@ public class ThrowableClientState {
 
    public boolean tryThrow(LivingEntity player, ItemStack itemStack, Entity targetEntity) {
       Context context = new Context(player, itemStack, targetEntity);
-      return this.stateMachine.setStateToAnyOf(context, List.of(State.PREPARE_THROW)) != null;
+      return this.stateMachine.setStateToAnyOf(context, List.of(ThrowableClientState.State.PREPARE_THROW)) != null;
    }
 
    public boolean tryDraw(LivingEntity player, ItemStack itemStack) {
       Context context = new Context(player, itemStack);
-      return this.stateMachine.setState(context, (Enum) State.DRAW) != null;
+      return this.stateMachine.setState(context, ThrowableClientState.State.DRAW) != null;
    }
 
    public boolean tryDeactivate(LivingEntity player, ItemStack itemStack) {
       Context context = new Context(player, itemStack);
-      return this.stateMachine.setState(context, (Enum) State.PREPARE_IDLE) != null;
+      return this.stateMachine.setState(context, ThrowableClientState.State.PREPARE_IDLE) != null;
    }
 
    public boolean tryInspect(LivingEntity player, ItemStack itemStack) {
       Context context = new Context(player, itemStack);
-      return this.stateMachine.setState(context, (Enum) State.INSPECT) != null;
+      return this.stateMachine.setState(context, ThrowableClientState.State.INSPECT) != null;
    }
 
    public UUID getId() {
@@ -224,44 +188,44 @@ public class ThrowableClientState {
    }
 
    public boolean isIdle() {
-      State fireState = (State)this.stateMachine.getCurrentState();
-      return this.simplifiedThrowState == State.IDLE || fireState == State.PREPARE_IDLE || fireState == State.IDLE || fireState == State.IDLE_COOLDOWN;
+      State fireState = this.stateMachine.getCurrentState();
+      return this.simplifiedThrowState == ThrowableClientState.State.IDLE || fireState == ThrowableClientState.State.PREPARE_IDLE || fireState == ThrowableClientState.State.IDLE || fireState == ThrowableClientState.State.IDLE_COOLDOWN;
    }
 
    public boolean isThrowing() {
-      State fireState = (State)this.stateMachine.getCurrentState();
-      return isThrowing(fireState) || this.simplifiedThrowState == State.THROW;
+      State fireState = this.stateMachine.getCurrentState();
+      return isThrowing(fireState) || this.simplifiedThrowState == ThrowableClientState.State.THROW;
    }
 
    private static boolean isThrowing(State fireState) {
-      return fireState == State.PREPARE_THROW || fireState == State.PREPARE_THROW_COOLDOWN || fireState == State.THROW || fireState == State.THROW_COOLDOWN || fireState == State.COMPLETE_THROW || fireState == State.COMPLETE_THROW_COOLDOWN;
+      return fireState == ThrowableClientState.State.PREPARE_THROW || fireState == ThrowableClientState.State.PREPARE_THROW_COOLDOWN || fireState == ThrowableClientState.State.THROW || fireState == ThrowableClientState.State.THROW_COOLDOWN || fireState == ThrowableClientState.State.COMPLETE_THROW || fireState == ThrowableClientState.State.COMPLETE_THROW_COOLDOWN;
    }
 
    public boolean isPreparingThrowing() {
-      State fireState = (State)this.stateMachine.getCurrentState();
-      return fireState == State.PREPARE_THROW || fireState == State.PREPARE_THROW_COOLDOWN;
+      State fireState = this.stateMachine.getCurrentState();
+      return fireState == ThrowableClientState.State.PREPARE_THROW || fireState == ThrowableClientState.State.PREPARE_THROW_COOLDOWN;
    }
 
    public boolean isCompletingThrowing() {
-      State state = (State)this.stateMachine.getCurrentState();
-      return state == State.COMPLETE_THROW || state == State.COMPLETE_THROW_COOLDOWN;
+      State state = this.stateMachine.getCurrentState();
+      return state == ThrowableClientState.State.COMPLETE_THROW || state == ThrowableClientState.State.COMPLETE_THROW_COOLDOWN;
    }
 
    public boolean isDrawing() {
-      State state = (State)this.stateMachine.getCurrentState();
-      return state == State.DRAW || state == State.DRAW_COOLDOWN;
+      State state = this.stateMachine.getCurrentState();
+      return state == ThrowableClientState.State.DRAW || state == ThrowableClientState.State.DRAW_COOLDOWN;
    }
 
    public boolean isInspecting() {
-      State state = (State)this.stateMachine.getCurrentState();
-      return state == State.INSPECT || state == State.INSPECT_COOLDOWN;
+      State state = this.stateMachine.getCurrentState();
+      return state == ThrowableClientState.State.INSPECT || state == ThrowableClientState.State.INSPECT_COOLDOWN;
    }
 
    public void updateState(LivingEntity player, ItemStack itemStack, boolean isSelected) {
       if (player == ClientUtil.getClientPlayer()) {
          Context context = new Context(player, itemStack);
          this.stateMachine.update(context);
-         State updatedSimplifiedFireState = State.getSimplifiedState((State)this.stateMachine.getCurrentState());
+         State updatedSimplifiedFireState = ThrowableClientState.State.getSimplifiedState(this.stateMachine.getCurrentState());
          if (updatedSimplifiedFireState != this.simplifiedThrowState) {
             this.simplifiedThrowState = updatedSimplifiedFireState;
          }
@@ -282,9 +246,9 @@ public class ThrowableClientState {
       if (player == null) {
          return null;
       } else {
-         ItemStack itemStack = player.m_21205_();
-         int activeSlot = player.m_150109_().f_35977_;
-         return itemStack != null && itemStack.m_41720_() instanceof ThrowableItem ? getState(player, itemStack, activeSlot, false) : null;
+         ItemStack itemStack = player.getMainHandItem();
+         int activeSlot = player.getInventory().selected;
+         return itemStack != null && itemStack.getItem() instanceof ThrowableItem ? getState(player, itemStack, activeSlot, false) : null;
       }
    }
 
@@ -295,17 +259,15 @@ public class ThrowableClientState {
          return null;
       } else if (slotIndex == -1) {
          ThrowableClientState state = null;
-         Iterator var12 = localSlotStates.entrySet().iterator();
 
-         while(var12.hasNext()) {
-            Entry<PlayerSlot, ThrowableClientState> entry = (Entry)var12.next();
-            if (((PlayerSlot)entry.getKey()).isClientSide == level.f_46443_ && Objects.equals(((ThrowableClientState)entry.getValue()).getId(), stackId)) {
-               PlayerSlot playerSlot = (PlayerSlot)entry.getKey();
+         for(Map.Entry<PlayerSlot, ThrowableClientState> entry : localSlotStates.entrySet()) {
+            if (entry.getKey().isClientSide == level.isClientSide && Objects.equals(entry.getValue().getId(), stackId)) {
+               PlayerSlot playerSlot = entry.getKey();
                slotIndex = playerSlot.slotId;
-               if (slotIndex >= 0 && playerSlot.playerEntityId == player.m_19879_()) {
-                  ItemStack stackAtSlotIndex = player.m_150109_().m_8020_(slotIndex);
-                  if (stackAtSlotIndex != null && stackAtSlotIndex.m_41720_() instanceof ThrowableLike) {
-                     state = (ThrowableClientState)entry.getValue();
+               if (slotIndex >= 0 && playerSlot.playerEntityId == player.getId()) {
+                  ItemStack stackAtSlotIndex = player.getInventory().getItem(slotIndex);
+                  if (stackAtSlotIndex != null && stackAtSlotIndex.getItem() instanceof ThrowableLike) {
+                     state = entry.getValue();
                      break;
                   }
                }
@@ -313,19 +275,18 @@ public class ThrowableClientState {
          }
 
          if (state == null) {
-            Map var10000 = noSlotStates;
-            ThrowableLike var10002 = (ThrowableLike)itemStack.m_41720_();
+            ThrowableLike var10002 = (ThrowableLike)itemStack.getItem();
             Objects.requireNonNull(var10002);
-            state = (ThrowableClientState)var10000.computeIfAbsent(stackId, var10002::createState);
+            state = noSlotStates.computeIfAbsent(stackId, var10002::createState);
          }
 
          return state;
       } else {
          int adjustedSlotIndex = isOffhand ? -5 : slotIndex;
-         PlayerSlot playerSlot = new PlayerSlot(player.m_19879_(), adjustedSlotIndex, level.f_46443_);
-         ThrowableClientState slotState = (ThrowableClientState)localSlotStates.get(playerSlot);
+         PlayerSlot playerSlot = new PlayerSlot(player.getId(), adjustedSlotIndex, level.isClientSide);
+         ThrowableClientState slotState = localSlotStates.get(playerSlot);
          if (slotState == null || !Objects.equals(slotState.getId(), stackId)) {
-            slotState = ((ThrowableLike)itemStack.m_41720_()).createState(stackId);
+            slotState = ((ThrowableLike)itemStack.getItem()).createState(stackId);
             localSlotStates.put(playerSlot, slotState);
          }
 
@@ -334,14 +295,14 @@ public class ThrowableClientState {
    }
 
    public static ThrowableClientState getState(UUID stateId) {
-      return (ThrowableClientState)statesById.get(stateId);
+      return statesById.get(stateId);
    }
 
    public void setSimplifiedState(State state) {
       this.simplifiedThrowState = state;
    }
 
-   public static enum State {
+   public enum State {
       PREPARE_IDLE,
       IDLE,
       IDLE_COOLDOWN,
@@ -356,39 +317,21 @@ public class ThrowableClientState {
       INSPECT,
       INSPECT_COOLDOWN;
 
-      public static State getSimplifiedState(State state) {
-         State var10000;
-         switch(state) {
-         case DRAW:
-         case DRAW_COOLDOWN:
-            var10000 = DRAW;
-            break;
-         case PREPARE_THROW:
-         case PREPARE_THROW_COOLDOWN:
-         case THROW:
-         case THROW_COOLDOWN:
-         case COMPLETE_THROW:
-         case COMPLETE_THROW_COOLDOWN:
-            var10000 = THROW;
-            break;
-         case INSPECT:
-         case INSPECT_COOLDOWN:
-            var10000 = INSPECT;
-            break;
-         default:
-            var10000 = IDLE;
-         }
-
-         return var10000;
+      State() {
       }
 
-      // $FF: synthetic method
-      private static State[] $values() {
-         return new State[]{PREPARE_IDLE, IDLE, IDLE_COOLDOWN, DRAW, DRAW_COOLDOWN, PREPARE_THROW, PREPARE_THROW_COOLDOWN, THROW, THROW_COOLDOWN, COMPLETE_THROW, COMPLETE_THROW_COOLDOWN, INSPECT, INSPECT_COOLDOWN};
+      public static State getSimplifiedState(State state) {
+          return switch (state) {
+              case DRAW, DRAW_COOLDOWN -> DRAW;
+              case PREPARE_THROW, PREPARE_THROW_COOLDOWN, THROW, THROW_COOLDOWN, COMPLETE_THROW,
+                   COMPLETE_THROW_COOLDOWN -> THROW;
+              case INSPECT, INSPECT_COOLDOWN -> INSPECT;
+              default -> IDLE;
+          };
       }
    }
 
-   private class Context {
+   private static class Context {
       LivingEntity player;
       ItemStack itemStack;
       Entity targetEntity;
@@ -417,7 +360,7 @@ public class ThrowableClientState {
       }
 
       public int hashCode() {
-         return Objects.hash(new Object[]{this.isClientSide, this.playerEntityId, this.slotId});
+         return Objects.hash(this.isClientSide, this.playerEntityId, this.slotId);
       }
 
       public boolean equals(Object obj) {

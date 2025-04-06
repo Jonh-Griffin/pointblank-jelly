@@ -30,7 +30,6 @@ import software.bernie.geckolib.core.animation.EasingType;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.animation.Animation.Keyframes;
 import software.bernie.geckolib.core.animation.Animation.LoopType;
-import software.bernie.geckolib.core.animation.AnimationProcessor.QueuedAnimation;
 import software.bernie.geckolib.core.animation.RawAnimation.Stage;
 import software.bernie.geckolib.core.keyframe.AnimationPoint;
 import software.bernie.geckolib.core.keyframe.BoneAnimation;
@@ -41,39 +40,37 @@ import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
 import software.bernie.geckolib.core.state.BoneSnapshot;
 
 public class BlendingAnimationProcessor<T extends GeoAnimatable> extends AnimationProcessor<T> {
-   private final Map<String, CoreGeoBone> bones = new Object2ObjectOpenHashMap();
+   private final Map<String, CoreGeoBone> bones = new Object2ObjectOpenHashMap<>();
    private final CoreGeoModel<T> model;
    public boolean reloadAnimations = false;
    static final String WAIT = "internal.wait";
 
    public BlendingAnimationProcessor(CoreGeoModel<T> model) {
-      super((CoreGeoModel)null);
+      super(null);
       this.model = model;
    }
 
    public Queue<QueuedAnimation> buildAnimationQueue(T animatable, RawAnimation rawAnimation) {
-      LinkedList<QueuedAnimation> animations = new LinkedList();
+      LinkedList<QueuedAnimation> animations = new LinkedList<>();
       boolean error = false;
-      Iterator var5 = rawAnimation.getAnimationStages().iterator();
 
-      while(var5.hasNext()) {
-         Stage stage = (Stage)var5.next();
-         Animation animation;
-         if (stage.animationName().equals("internal.wait")) {
-            animation = generateWaitAnimation((double)stage.additionalTicks());
-         } else {
-            animation = this.model.getAnimation(animatable, stage.animationName());
-         }
+       for (Stage stage : rawAnimation.getAnimationStages()) {
+           Animation animation;
+           if (stage.animationName().equals("internal.wait")) {
+               animation = generateWaitAnimation(stage.additionalTicks());
+           } else {
+               animation = this.model.getAnimation(animatable, stage.animationName());
+           }
 
-         if (animation == null) {
-            PrintStream var10000 = System.out;
-            String var10001 = stage.animationName();
-            var10000.println("Unable to find animation: " + var10001 + " for " + animatable.getClass().getSimpleName());
-            error = true;
-         } else {
-            animations.add(new QueuedAnimation(animation, stage.loopType()));
-         }
-      }
+           if (animation == null) {
+               PrintStream var10000 = System.out;
+               String var10001 = stage.animationName();
+               var10000.println("Unable to find animation: " + var10001 + " for " + animatable.getClass().getSimpleName());
+               error = true;
+           } else {
+               animations.add(new QueuedAnimation(animation, stage.loopType()));
+           }
+       }
 
       return error ? null : animations;
    }
@@ -83,15 +80,15 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
    }
 
    public void tickAnimation(T animatable, CoreGeoModel<T> model, AnimatableManager<T> animatableManager, double animTime, AnimationState<T> state, boolean crashWhenCantFindBone) {
-      Map<CoreGeoBone, Map<String, AnimationPointInfo2>> animationPoints = new LinkedHashMap();
+      Map<CoreGeoBone, Map<String, AnimationPointInfo2>> animationPoints = new LinkedHashMap<>();
       Map<String, BoneSnapshot> globalBoneSnapshots = this.updateBoneSnapshots(animatableManager.getBoneSnapshotCollection());
-      Set<Map<String, BoneSnapshot>> snapshotSets = Collections.newSetFromMap(new IdentityHashMap());
+      Set<Map<String, BoneSnapshot>> snapshotSets = Collections.newSetFromMap(new IdentityHashMap<>());
       snapshotSets.add(globalBoneSnapshots);
-      Iterator var11 = animatableManager.getAnimationControllers().values().iterator();
+      var var11 = animatableManager.getAnimationControllers().values().iterator();
 
       label108:
       while(var11.hasNext()) {
-         AnimationController<T> controller = (AnimationController)var11.next();
+         AnimationController<T> controller = var11.next();
          if (this.reloadAnimations) {
             controller.forceAnimationReset();
             controller.getBoneAnimationQueues().clear();
@@ -101,7 +98,7 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
          controllerExt.setIsJustStarting(animatableManager.isFirstTick());
          state.withController(controller);
          controller.process(model, state, this.bones, globalBoneSnapshots, animTime, crashWhenCantFindBone);
-         Iterator var14 = controller.getBoneAnimationQueues().values().iterator();
+         Iterator<BoneAnimationQueue> var14 = controller.getBoneAnimationQueues().values().iterator();
 
          while(true) {
             CoreGeoBone bone;
@@ -111,18 +108,18 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
                   continue label108;
                }
 
-               BoneAnimationQueue boneAnimation = (BoneAnimationQueue)var14.next();
+               BoneAnimationQueue boneAnimation = var14.next();
                bone = boneAnimation.bone();
-               AnimationPoint rotXPoint = (AnimationPoint)boneAnimation.rotationXQueue().poll();
-               AnimationPoint rotYPoint = (AnimationPoint)boneAnimation.rotationYQueue().poll();
-               AnimationPoint rotZPoint = (AnimationPoint)boneAnimation.rotationZQueue().poll();
-               AnimationPoint posXPoint = (AnimationPoint)boneAnimation.positionXQueue().poll();
-               AnimationPoint posYPoint = (AnimationPoint)boneAnimation.positionYQueue().poll();
-               AnimationPoint posZPoint = (AnimationPoint)boneAnimation.positionZQueue().poll();
-               AnimationPoint scaleXPoint = (AnimationPoint)boneAnimation.scaleXQueue().poll();
-               AnimationPoint scaleYPoint = (AnimationPoint)boneAnimation.scaleYQueue().poll();
-               AnimationPoint scaleZPoint = (AnimationPoint)boneAnimation.scaleZQueue().poll();
-               EasingType easingType = (EasingType)controllerExt.getOverrideEasingTypeFunction().apply(animatable);
+               AnimationPoint rotXPoint = boneAnimation.rotationXQueue().poll();
+               AnimationPoint rotYPoint = boneAnimation.rotationYQueue().poll();
+               AnimationPoint rotZPoint = boneAnimation.rotationZQueue().poll();
+               AnimationPoint posXPoint = boneAnimation.positionXQueue().poll();
+               AnimationPoint posYPoint = boneAnimation.positionYQueue().poll();
+               AnimationPoint posZPoint = boneAnimation.positionZQueue().poll();
+               AnimationPoint scaleXPoint = boneAnimation.scaleXQueue().poll();
+               AnimationPoint scaleYPoint = boneAnimation.scaleYQueue().poll();
+               AnimationPoint scaleZPoint = boneAnimation.scaleZQueue().poll();
+               EasingType easingType = controllerExt.getOverrideEasingTypeFunction().apply(animatable);
                info = new AnimationPointInfo2(easingType);
                if (rotXPoint != null && rotYPoint != null && rotZPoint != null) {
                   info.setRotXPoint(rotXPoint);
@@ -143,9 +140,7 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
                }
             } while(!info.isPositionChanged() && !info.isRotationChanged() && !info.isScaleChanged());
 
-            Map<String, AnimationPointInfo2> boneAnimationPoints = (Map)animationPoints.computeIfAbsent(bone, (b) -> {
-               return new HashMap();
-            });
+            Map<String, AnimationPointInfo2> boneAnimationPoints = animationPoints.computeIfAbsent(bone, (b) -> new HashMap<>());
             String controllerName = controller instanceof BlendingAnimationController ? controller.getName() : "_default";
             boneAnimationPoints.put(controllerName, info);
          }
@@ -153,11 +148,11 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
 
       this.reloadAnimations = false;
       double resetTickLength = animatable.getBoneResetTime();
-      Iterator var41 = animationPoints.entrySet().iterator();
+      Iterator<Entry<CoreGeoBone, Map<String, AnimationPointInfo2>>> var41 = animationPoints.entrySet().iterator();
 
       while(true) {
-         Entry e;
-         Map pointInfoByControllers;
+         Entry<CoreGeoBone, Map<String, AnimationPointInfo2>> e;
+         Map<String, AnimationPointInfo2> pointInfoByControllers;
          do {
             if (!var41.hasNext()) {
                resetBones(this.getRegisteredBones(), globalBoneSnapshots, animTime, resetTickLength);
@@ -165,8 +160,8 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
                return;
             }
 
-            e = (Entry)var41.next();
-            pointInfoByControllers = (Map)e.getValue();
+            e = var41.next();
+            pointInfoByControllers = e.getValue();
          } while(pointInfoByControllers == null);
 
          double rotXPoint = 0.0D;
@@ -181,35 +176,33 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
          boolean rotationChanged = false;
          boolean positionChanged = false;
          boolean scaleChanged = false;
-         Iterator var37 = pointInfoByControllers.entrySet().iterator();
 
-         while(var37.hasNext()) {
-            Entry<String, AnimationPointInfo2> e2 = (Entry)var37.next();
-            AnimationPointInfo2 pointInfo = (AnimationPointInfo2)e2.getValue();
-            if (pointInfo.isRotationChanged()) {
-               rotXPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getRotXPoint(), pointInfo.getEasingType()));
-               rotYPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getRotYPoint(), pointInfo.getEasingType()));
-               rotZPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getRotZPoint(), pointInfo.getEasingType()));
-               rotationChanged = true;
-            }
+          for (Entry<String, AnimationPointInfo2> stringAnimationPointInfo2Entry : pointInfoByControllers.entrySet()) {
+              AnimationPointInfo2 pointInfo = stringAnimationPointInfo2Entry.getValue();
+              if (pointInfo.isRotationChanged()) {
+                  rotXPoint += (float) EasingType.lerpWithOverride(pointInfo.getRotXPoint(), pointInfo.getEasingType());
+                  rotYPoint += (float) EasingType.lerpWithOverride(pointInfo.getRotYPoint(), pointInfo.getEasingType());
+                  rotZPoint += (float) EasingType.lerpWithOverride(pointInfo.getRotZPoint(), pointInfo.getEasingType());
+                  rotationChanged = true;
+              }
 
-            if (pointInfo.isPositionChanged()) {
-               posXPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getPosXPoint(), pointInfo.getEasingType()));
-               posYPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getPosYPoint(), pointInfo.getEasingType()));
-               posZPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getPosZPoint(), pointInfo.getEasingType()));
-               positionChanged = true;
-            }
+              if (pointInfo.isPositionChanged()) {
+                  posXPoint += (float) EasingType.lerpWithOverride(pointInfo.getPosXPoint(), pointInfo.getEasingType());
+                  posYPoint += (float) EasingType.lerpWithOverride(pointInfo.getPosYPoint(), pointInfo.getEasingType());
+                  posZPoint += (float) EasingType.lerpWithOverride(pointInfo.getPosZPoint(), pointInfo.getEasingType());
+                  positionChanged = true;
+              }
 
-            if (pointInfo.isScaleChanged()) {
-               scaleXPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getScaleXPoint(), pointInfo.getEasingType()));
-               scaleYPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getScaleYPoint(), pointInfo.getEasingType()));
-               scaleZPoint += (double)((float)EasingType.lerpWithOverride(pointInfo.getScaleZPoint(), pointInfo.getEasingType()));
-               scaleChanged = true;
-            }
-         }
+              if (pointInfo.isScaleChanged()) {
+                  scaleXPoint += (float) EasingType.lerpWithOverride(pointInfo.getScaleXPoint(), pointInfo.getEasingType());
+                  scaleYPoint += (float) EasingType.lerpWithOverride(pointInfo.getScaleYPoint(), pointInfo.getEasingType());
+                  scaleZPoint += (float) EasingType.lerpWithOverride(pointInfo.getScaleZPoint(), pointInfo.getEasingType());
+                  scaleChanged = true;
+              }
+          }
 
-         CoreGeoBone bone = (CoreGeoBone)this.bones.get(((CoreGeoBone)e.getKey()).getName());
-         BoneSnapshot snapshot = (BoneSnapshot)globalBoneSnapshots.get(bone.getName());
+         CoreGeoBone bone = this.bones.get(e.getKey().getName());
+         BoneSnapshot snapshot = globalBoneSnapshots.get(bone.getName());
          if (rotationChanged) {
             BoneSnapshot initialSnapshot = bone.getInitialSnapshot();
             bone.setRotX((float)rotXPoint + initialSnapshot.getRotX());
@@ -241,7 +234,7 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
    }
 
    private static void resetBones(Collection<CoreGeoBone> bones, Map<String, BoneSnapshot> boneSnapshots, double animTime, double resetTickLength) {
-      Iterator var6 = bones.iterator();
+      Iterator<CoreGeoBone> var6 = bones.iterator();
 
       while(true) {
          CoreGeoBone bone;
@@ -254,22 +247,22 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
                return;
             }
 
-            bone = (CoreGeoBone)var6.next();
+            bone = var6.next();
             if (bone.hasRotationChanged()) {
                break;
             }
 
             initialSnapshot = bone.getInitialSnapshot();
-            saveSnapshot = (BoneSnapshot)boneSnapshots.get(bone.getName());
+            saveSnapshot = boneSnapshots.get(bone.getName());
             if (saveSnapshot != null) {
                if (saveSnapshot.isRotAnimInProgress()) {
                   saveSnapshot.stopRotAnim(animTime);
                }
 
                percentageReset = Math.min((animTime - saveSnapshot.getLastResetRotationTick()) / resetTickLength, 1.0D);
-               bone.setRotX((float)Interpolations.lerp((double)saveSnapshot.getRotX(), (double)initialSnapshot.getRotX(), percentageReset));
-               bone.setRotY((float)Interpolations.lerp((double)saveSnapshot.getRotY(), (double)initialSnapshot.getRotY(), percentageReset));
-               bone.setRotZ((float)Interpolations.lerp((double)saveSnapshot.getRotZ(), (double)initialSnapshot.getRotZ(), percentageReset));
+               bone.setRotX((float)Interpolations.lerp(saveSnapshot.getRotX(), initialSnapshot.getRotX(), percentageReset));
+               bone.setRotY((float)Interpolations.lerp(saveSnapshot.getRotY(), initialSnapshot.getRotY(), percentageReset));
+               bone.setRotZ((float)Interpolations.lerp(saveSnapshot.getRotZ(), initialSnapshot.getRotZ(), percentageReset));
                if (percentageReset >= 1.0D) {
                   saveSnapshot.updateRotation(bone.getRotX(), bone.getRotY(), bone.getRotZ());
                }
@@ -279,15 +272,15 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
 
          if (!bone.hasPositionChanged()) {
             initialSnapshot = bone.getInitialSnapshot();
-            saveSnapshot = (BoneSnapshot)boneSnapshots.get(bone.getName());
+            saveSnapshot = boneSnapshots.get(bone.getName());
             if (saveSnapshot.isPosAnimInProgress()) {
                saveSnapshot.stopPosAnim(animTime);
             }
 
             percentageReset = Math.min((animTime - saveSnapshot.getLastResetPositionTick()) / resetTickLength, 1.0D);
-            bone.setPosX((float)Interpolations.lerp((double)saveSnapshot.getOffsetX(), (double)initialSnapshot.getOffsetX(), percentageReset));
-            bone.setPosY((float)Interpolations.lerp((double)saveSnapshot.getOffsetY(), (double)initialSnapshot.getOffsetY(), percentageReset));
-            bone.setPosZ((float)Interpolations.lerp((double)saveSnapshot.getOffsetZ(), (double)initialSnapshot.getOffsetZ(), percentageReset));
+            bone.setPosX((float)Interpolations.lerp(saveSnapshot.getOffsetX(), initialSnapshot.getOffsetX(), percentageReset));
+            bone.setPosY((float)Interpolations.lerp(saveSnapshot.getOffsetY(), initialSnapshot.getOffsetY(), percentageReset));
+            bone.setPosZ((float)Interpolations.lerp(saveSnapshot.getOffsetZ(), initialSnapshot.getOffsetZ(), percentageReset));
             if (percentageReset >= 1.0D) {
                saveSnapshot.updateOffset(bone.getPosX(), bone.getPosY(), bone.getPosZ());
             }
@@ -295,15 +288,15 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
 
          if (!bone.hasScaleChanged()) {
             initialSnapshot = bone.getInitialSnapshot();
-            saveSnapshot = (BoneSnapshot)boneSnapshots.get(bone.getName());
+            saveSnapshot = boneSnapshots.get(bone.getName());
             if (saveSnapshot.isScaleAnimInProgress()) {
                saveSnapshot.stopScaleAnim(animTime);
             }
 
             percentageReset = Math.min((animTime - saveSnapshot.getLastResetScaleTick()) / resetTickLength, 1.0D);
-            bone.setScaleX((float)Interpolations.lerp((double)saveSnapshot.getScaleX(), (double)initialSnapshot.getScaleX(), percentageReset));
-            bone.setScaleY((float)Interpolations.lerp((double)saveSnapshot.getScaleY(), (double)initialSnapshot.getScaleY(), percentageReset));
-            bone.setScaleZ((float)Interpolations.lerp((double)saveSnapshot.getScaleZ(), (double)initialSnapshot.getScaleZ(), percentageReset));
+            bone.setScaleX((float)Interpolations.lerp(saveSnapshot.getScaleX(), initialSnapshot.getScaleX(), percentageReset));
+            bone.setScaleY((float)Interpolations.lerp(saveSnapshot.getScaleY(), initialSnapshot.getScaleY(), percentageReset));
+            bone.setScaleZ((float)Interpolations.lerp(saveSnapshot.getScaleZ(), initialSnapshot.getScaleZ(), percentageReset));
             if (percentageReset >= 1.0D) {
                saveSnapshot.updateScale(bone.getScaleX(), bone.getScaleY(), bone.getScaleZ());
             }
@@ -316,42 +309,36 @@ public class BlendingAnimationProcessor<T extends GeoAnimatable> extends Animati
    }
 
    private Map<String, BoneSnapshot> updateBoneSnapshots(Map<String, BoneSnapshot> snapshots) {
-      Iterator var2 = this.getRegisteredBones().iterator();
 
-      while(var2.hasNext()) {
-         CoreGeoBone bone = (CoreGeoBone)var2.next();
-         if (!snapshots.containsKey(bone.getName())) {
-            snapshots.put(bone.getName(), BoneSnapshot.copy(bone.getInitialSnapshot()));
-         }
-      }
+       for (CoreGeoBone bone : this.getRegisteredBones()) {
+           if (!snapshots.containsKey(bone.getName())) {
+               snapshots.put(bone.getName(), BoneSnapshot.copy(bone.getInitialSnapshot()));
+           }
+       }
 
       return snapshots;
    }
 
    public CoreGeoBone getBone(String boneName) {
-      return (CoreGeoBone)this.bones.get(boneName);
+      return this.bones.get(boneName);
    }
 
    public void registerGeoBone(CoreGeoBone bone) {
       bone.saveInitialSnapshot();
       this.bones.put(bone.getName(), bone);
-      Iterator var2 = bone.getChildBones().iterator();
 
-      while(var2.hasNext()) {
-         CoreGeoBone child = (CoreGeoBone)var2.next();
-         this.registerGeoBone(child);
-      }
+       for (CoreGeoBone child : bone.getChildBones()) {
+           this.registerGeoBone(child);
+       }
 
    }
 
    public void setActiveModel(CoreBakedGeoModel model) {
       this.bones.clear();
-      Iterator var2 = model.getBones().iterator();
 
-      while(var2.hasNext()) {
-         CoreGeoBone bone = (CoreGeoBone)var2.next();
-         this.registerGeoBone(bone);
-      }
+       for (CoreGeoBone bone : model.getBones()) {
+           this.registerGeoBone(bone);
+       }
 
    }
 

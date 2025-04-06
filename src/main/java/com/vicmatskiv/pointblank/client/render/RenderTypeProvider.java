@@ -1,8 +1,6 @@
 package com.vicmatskiv.pointblank.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat.Mode;
 import com.vicmatskiv.pointblank.compat.iris.IrisCompat;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.Minecraft;
@@ -12,12 +10,12 @@ import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 public interface RenderTypeProvider {
-   RenderType NO_RENDER_TYPE = new RenderType((String)null, (VertexFormat)null, (Mode)null, 0, false, false, (Runnable)null, (Runnable)null) {
+   RenderType NO_RENDER_TYPE = new RenderType(null, null, null, 0, false, false, null, null) {
    };
    AtomicInteger wrappedCounter = new AtomicInteger();
    Runnable SETUP_STENCIL_MASK_RENDER = () -> {
       GL11.glEnable(2960);
-      RenderSystem.clear(1024, Minecraft.f_91002_);
+      RenderSystem.clear(1024, Minecraft.ON_OSX);
       RenderSystem.clearStencil(0);
       RenderSystem.stencilMask(255);
       RenderSystem.colorMask(false, false, false, false);
@@ -43,7 +41,7 @@ public interface RenderTypeProvider {
 
    static RenderTypeProvider getInstance() {
       IrisCompat irisCompat = IrisCompat.getInstance();
-      return (RenderTypeProvider)(irisCompat.isShaderPackEnabled() ? irisCompat.getRenderTypeProvider() : DefaultRenderTypeProvider.getInstance());
+      return irisCompat.isShaderPackEnabled() ? irisCompat.getRenderTypeProvider() : DefaultRenderTypeProvider.getInstance();
    }
 
    RenderType getPipRenderType(boolean var1);
@@ -61,20 +59,18 @@ public interface RenderTypeProvider {
    RenderType getGlowBlockEntityRenderType(ResourceLocation var1);
 
    static RenderType wrapRenderType(RenderType renderType, Runnable setupRenderState, Runnable clearRenderState) {
-      return new RenderType("pointblank:" + renderType + ":" + wrappedCounter.incrementAndGet(), renderType.m_110508_(), renderType.m_173186_(), renderType.m_110507_(), renderType.m_110405_(), false, () -> {
-         renderType.m_110185_();
+      return new RenderType("pointblank:" + renderType + ":" + wrappedCounter.incrementAndGet(), renderType.format(), renderType.mode(), renderType.bufferSize(), renderType.affectsCrumbling(), false, () -> {
+         renderType.setupRenderState();
          setupRenderState.run();
       }, () -> {
          clearRenderState.run();
-         renderType.m_110188_();
+         renderType.clearRenderState();
       }) {
       };
    }
 
    default MultiBufferSource wrapBufferSource(MultiBufferSource source) {
-      return (renderType) -> {
-         return renderType == NO_RENDER_TYPE ? null : source.m_6299_(renderType);
-      };
+      return (renderType) -> renderType == NO_RENDER_TYPE ? null : source.getBuffer(renderType);
    }
 
    default float getReticleBrightness() {
@@ -85,15 +81,13 @@ public interface RenderTypeProvider {
       return 1.0F;
    }
 
-   public static enum Key {
+   enum Key {
       MUZZLE_FLASH,
       PIP,
       PIP_OVERLAY,
       RETICLE;
 
-      // $FF: synthetic method
-      private static Key[] $values() {
-         return new Key[]{MUZZLE_FLASH, PIP, PIP_OVERLAY, RETICLE};
+      Key() {
       }
    }
 }

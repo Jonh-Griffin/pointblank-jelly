@@ -71,31 +71,31 @@ public class Config {
 
    @SubscribeEvent
    static void onLoad(ModConfigEvent event) {
-      autoReload = (AutoReload)AUTO_RELOAD.get();
-      scopeAimingMouseSensitivity = (Double)SCOPE_AIMING_MOUSE_SENSITIVITY.get();
-      resetAutoFirePitchEnabled = (Boolean)RESET_AUTO_FIRE_PITCH_ENABLED.get();
-      knockback = (Double)KNOCKBACK.get();
-      particleEffectsEnabled = (Boolean)PARTICLE_EFFECTS_ENABLED.get();
-      armsDealerHouseWeight = (Integer)ARMS_DEALER_HOUSE_WEIGHT.get();
-      emeraldExchangeRate = (Double)EMERALD_EXCHANGE_RATE.get();
-      thirdPersonArmPoseAlwaysOn = (Boolean)THIRD_PERSON_ARM_POSE_ALWAYS_ON.get();
-      pipScopeRefreshFrame = (Integer)PIP_SCOPE_REFRESH_FRAME.get();
-      pipScopesEnabled = (Boolean)PIP_SCOPES_ENABLED.get();
-      pipScopeColorBalanceRed = (Integer)PIP_SCOPE_COLOR_BALANCE_RED.get();
-      pipScopeColorBalanceGreen = (Integer)PIP_SCOPE_COLOR_BALANCE_GREEN.get();
-      pipScopeColorBalanceBlue = (Integer)PIP_SCOPE_COLOR_BALANCE_BLUE.get();
-      customShadersEnabled = (Boolean)CUSTOM_SHADERS_ENABLED.get();
-      explosionDestroyBlocksEnabled = (Boolean)EXPLOSION_DESTROY_BLOCKS_ENABLED.get();
-      itemDropChance = (Double)ITEM_DROP_CHANCE.get();
-      maxItemDropCount = (Integer)MAX_ITEM_DROP_COUNT.get();
-      bulletsBreakGlassEnabled = (Boolean)BULLETS_BREAK_GLASS_ENABLED.get();
-      hitscanDamageModifier = (Double)HITSCAN_DAMAGE_MODIFIER.get();
-      headshotDamageModifier = (Double)HEADSHOT_DAMAGE_MODIFIER.get();
-      crosshairType = (CrosshairType)CROSSHAIR_TYPE.get();
-      goreEnabled = (Boolean)GORE_ENABLED.get();
-      advancedIrisIntegrationEnabled = (Boolean)ADVANCE_IRIS_INTEGRATION_ENABLED.get();
-      firstPersonAnimationsEnabled = (Boolean)FIRST_PERSON_ANIMATIONS_ENABLED.get();
-      thirdPersonAnimationsEnabled = (Boolean)THIRD_PERSON_ANIMATIONS_ENABLED.get();
+      autoReload = AUTO_RELOAD.get();
+      scopeAimingMouseSensitivity = SCOPE_AIMING_MOUSE_SENSITIVITY.get();
+      resetAutoFirePitchEnabled = RESET_AUTO_FIRE_PITCH_ENABLED.get();
+      knockback = KNOCKBACK.get();
+      particleEffectsEnabled = PARTICLE_EFFECTS_ENABLED.get();
+      armsDealerHouseWeight = ARMS_DEALER_HOUSE_WEIGHT.get();
+      emeraldExchangeRate = EMERALD_EXCHANGE_RATE.get();
+      thirdPersonArmPoseAlwaysOn = THIRD_PERSON_ARM_POSE_ALWAYS_ON.get();
+      pipScopeRefreshFrame = PIP_SCOPE_REFRESH_FRAME.get();
+      pipScopesEnabled = PIP_SCOPES_ENABLED.get();
+      pipScopeColorBalanceRed = PIP_SCOPE_COLOR_BALANCE_RED.get();
+      pipScopeColorBalanceGreen = PIP_SCOPE_COLOR_BALANCE_GREEN.get();
+      pipScopeColorBalanceBlue = PIP_SCOPE_COLOR_BALANCE_BLUE.get();
+      customShadersEnabled = CUSTOM_SHADERS_ENABLED.get();
+      explosionDestroyBlocksEnabled = EXPLOSION_DESTROY_BLOCKS_ENABLED.get();
+      itemDropChance = ITEM_DROP_CHANCE.get();
+      maxItemDropCount = MAX_ITEM_DROP_COUNT.get();
+      bulletsBreakGlassEnabled = BULLETS_BREAK_GLASS_ENABLED.get();
+      hitscanDamageModifier = HITSCAN_DAMAGE_MODIFIER.get();
+      headshotDamageModifier = HEADSHOT_DAMAGE_MODIFIER.get();
+      crosshairType = CROSSHAIR_TYPE.get();
+      goreEnabled = GORE_ENABLED.get();
+      advancedIrisIntegrationEnabled = ADVANCE_IRIS_INTEGRATION_ENABLED.get();
+      firstPersonAnimationsEnabled = FIRST_PERSON_ANIMATIONS_ENABLED.get();
+      thirdPersonAnimationsEnabled = THIRD_PERSON_ANIMATIONS_ENABLED.get();
    }
 
    static {
@@ -127,26 +127,16 @@ public class Config {
       SPEC = BUILDER.build();
    }
 
-   public static enum AutoReload {
+   public enum AutoReload {
       CREATIVE,
       SURVIVAL,
       ENABLED,
-      DISABLED;
-
-      // $FF: synthetic method
-      private static AutoReload[] $values() {
-         return new AutoReload[]{CREATIVE, SURVIVAL, ENABLED, DISABLED};
-      }
+      DISABLED
    }
 
-   public static enum CrosshairType {
+   public enum CrosshairType {
       DEFAULT,
       VANILLA,
-      DISABLED;
-
-      // $FF: synthetic method
-      private static CrosshairType[] $values() {
-         return new CrosshairType[]{DEFAULT, VANILLA, DISABLED};
+      DISABLED
       }
-   }
 }

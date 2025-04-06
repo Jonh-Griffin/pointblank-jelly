@@ -10,7 +10,7 @@ import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 import software.bernie.geckolib.util.ClientUtils;
 
 public class GunStateResponsePacket {
@@ -49,29 +49,28 @@ public class GunStateResponsePacket {
       return new GunStateResponsePacket(stateId, slotIndex, correlationId, isSuccess);
    }
 
-   public static <T extends GunStateResponsePacket> void handle(T packet, Supplier<Context> ctx) {
-      ((Context)ctx.get()).enqueueWork(() -> {
+   public static <T extends GunStateResponsePacket> void handle(T packet, Supplier<NetworkEvent.Context> ctx) {
+      ctx.get().enqueueWork(() -> {
          Player player = ClientUtils.getClientPlayer();
          ClientEventHandler.runSyncTick(() -> {
             Tuple<ItemStack, GunClientState> targetTuple = packet.getItemStackAndState(packet, player);
             if (targetTuple != null) {
-               packet.handleEnqueued(ctx, (ItemStack)targetTuple.m_14418_(), (GunClientState)targetTuple.m_14419_());
+               packet.handleEnqueued(ctx, targetTuple.getA(), targetTuple.getB());
             }
 
          });
       });
-      ((Context)ctx.get()).setPacketHandled(true);
+      ctx.get().setPacketHandled(true);
    }
 
    protected <T extends GunStateResponsePacket> Tuple<ItemStack, GunClientState> getItemStackAndState(T packet, Entity entity) {
-      if (entity instanceof Player) {
-         Player player = (Player)entity;
+      if (entity instanceof Player player) {
          return InventoryUtils.getItemStackByStateId(player, packet.stateId, packet.slotIndex);
       } else {
          return null;
       }
    }
 
-   protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
+   protected <T extends GunStateResponsePacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx, ItemStack itemStack, GunClientState gunClientState) {
    }
 }

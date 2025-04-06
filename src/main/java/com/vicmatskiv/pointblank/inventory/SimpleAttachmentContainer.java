@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.inventory;
 
 import com.google.common.collect.Lists;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.minecraft.core.NonNullList;
@@ -32,12 +31,12 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
       this.containerIndex = containerIndex;
       this.menu = menu;
       this.size = size;
-      this.items = NonNullList.m_122780_(size, ItemStack.f_41583_);
+      this.items = NonNullList.withSize(size, ItemStack.EMPTY);
    }
 
    public SimpleAttachmentContainer(ItemStack... itemStacks) {
       this.size = itemStacks.length;
-      this.items = NonNullList.m_122783_(ItemStack.f_41583_, itemStacks);
+      this.items = NonNullList.of(ItemStack.EMPTY, itemStacks);
    }
 
    public int getContainerIndex() {
@@ -79,22 +78,20 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
       this.listeners = null;
    }
 
-   public ItemStack m_8020_(int index) {
-      return index >= 0 && index < this.items.size() ? (ItemStack)this.items.get(index) : ItemStack.f_41583_;
+   public ItemStack getItem(int index) {
+      return index >= 0 && index < this.items.size() ? this.items.get(index) : ItemStack.EMPTY;
    }
 
    public List<ItemStack> removeAllItems() {
-      List<ItemStack> list = (List)this.items.stream().filter((itemStack) -> {
-         return !itemStack.m_41619_();
-      }).collect(Collectors.toList());
-      this.m_6211_();
+      List<ItemStack> list = this.items.stream().filter((itemStack) -> !itemStack.isEmpty()).collect(Collectors.toList());
+      this.clearContent();
       return list;
    }
 
-   public ItemStack m_7407_(int p_19159_, int p_19160_) {
-      ItemStack itemstack = ContainerHelper.m_18969_(this.items, p_19159_, p_19160_);
-      if (!itemstack.m_41619_()) {
-         this.m_6596_();
+   public ItemStack removeItem(int p_19159_, int p_19160_) {
+      ItemStack itemstack = ContainerHelper.removeItem(this.items, p_19159_, p_19160_);
+      if (!itemstack.isEmpty()) {
+         this.setChanged();
       }
 
       return itemstack;
@@ -104,46 +101,44 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
       ItemStack itemstack = new ItemStack(item, 0);
 
       for(int i = this.size - 1; i >= 0; --i) {
-         ItemStack itemstack1 = this.m_8020_(i);
-         if (itemstack1.m_41720_().equals(item)) {
-            int j = p_19172_ - itemstack.m_41613_();
-            ItemStack itemstack2 = itemstack1.m_41620_(j);
-            itemstack.m_41769_(itemstack2.m_41613_());
-            if (itemstack.m_41613_() == p_19172_) {
+         ItemStack itemstack1 = this.getItem(i);
+         if (itemstack1.getItem().equals(item)) {
+            int j = p_19172_ - itemstack.getCount();
+            ItemStack itemstack2 = itemstack1.split(j);
+            itemstack.grow(itemstack2.getCount());
+            if (itemstack.getCount() == p_19172_) {
                break;
             }
          }
       }
 
-      if (!itemstack.m_41619_()) {
-         this.m_6596_();
+      if (!itemstack.isEmpty()) {
+         this.setChanged();
       }
 
       return itemstack;
    }
 
    public ItemStack addItem(ItemStack itemStack) {
-      if (itemStack.m_41619_()) {
-         return ItemStack.f_41583_;
+      if (itemStack.isEmpty()) {
+         return ItemStack.EMPTY;
       } else {
-         ItemStack itemStackCopy = itemStack.m_41777_();
+         ItemStack itemStackCopy = itemStack.copy();
          this.moveItemToOccupiedSlotsWithSameType(itemStackCopy);
-         if (itemStackCopy.m_41619_()) {
-            return ItemStack.f_41583_;
+         if (itemStackCopy.isEmpty()) {
+            return ItemStack.EMPTY;
          } else {
             this.moveItemToEmptySlots(itemStackCopy);
-            return itemStackCopy.m_41619_() ? ItemStack.f_41583_ : itemStackCopy;
+            return itemStackCopy.isEmpty() ? ItemStack.EMPTY : itemStackCopy;
          }
       }
    }
 
    public boolean canAddItem(ItemStack item) {
       boolean flag = false;
-      Iterator var3 = this.items.iterator();
 
-      while(var3.hasNext()) {
-         ItemStack itemstack = (ItemStack)var3.next();
-         if (itemstack.m_41619_() || ItemStack.m_150942_(itemstack, item) && itemstack.m_41613_() < itemstack.m_41741_()) {
+      for(ItemStack itemstack : this.items) {
+         if (itemstack.isEmpty() || ItemStack.isSameItemSameTags(itemstack, item) && itemstack.getCount() < itemstack.getMaxStackSize()) {
             flag = true;
             break;
          }
@@ -152,72 +147,61 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
       return flag;
    }
 
-   public ItemStack m_8016_(int itemIndex) {
-      ItemStack itemstack = (ItemStack)this.items.get(itemIndex);
-      if (itemstack.m_41619_()) {
-         return ItemStack.f_41583_;
+   public ItemStack removeItemNoUpdate(int itemIndex) {
+      ItemStack itemstack = this.items.get(itemIndex);
+      if (itemstack.isEmpty()) {
+         return ItemStack.EMPTY;
       } else {
-         this.items.set(itemIndex, ItemStack.f_41583_);
+         this.items.set(itemIndex, ItemStack.EMPTY);
          return itemstack;
       }
    }
 
-   public void m_6836_(int index, ItemStack itemStack) {
-      LOGGER.debug("Setting item {} in container {} to stack {} with tag {}", index, this, itemStack, itemStack.m_41783_());
+   public void setItem(int index, ItemStack itemStack) {
+      LOGGER.debug("Setting item {} in container {} to stack {} with tag {}", index, this, itemStack, itemStack.getTag());
       this.items.set(index, itemStack);
-      if (!itemStack.m_41619_() && itemStack.m_41613_() > this.m_6893_()) {
-         itemStack.m_41764_(this.m_6893_());
+      if (!itemStack.isEmpty() && itemStack.getCount() > this.getMaxStackSize()) {
+         itemStack.setCount(this.getMaxStackSize());
       }
 
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public int m_6643_() {
+   public int getContainerSize() {
       return this.size;
    }
 
-   public boolean m_7983_() {
-      Iterator var1 = this.items.iterator();
-
-      ItemStack itemstack;
-      do {
-         if (!var1.hasNext()) {
-            return true;
+   public boolean isEmpty() {
+      for(ItemStack itemstack : this.items) {
+         if (!itemstack.isEmpty()) {
+            return false;
          }
+      }
 
-         itemstack = (ItemStack)var1.next();
-      } while(itemstack.m_41619_());
-
-      return false;
+      return true;
    }
 
-   public void m_6596_() {
+   public void setChanged() {
       if (this.listeners != null) {
-         Iterator var1 = this.listeners.iterator();
-
-         while(var1.hasNext()) {
-            ContainerListener containerlistener = (ContainerListener)var1.next();
-            containerlistener.m_5757_(this);
+         for(ContainerListener containerlistener : this.listeners) {
+            containerlistener.containerChanged(this);
          }
       }
 
    }
 
-   public boolean m_6542_(Player p_19167_) {
+   public boolean stillValid(Player p_19167_) {
       return true;
    }
 
-   public void m_6211_() {
+   public void clearContent() {
       this.items.clear();
-      this.m_6596_();
+      this.setChanged();
    }
 
-   public void m_5809_(StackedContents p_19169_) {
-      Iterator var2 = this.items.iterator();
-
-      while(var2.hasNext()) {
-         ItemStack itemstack = (ItemStack)var2.next();
-         p_19169_.m_36491_(itemstack);
+   public void fillStackedContents(StackedContents p_19169_) {
+      for(ItemStack itemstack : this.items) {
+         p_19169_.accountStack(itemstack);
       }
 
    }
@@ -228,9 +212,9 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
 
    private void moveItemToEmptySlots(ItemStack p_19190_) {
       for(int i = 0; i < this.size; ++i) {
-         ItemStack itemstack = this.m_8020_(i);
-         if (itemstack.m_41619_()) {
-            this.m_6836_(i, p_19190_.m_278832_());
+         ItemStack itemstack = this.getItem(i);
+         if (itemstack.isEmpty()) {
+            this.setItem(i, p_19190_.copyAndClear());
             return;
          }
       }
@@ -239,10 +223,10 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
 
    private void moveItemToOccupiedSlotsWithSameType(ItemStack p_19192_) {
       for(int i = 0; i < this.size; ++i) {
-         ItemStack itemstack = this.m_8020_(i);
-         if (ItemStack.m_150942_(itemstack, p_19192_)) {
+         ItemStack itemstack = this.getItem(i);
+         if (ItemStack.isSameItemSameTags(itemstack, p_19192_)) {
             this.moveItemsBetweenStacks(p_19192_, itemstack);
-            if (p_19192_.m_41619_()) {
+            if (p_19192_.isEmpty()) {
                return;
             }
          }
@@ -251,22 +235,22 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
    }
 
    private void moveItemsBetweenStacks(ItemStack fromStack, ItemStack toStack) {
-      int i = Math.min(this.m_6893_(), toStack.m_41741_());
-      int j = Math.min(fromStack.m_41613_(), i - toStack.m_41613_());
+      int i = Math.min(this.getMaxStackSize(), toStack.getMaxStackSize());
+      int j = Math.min(fromStack.getCount(), i - toStack.getCount());
       if (j > 0) {
-         toStack.m_41769_(j);
-         fromStack.m_41774_(j);
-         this.m_6596_();
+         toStack.grow(j);
+         fromStack.shrink(j);
+         this.setChanged();
       }
 
    }
 
    public void fromTag(ListTag tag) {
-      this.m_6211_();
+      this.clearContent();
 
       for(int i = 0; i < tag.size(); ++i) {
-         ItemStack itemstack = ItemStack.m_41712_(tag.m_128728_(i));
-         if (!itemstack.m_41619_()) {
+         ItemStack itemstack = ItemStack.of(tag.getCompound(i));
+         if (!itemstack.isEmpty()) {
             this.addItem(itemstack);
          }
       }
@@ -276,10 +260,10 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
    public ListTag createTag() {
       ListTag listtag = new ListTag();
 
-      for(int i = 0; i < this.m_6643_(); ++i) {
-         ItemStack itemstack = this.m_8020_(i);
-         if (!itemstack.m_41619_()) {
-            listtag.add(itemstack.m_41739_(new CompoundTag()));
+      for(int i = 0; i < this.getContainerSize(); ++i) {
+         ItemStack itemstack = this.getItem(i);
+         if (!itemstack.isEmpty()) {
+            listtag.add(itemstack.save(new CompoundTag()));
          }
       }
 
@@ -295,7 +279,7 @@ public class SimpleAttachmentContainer implements Container, StackedContentsComp
 
       for(int i = 0; i < containerIndex; ++i) {
          SimpleAttachmentContainer container = attachmentContainers[i];
-         startIndex += container.m_6643_();
+         startIndex += container.getContainerSize();
       }
 
       return startIndex;

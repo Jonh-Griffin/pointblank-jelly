@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.mixin;
 
 import com.vicmatskiv.pointblank.client.ClientSystem;
@@ -13,16 +18,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin({GameRenderer.class})
 public class GameRendererMixin {
+   public GameRendererMixin() {
+   }
+
    @Inject(
-      method = {"render"},
-      at = {@At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/vertex/PoseStack;)V"
-)}
+           method = {"render"},
+           at = {@At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/vertex/PoseStack;)V"
+           )}
    )
    public void render(float partialTick, long time, boolean p_109096_, CallbackInfo callbackInfo) {
-      Minecraft mc = Minecraft.m_91087_();
-      if (mc.f_91066_.m_92176_().m_90612_()) {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.options.getCameraType().isFirstPerson()) {
          GunClientState state = GunClientState.getMainHeldState();
          if (state != null) {
             ClientSystem.getInstance().renderAux(state, partialTick, time);
@@ -32,13 +40,13 @@ public class GameRendererMixin {
    }
 
    @ModifyArg(
-      method = {"renderLevel"},
-      at = @At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix (D)Lorg/joml/Matrix4f;",
-   ordinal = 0
-),
-      index = 0
+           method = {"renderLevel"},
+           at = @At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix (D)Lorg/joml/Matrix4f;",
+                   ordinal = 0
+           ),
+           index = 0
    )
    private double modifyFov(double fov) {
       AuxLevelRenderer auxRenderer = ClientSystem.getInstance().getAuxLevelRenderer();
@@ -50,13 +58,13 @@ public class GameRendererMixin {
    }
 
    @ModifyArg(
-      method = {"renderLevel"},
-      at = @At(
-   value = "INVOKE",
-   target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix (D)Lorg/joml/Matrix4f;",
-   ordinal = 1
-),
-      index = 0
+           method = {"renderLevel"},
+           at = @At(
+                   value = "INVOKE",
+                   target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix (D)Lorg/joml/Matrix4f;",
+                   ordinal = 1
+           ),
+           index = 0
    )
    private double modifyCullFrustrumFov(double fov) {
       AuxLevelRenderer auxRenderer = ClientSystem.getInstance().getAuxLevelRenderer();

@@ -7,12 +7,12 @@
     "mixins": [
     ],
     "client": [
-		"RenderTargetsMixin",
-		"CompositeRendererMixin",
-		"FinalPassRendererMixin",
-        "ProgramSetMixin",
-        "ShadowRendererMixin",
-        "IrisRenderingPipelineMixin"
+      "CompositeRendererMixin",
+      "FinalPassRendererMixin",
+      "IrisRenderingPipelineMixin",
+      "ProgramSetMixin",
+      "RenderTargetsMixin",
+      "ShadowRendererMixin"
     ],
     "injectors": {
         "defaultRequire": 1

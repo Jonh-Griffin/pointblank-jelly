@@ -16,29 +16,13 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 
 public class AttachmentModelRenderer extends GeoItemRenderer<AttachmentItem> implements RenderPassGeoRenderer<AttachmentItem> {
    public AttachmentModelRenderer(String resourceName) {
-      super(new DefaultedItemGeoModel(new ResourceLocation("pointblank", resourceName)));
-      this.addRenderLayer(new AttachmentLayer(this));
+      super(new DefaultedItemGeoModel<>(new ResourceLocation("pointblank", resourceName)));
+      this.addRenderLayer(new AttachmentLayer<>(this));
    }
 
-   public void m_108829_(ItemStack itemStack, ItemDisplayContext itemDisplayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-      HierarchicalRenderContext hrc = HierarchicalRenderContext.push(itemStack, itemDisplayContext);
-
-      try {
-         super.m_108829_(itemStack, itemDisplayContext, poseStack, bufferSource, packedLight, packedOverlay);
-      } catch (Throwable var11) {
-         if (hrc != null) {
-            try {
-               hrc.close();
-            } catch (Throwable var10) {
-               var11.addSuppressed(var10);
-            }
-         }
-
-         throw var11;
-      }
-
-      if (hrc != null) {
-         hrc.close();
+   public void renderByItem(ItemStack itemStack, ItemDisplayContext itemDisplayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+      try (HierarchicalRenderContext hrc = HierarchicalRenderContext.push(itemStack, itemDisplayContext)) {
+         super.renderByItem(itemStack, itemDisplayContext, poseStack, bufferSource, packedLight, packedOverlay);
       }
 
    }

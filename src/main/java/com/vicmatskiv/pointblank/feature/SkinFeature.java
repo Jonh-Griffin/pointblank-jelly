@@ -18,7 +18,7 @@ public class SkinFeature extends ConditionalFeature {
    }
 
    public MutableComponent getDescription() {
-      return Component.m_237115_("Changes skin");
+      return Component.literal("Changes skin");
    }
 
    public static ResourceLocation getTexture(ItemStack itemStack) {
@@ -27,9 +27,7 @@ public class SkinFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, SkinFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private ResourceLocation skinResource;
 
       public Builder withCondition(Predicate<ConditionContext> condition) {

@@ -15,15 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class SlotMixin {
    @Shadow
    @Final
-   private int f_40217_;
+   private int slot;
+
+   public SlotMixin() {
+   }
 
    @Inject(
-      method = {"mayPlace"},
-      at = {@At("HEAD")},
-      cancellable = true
+           method = {"mayPlace"},
+           at = {@At("HEAD")},
+           cancellable = true
    )
    private void onMayPlace(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
-      if (this.f_40217_ == 40 && (itemStack.m_41720_() instanceof GunItem || itemStack.m_41720_() instanceof ThrowableItem)) {
+      if (this.slot == 40 && (itemStack.getItem() instanceof GunItem || itemStack.getItem() instanceof ThrowableItem)) {
          cir.setReturnValue(false);
          cir.cancel();
       }

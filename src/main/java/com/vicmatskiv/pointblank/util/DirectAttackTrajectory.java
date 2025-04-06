@@ -32,8 +32,8 @@ public class DirectAttackTrajectory implements Trajectory<DirectAttackTrajectory
 
    public void tick() {
       this.startOfTickPosition = this.endOfTickPosition;
-      this.deltaMovement = this.deltaMovement.m_82492_(0.0D, this.gravity, 0.0D);
-      this.endOfTickPosition = this.startOfTickPosition.m_82549_(this.deltaMovement);
+      this.deltaMovement = this.deltaMovement.subtract((double)0.0F, this.gravity, (double)0.0F);
+      this.endOfTickPosition = this.startOfTickPosition.add(this.deltaMovement);
    }
 
    public boolean isCompleted() {
@@ -43,9 +43,7 @@ public class DirectAttackTrajectory implements Trajectory<DirectAttackTrajectory
    public static enum Phase {
       NONE;
 
-      // $FF: synthetic method
-      private static Phase[] $values() {
-         return new Phase[]{NONE};
+      private Phase() {
       }
    }
 }

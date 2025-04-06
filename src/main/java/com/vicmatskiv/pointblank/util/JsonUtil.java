@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Locale;
 
 public class JsonUtil {
-   public static <T extends Enum<T>> T getEnum(JsonObject obj, String property, Class<T> enumClass, T defaultValue, boolean toUpperCase) {
+   public static <T extends Enum<T>> Enum<T> getEnum(JsonObject obj, String property, Class<T> enumClass, T defaultValue, boolean toUpperCase) {
       JsonElement element = obj.get(property);
-      Enum result;
+      Enum<T> result;
       if (element != null) {
          String enumValue = element.getAsString();
          if (toUpperCase) {
@@ -27,8 +27,8 @@ public class JsonUtil {
       return result;
    }
 
-   public static <T extends Enum<T>> T getEnum(JsonObject obj, String property, Class<T> enumClass, boolean toUpperCase) {
-      T value = getEnum(obj, property, enumClass, (Enum)null, toUpperCase);
+   public static <T extends Enum<T>> Enum<T> getEnum(JsonObject obj, String property, Class<T> enumClass, boolean toUpperCase) {
+      Enum<T> value = getEnum(obj, property, enumClass, null, toUpperCase);
       if (value == null) {
          throw new IllegalArgumentException("Required property '" + property + "' is not defined in json: " + obj);
       } else {

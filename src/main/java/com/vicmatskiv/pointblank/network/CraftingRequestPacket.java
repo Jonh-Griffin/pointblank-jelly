@@ -2,6 +2,7 @@ package com.vicmatskiv.pointblank.network;
 
 import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity;
 import com.vicmatskiv.pointblank.inventory.CraftingContainerMenu;
+import com.vicmatskiv.pointblank.network.CraftingResponsePacket.CraftingResult;
 import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -9,8 +10,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.NetworkEvent.Context;
 
 public class CraftingRequestPacket {
    private RequestType requestType;
@@ -25,56 +26,47 @@ public class CraftingRequestPacket {
    }
 
    public static void encode(CraftingRequestPacket packet, FriendlyByteBuf buf) {
-      buf.m_130068_(packet.requestType);
-      buf.m_130085_(packet.recipeId);
+      buf.writeEnum(packet.requestType);
+      buf.writeResourceLocation(packet.recipeId);
    }
 
    public static CraftingRequestPacket decode(FriendlyByteBuf buf) {
-      return new CraftingRequestPacket((RequestType)buf.m_130066_(RequestType.class), buf.m_130281_());
+      return new CraftingRequestPacket(buf.readEnum(RequestType.class), buf.readResourceLocation());
    }
 
-   public static void handle(CraftingRequestPacket packet, Supplier<Context> context) {
-      ((Context)context.get()).enqueueWork(() -> {
-         ServerPlayer player = ((Context)context.get()).getSender();
-         AbstractContainerMenu patt1720$temp = player.f_36096_;
-         if (patt1720$temp instanceof CraftingContainerMenu) {
-            CraftingContainerMenu containerMenu = (CraftingContainerMenu)patt1720$temp;
+   public static void handle(CraftingRequestPacket packet, Supplier<NetworkEvent.Context> context) {
+      context.get().enqueueWork(() -> {
+         ServerPlayer player = context.get().getSender();
+         AbstractContainerMenu patt1720$temp = player.containerMenu;
+         if (patt1720$temp instanceof CraftingContainerMenu containerMenu) {
             PrinterBlockEntity craftingBlockEntity = containerMenu.getWorkstationBlockEntity();
-            if (packet.requestType == RequestType.START_CRAFTING) {
+            if (packet.requestType == CraftingRequestPacket.RequestType.START_CRAFTING) {
                PrinterBlockEntity.CraftingEventHandler eventHandler = new PrinterBlockEntity.CraftingEventHandler() {
                   public void onCraftingCompleted(Player player, ItemStack craftingItemStack, boolean isAddedToInventory) {
-                     Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-                        return (ServerPlayer)player;
-                     }), new CraftingResponsePacket(craftingItemStack, CraftingResponsePacket.CraftingResult.COMPLETED, isAddedToInventory));
+                     Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new CraftingResponsePacket(craftingItemStack, CraftingResult.COMPLETED, isAddedToInventory));
                   }
 
                   public void onCraftingFailed(Player player, ItemStack craftingItemStack, Exception craftingException) {
-                     Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-                        return (ServerPlayer)player;
-                     }), new CraftingResponsePacket(ItemStack.f_41583_, CraftingResponsePacket.CraftingResult.FAILED, false));
+                     Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer)player), new CraftingResponsePacket(ItemStack.EMPTY, CraftingResult.FAILED, false));
                   }
                };
                if (!craftingBlockEntity.tryCrafting(player, packet.recipeId, eventHandler)) {
-                  Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-                     return player;
-                  }), new CraftingResponsePacket(ItemStack.f_41583_, CraftingResponsePacket.CraftingResult.FAILED, false));
+                  Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> player), new CraftingResponsePacket(ItemStack.EMPTY, CraftingResult.FAILED, false));
                }
-            } else if (packet.requestType == RequestType.CANCEL_CRAFTING) {
+            } else if (packet.requestType == CraftingRequestPacket.RequestType.CANCEL_CRAFTING) {
                craftingBlockEntity.cancelCrafting(player, packet.recipeId);
             }
          }
 
       });
-      ((Context)context.get()).setPacketHandled(true);
+      context.get().setPacketHandled(true);
    }
 
-   public static enum RequestType {
+   public enum RequestType {
       START_CRAFTING,
       CANCEL_CRAFTING;
 
-      // $FF: synthetic method
-      private static RequestType[] $values() {
-         return new RequestType[]{START_CRAFTING, CANCEL_CRAFTING};
+      RequestType() {
       }
    }
 }

@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.util;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -25,14 +24,17 @@ import org.apache.logging.log4j.Logger;
 public class HitScan {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
 
+   public HitScan() {
+   }
+
    public static List<HitResult> getObjectsInCrosshair1(LivingEntity player, float partialTicks, double maxDistance, int count, double inaccuracy, long seed, Predicate<Block> isBreakableBlock, Predicate<Block> isPassThroughBlock, List<BlockPos> blockPosToBreakOutput) {
-      Vec3 startPos = player.m_146892_();
-      Vec3 direction = player.m_20252_(partialTicks);
+      Vec3 startPos = player.getEyePosition();
+      Vec3 direction = player.getViewVector(partialTicks);
       return getObjectsInCrosshair(player, startPos, direction, partialTicks, maxDistance, count, inaccuracy, seed, isBreakableBlock, isPassThroughBlock, blockPosToBreakOutput);
    }
 
    public static List<HitResult> getObjectsInCrosshair(LivingEntity player, Vec3 startPos, Vec3 direction, float partialTicks, double maxDistance, int count, double inaccuracy, long seed, Predicate<Block> isBreakableBlock, Predicate<Block> isPassThroughBlock, List<BlockPos> blockPosToBreakOutput) {
-      List<HitResult> hitResults = new ArrayList();
+      List<HitResult> hitResults = new ArrayList<>();
       Random random = new Random(seed);
 
       for(int i = 0; i < count; ++i) {
@@ -52,106 +54,99 @@ public class HitScan {
    }
 
    public static HitResult ensureEntityInCrosshair(LivingEntity player, Entity targetEntity, float partialTicks, double maxDistance, float bbExpansion) {
-      Vec3 direction = player.m_20252_(partialTicks);
-      Vec3 startPos = player.m_146892_();
+      Vec3 direction = player.getViewVector(partialTicks);
+      Vec3 startPos = player.getEyePosition();
       return ensureEntityInCrosshair(player, targetEntity, startPos, direction, partialTicks, maxDistance, bbExpansion);
    }
 
    public static HitResult getNearestObjectInCrosshair(LivingEntity player, float partialTicks, double maxDistance, double inaccuracy, long seed, Predicate<Block> isBreakableBlock, Predicate<Block> isPassThroughBlock, List<BlockPos> blockPosToBreakOutput) {
-      Vec3 direction = player.m_20252_(partialTicks);
+      Vec3 direction = player.getViewVector(partialTicks);
       Vec3 deviatedLookVec = getDeviatedDirectionVector(player, direction, partialTicks, inaccuracy, seed);
-      Vec3 startPos = player.m_146892_();
+      Vec3 startPos = player.getEyePosition();
       return getNearestObjectInCrosshair(player, startPos, deviatedLookVec, partialTicks, maxDistance, isBreakableBlock, isPassThroughBlock, blockPosToBreakOutput);
    }
 
    public static HitResult getNearestObjectInCrosshair(LivingEntity player, float partialTicks, double maxDistance, Predicate<Block> isBreakableBlock, Predicate<Block> isPassThroughBlock, List<BlockPos> blockPosToBreakOutput) {
-      Vec3 direction = player.m_20252_(partialTicks);
-      Vec3 startPos = player.m_146892_();
+      Vec3 direction = player.getViewVector(partialTicks);
+      Vec3 startPos = player.getEyePosition();
       return getNearestObjectInCrosshair(player, startPos, direction, partialTicks, maxDistance, isBreakableBlock, isPassThroughBlock, blockPosToBreakOutput);
    }
 
    private static Vec3 getDeviatedDirectionVector(LivingEntity player, Vec3 dirVector, float partialTicks, double inaccuracy, long seed) {
       Random random = new Random(seed);
-      double deviationX = (random.nextDouble() - 0.5D) * 2.0D * inaccuracy;
-      double deviationY = (random.nextDouble() - 0.5D) * 2.0D * inaccuracy;
-      double deviationZ = (random.nextDouble() - 0.5D) * 2.0D * inaccuracy;
-      return dirVector.m_82520_(deviationX, deviationY, deviationZ).m_82541_();
+      double deviationX = (random.nextDouble() - (double)0.5F) * (double)2.0F * inaccuracy;
+      double deviationY = (random.nextDouble() - (double)0.5F) * (double)2.0F * inaccuracy;
+      double deviationZ = (random.nextDouble() - (double)0.5F) * (double)2.0F * inaccuracy;
+      return dirVector.add(deviationX, deviationY, deviationZ).normalize();
    }
 
    public static HitResult getNearestObjectInCrosshair(LivingEntity player, Vec3 startPos, Vec3 directionVector, float partialTicks, double maxDistance, Predicate<Block> isBreakableBlock, Predicate<Block> isPassThroughBlock, List<BlockPos> blockPosToBreakOutput) {
-      Vec3 endVec = startPos.m_82520_(directionVector.f_82479_ * maxDistance, directionVector.f_82480_ * maxDistance, directionVector.f_82481_ * maxDistance);
-      AABB playerBox = player.m_20191_();
-      AABB expandedBox = playerBox.m_82363_(directionVector.f_82479_ * maxDistance, directionVector.f_82480_ * maxDistance, directionVector.f_82481_ * maxDistance);
+      Vec3 endVec = startPos.add(directionVector.x * maxDistance, directionVector.y * maxDistance, directionVector.z * maxDistance);
+      AABB playerBox = player.getBoundingBox();
+      AABB expandedBox = playerBox.expandTowards(directionVector.x * maxDistance, directionVector.y * maxDistance, directionVector.z * maxDistance);
       Entity closestEntity = null;
       double closestEntityDistance = maxDistance;
       Vec3 closestEntityHitVec = null;
-      Iterator var16 = MiscUtil.getLevel(player).m_45933_(player, expandedBox).iterator();
 
-      double blockDistance;
-      while(var16.hasNext()) {
-         Entity entity = (Entity)var16.next();
-         if (!entity.m_5833_() && entity.m_6087_() && entity.m_6084_()) {
-            AABB entityBox = entity.m_20191_().m_82400_(0.3D);
-            Optional<Vec3> hitVec = entityBox.m_82371_(startPos, endVec);
+      for(Entity entity : MiscUtil.getLevel(player).getEntities(player, expandedBox)) {
+         if (!entity.isSpectator() && entity.isPickable() && entity.isAlive()) {
+            AABB entityBox = entity.getBoundingBox().inflate(0.3);
+            Optional<Vec3> hitVec = entityBox.clip(startPos, endVec);
             if (hitVec.isPresent()) {
-               blockDistance = startPos.m_82554_((Vec3)hitVec.get());
-               if (blockDistance < closestEntityDistance) {
+               double distanceToEntity = startPos.distanceTo(hitVec.get());
+               if (distanceToEntity < closestEntityDistance) {
                   closestEntity = entity;
-                  closestEntityDistance = blockDistance;
-                  closestEntityHitVec = (Vec3)hitVec.get();
+                  closestEntityDistance = distanceToEntity;
+                  closestEntityHitVec = hitVec.get();
                }
             }
          }
       }
 
-      BlockHitResult blockHit = MiscUtil.getLevel(player).m_45547_(new ClipContext(startPos, endVec, ClipContext.Block.COLLIDER, Fluid.NONE, player));
+      BlockHitResult blockHit = MiscUtil.getLevel(player).clip(new ClipContext(startPos, endVec, net.minecraft.world.level.ClipContext.Block.COLLIDER, Fluid.NONE, player));
 
-      while(blockHit.m_6662_() != Type.MISS) {
-         BlockPos blockPos = blockHit.m_82425_();
-         BlockState blockState = MiscUtil.getLevel(player).m_8055_(blockPos);
-         Block block = blockState.m_60734_();
-         if (isPassThroughBlock.test(block)) {
-            blockHit = MiscUtil.getLevel(player).m_45547_(new ClipContext(blockHit.m_82450_(), endVec, ClipContext.Block.COLLIDER, Fluid.NONE, player));
-         } else {
-            if (!isBreakableBlock.test(block)) {
-               blockDistance = startPos.m_82554_(blockHit.m_82450_());
-               if (blockDistance < closestEntityDistance) {
-                  return blockHit;
-               }
-               break;
-            }
+      while(blockHit.getType() != Type.MISS) {
+         BlockPos blockPos = blockHit.getBlockPos();
+         BlockState blockState = MiscUtil.getLevel(player).getBlockState(blockPos);
+         Block block = blockState.getBlock();
+          if (!isPassThroughBlock.test(block)) {
+              if (!isBreakableBlock.test(block)) {
+                  double blockDistance = startPos.distanceTo(blockHit.getLocation());
+                  if (blockDistance < closestEntityDistance) {
+                      return blockHit;
+                  }
+                  break;
+              }
 
-            blockPosToBreakOutput.add(blockPos);
-            blockHit = MiscUtil.getLevel(player).m_45547_(new ClipContext(blockHit.m_82450_(), endVec, ClipContext.Block.COLLIDER, Fluid.NONE, player));
-         }
+              blockPosToBreakOutput.add(blockPos);
+          }
+          blockHit = MiscUtil.getLevel(player).clip(new ClipContext(blockHit.getLocation(), endVec, ClipContext.Block.COLLIDER, Fluid.NONE, player));
       }
 
-      return (HitResult)(closestEntity != null ? new EntityHitResult(closestEntity, closestEntityHitVec) : blockHit);
+      return closestEntity != null ? new EntityHitResult(closestEntity, closestEntityHitVec) : blockHit;
    }
 
    public static boolean isHeadshot(LivingEntity entity, Vec3 hitVec) {
-      AABB entityBox = entity.m_20191_();
-      double headHeightStart = entityBox.f_82289_ + (double)entity.m_20192_() - (double)entity.m_20206_() * 0.12D;
-      double hOffset = 0.301D;
-      double babyVOffset = entity.m_6162_() ? 0.5D : 0.0D;
-      AABB headBox = new AABB(entityBox.f_82288_ - hOffset, headHeightStart, entityBox.f_82290_ - hOffset, entityBox.f_82291_ + hOffset, entityBox.f_82292_ + (double)entity.m_20206_() * 0.1D + babyVOffset, entityBox.f_82293_ + hOffset);
-      return headBox.m_82390_(hitVec);
+      AABB entityBox = entity.getBoundingBox();
+      double headHeightStart = entityBox.minY + (double)entity.getEyeHeight() - (double)entity.getBbHeight() * 0.12;
+      double hOffset = 0.301;
+      double babyVOffset = entity.isBaby() ? (double)0.5F : (double)0.0F;
+      AABB headBox = new AABB(entityBox.minX - hOffset, headHeightStart, entityBox.minZ - hOffset, entityBox.maxX + hOffset, entityBox.maxY + (double)entity.getBbHeight() * 0.1 + babyVOffset, entityBox.maxZ + hOffset);
+      return headBox.contains(hitVec);
    }
 
    protected static HitResult ensureEntityInCrosshair(LivingEntity player, Entity targetEntity, Vec3 startPos, Vec3 directionVector, float partialTicks, double maxDistance, float bbExpansion) {
-      Vec3 endVec = startPos.m_82520_(directionVector.f_82479_ * maxDistance, directionVector.f_82480_ * maxDistance, directionVector.f_82481_ * maxDistance);
-      AABB playerBox = player.m_20191_();
-      AABB expandedBox = playerBox.m_82363_(directionVector.f_82479_ * maxDistance, directionVector.f_82480_ * maxDistance, directionVector.f_82481_ * maxDistance);
+      Vec3 endVec = startPos.add(directionVector.x * maxDistance, directionVector.y * maxDistance, directionVector.z * maxDistance);
+      AABB playerBox = player.getBoundingBox();
+      AABB expandedBox = playerBox.expandTowards(directionVector.x * maxDistance, directionVector.y * maxDistance, directionVector.z * maxDistance);
       Vec3 closestEntityHitVec = null;
-      Iterator var12 = MiscUtil.getLevel(player).m_45933_(player, expandedBox).iterator();
 
-      while(var12.hasNext()) {
-         Entity entity = (Entity)var12.next();
-         if (entity == targetEntity && !entity.m_5833_() && entity.m_6087_() && entity.m_6084_()) {
-            AABB entityBox = entity.m_20191_().m_82400_((double)bbExpansion);
-            Optional<Vec3> hitVec = entityBox.m_82371_(startPos, endVec);
+      for(Entity entity : MiscUtil.getLevel(player).getEntities(player, expandedBox)) {
+         if (entity == targetEntity && !entity.isSpectator() && entity.isPickable() && entity.isAlive()) {
+            AABB entityBox = entity.getBoundingBox().inflate(bbExpansion);
+            Optional<Vec3> hitVec = entityBox.clip(startPos, endVec);
             if (hitVec.isPresent()) {
-               closestEntityHitVec = (Vec3)hitVec.get();
+               closestEntityHitVec = hitVec.get();
             }
          }
       }

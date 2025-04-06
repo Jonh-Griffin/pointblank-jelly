@@ -19,7 +19,7 @@ public class ReloadFeature extends ConditionalFeature {
    }
 
    public static int getMaxAmmoPerReloadIteration(ItemStack itemStack) {
-      if (!(itemStack.m_41720_() instanceof GunItem)) {
+      if (!(itemStack.getItem() instanceof GunItem)) {
          return 0;
       } else {
          Features.EnabledFeature enabledReloadFeature = Features.getFirstEnabledFeature(itemStack, ReloadFeature.class);
@@ -28,10 +28,11 @@ public class ReloadFeature extends ConditionalFeature {
    }
 
    public static class Builder implements FeatureBuilder<Builder, ReloadFeature> {
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private int maxAmmoPerReloadIteration;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -39,7 +40,7 @@ public class ReloadFeature extends ConditionalFeature {
       }
 
       public Builder withMaxAmmoPerReloadIteration(int maxAmmoPerReloadIteration) {
-         this.maxAmmoPerReloadIteration = Mth.m_14045_(maxAmmoPerReloadIteration, 1, Integer.MAX_VALUE);
+         this.maxAmmoPerReloadIteration = Mth.clamp(maxAmmoPerReloadIteration, 1, Integer.MAX_VALUE);
          return this;
       }
 

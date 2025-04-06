@@ -1,12 +1,16 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.compat.playeranimator;
 
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.minecraft.Util;
@@ -22,20 +26,20 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private static PlayerAnimatorCompat instance;
    private Function<List<PlayerAnimationType>, List<String>> animationsToPlay;
-   private static final PlayerAnimationRegistry<?> noOpRegistry = new PlayerAnimationRegistry<Object>() {
-      public void register(String ownerId, Supplier<Reader> reader) {
-      }
+   private static final PlayerAnimationRegistry<?> noOpRegistry = new PlayerAnimationRegistry<>() {
+       public void register(String ownerId, Supplier<Reader> reader) {
+       }
 
-      public boolean isRegistered(String ownerId) {
-         return false;
-      }
+       public boolean isRegistered(String ownerId) {
+           return false;
+       }
 
-      public List<PlayerAnimation<Object>> getAnimations(String ownerId, PlayerAnimationType animationType) {
-         return Collections.emptyList();
-      }
+       public List<PlayerAnimation<Object>> getAnimations(String ownerId, PlayerAnimationType animationType) {
+           return Collections.emptyList();
+       }
 
-      public void reload() {
-      }
+       public void reload() {
+       }
    };
 
    public static PlayerAnimatorCompat getInstance() {
@@ -48,8 +52,8 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
                Class<?> playerAnimatorClass = Class.forName(playerAnimatorClassName);
                instance = (PlayerAnimatorCompat)playerAnimatorClass.getDeclaredConstructor().newInstance();
                LOGGER.info("Compatibility with Player Animator version {} enabled", compatModFileInfo.versionString());
-            } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | NoClassDefFoundError var3) {
-               LOGGER.error("Player Animator mod version {} detected, but compatibility could not be enabled. This is likely due to an outdated and/or incompatible version of the Player Animator mod. ", compatModFileInfo.versionString(), var3);
+            } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | NoClassDefFoundError e) {
+               LOGGER.error("Player Animator mod version {} detected, but compatibility could not be enabled. This is likely due to an outdated and/or incompatible version of the Player Animator mod. ", compatModFileInfo.versionString(), e);
             }
          }
 
@@ -67,10 +71,10 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
    }
 
    protected void init() {
-      this.animationsToPlay = Util.m_143827_(PlayerAnimatorCompat::getAnimationsToPlay);
+      this.animationsToPlay = Util.memoize(PlayerAnimatorCompat::getAnimationsToPlay);
    }
 
-   public void m_6213_(ResourceManager resourceManager) {
+   public void onResourceManagerReload(ResourceManager resourceManager) {
       this.init();
    }
 
@@ -105,11 +109,7 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
    }
 
    public void playEnsemble(Player player, String ownerId, String fallbackOwnerId, List<PlayerAnimationType> animationTypes) {
-      List<String> animationNames = (List)this.animationsToPlay.apply(animationTypes);
-      Iterator var6 = animationNames.iterator();
-
-      while(var6.hasNext()) {
-         String animationName = (String)var6.next();
+      for(String animationName : this.animationsToPlay.apply(animationTypes)) {
          this.playAnimation(player, ownerId, fallbackOwnerId, animationName);
       }
 
@@ -117,13 +117,11 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
    }
 
    private static List<String> getAnimationsToPlay(List<PlayerAnimationType> types) {
-      List<String> animationsToPlay = new ArrayList();
-      Iterator var2 = PlayerAnimationType.compose(types).entrySet().iterator();
+      List<String> animationsToPlay = new ArrayList<>();
 
-      while(var2.hasNext()) {
-         Entry<PlayerAnimationPartGroup, PlayerAnimationType> e = (Entry)var2.next();
-         PlayerAnimationPartGroup group = (PlayerAnimationPartGroup)e.getKey();
-         PlayerAnimationType animationType = (PlayerAnimationType)e.getValue();
+      for(Map.Entry<PlayerAnimationPartGroup, PlayerAnimationType> e : PlayerAnimationType.compose(types).entrySet()) {
+         PlayerAnimationPartGroup group = e.getKey();
+         PlayerAnimationType animationType = e.getValue();
          String animationName = constructAnimationName(animationType.getBaseAnimationName(), group);
          animationsToPlay.add(animationName);
       }

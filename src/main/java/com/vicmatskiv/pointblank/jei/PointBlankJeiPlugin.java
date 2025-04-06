@@ -25,7 +25,7 @@ public class PointBlankJeiPlugin implements IModPlugin {
    }
 
    public void registerRecipes(IRecipeRegistration registration) {
-      Minecraft mc = Minecraft.m_91087_();
-      registration.addRecipes(POINTBLANK_RECIPE_TYPE, PointBlankRecipe.getRecipes(mc.f_91073_));
+      Minecraft mc = Minecraft.getInstance();
+      registration.addRecipes(POINTBLANK_RECIPE_TYPE, PointBlankRecipe.getRecipes(mc.level));
    }
 }

@@ -4,16 +4,13 @@ import com.vicmatskiv.pointblank.item.AmmoItem;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.registry.RecipeTypeRegistry;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.data.recipes.RecipeProvider;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.common.Tags.Items;
 
 public class PointBlankRecipeProvider extends RecipeProvider {
@@ -21,25 +18,22 @@ public class PointBlankRecipeProvider extends RecipeProvider {
       super(output);
    }
 
-   protected void m_245200_(Consumer<FinishedRecipe> consumer) {
-      Iterator var2 = ItemRegistry.ITEMS.getItemsByName().entrySet().iterator();
-
-      while(var2.hasNext()) {
-         Entry<String, Supplier<? extends Item>> e = (Entry)var2.next();
-         Item item = (Item)((Supplier)e.getValue()).get();
+   protected void buildRecipes(Consumer<FinishedRecipe> consumer) {
+      for(Map.Entry<String, Supplier<? extends Item>> e : ItemRegistry.ITEMS.getItemsByName().entrySet()) {
+         Item item = (e.getValue()).get();
          int quantity = 0;
-         PointBlankRecipeBuilder sampleBuilder = new PointBlankRecipeBuilder((RecipeSerializer)RecipeTypeRegistry.DEFAULT_SERIALIZER.get(), item, quantity);
+         PointBlankRecipeBuilder sampleBuilder = new PointBlankRecipeBuilder(RecipeTypeRegistry.DEFAULT_SERIALIZER.get(), item, quantity);
          if (item instanceof GunItem) {
             quantity = 1;
-            sampleBuilder.requires(PointBlankIngredient.of((TagKey)Items.INGOTS_GOLD, 1)).requires(PointBlankIngredient.of((TagKey)Items.INGOTS_IRON, 3));
+            sampleBuilder.requires(PointBlankIngredient.of(Items.INGOTS_GOLD, 1)).requires(PointBlankIngredient.of(Items.INGOTS_IRON, 3));
          } else if (item instanceof AmmoItem) {
             quantity = 30;
-            sampleBuilder.requires(PointBlankIngredient.of((TagKey)Items.INGOTS_COPPER, 1)).requires(PointBlankIngredient.of((TagKey)Items.INGOTS_IRON, 1)).requires(PointBlankIngredient.of((TagKey)Items.GUNPOWDER, 1));
+            sampleBuilder.requires(PointBlankIngredient.of(Items.INGOTS_COPPER, 1)).requires(PointBlankIngredient.of(Items.INGOTS_IRON, 1)).requires(PointBlankIngredient.of(Items.GUNPOWDER, 1));
          }
 
          if (quantity > 0) {
-            sampleBuilder.unlockedBy("has_iron", m_206406_(Items.INGOTS_IRON));
-            sampleBuilder.m_176498_(consumer);
+            sampleBuilder.unlockedBy("has_iron", has(Items.INGOTS_IRON));
+            sampleBuilder.save(consumer);
          }
       }
 

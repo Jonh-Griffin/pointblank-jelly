@@ -1,6 +1,7 @@
 package com.vicmatskiv.pointblank.block;
 
 import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity;
+import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity.State;
 import com.vicmatskiv.pointblank.registry.BlockEntityRegistry;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -20,8 +21,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
-import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
@@ -33,41 +34,40 @@ public class PrinterBlock extends BaseEntityBlock implements EntityBlock {
    public static final DirectionProperty FACING;
 
    public PrinterBlock() {
-      super(Properties.m_284310_().m_284180_(MapColor.f_283906_).m_280658_(NoteBlockInstrument.IRON_XYLOPHONE).m_60999_().m_60913_(1.0F, 2.0F).m_60918_(SoundType.f_56743_).m_60955_());
+      super(Properties.of().mapColor(MapColor.METAL).instrument(NoteBlockInstrument.IRON_XYLOPHONE).requiresCorrectToolForDrops().strength(1.0F, 2.0F).sound(SoundType.METAL).noOcclusion());
    }
 
-   public RenderShape m_7514_(BlockState state) {
+   public RenderShape getRenderShape(BlockState state) {
       return RenderShape.ENTITYBLOCK_ANIMATED;
    }
 
-   protected void m_7926_(Builder<Block, BlockState> builder) {
-      builder.m_61104_(new Property[]{FACING});
+   protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+      builder.add(FACING);
    }
 
    @Nullable
-   public BlockState m_5573_(BlockPlaceContext context) {
-      return (BlockState)this.m_49966_().m_61124_(FACING, context.m_8125_().m_122427_().m_122427_());
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getClockWise().getClockWise());
    }
 
    @Nullable
-   public BlockEntity m_142194_(BlockPos blockPos, BlockState blockState) {
-      return ((BlockEntityType)BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get()).m_155264_(blockPos, blockState);
+   public BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return (BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get()).create(blockPos, blockState);
    }
 
-   public boolean m_7898_(BlockState state, LevelReader world, BlockPos pos) {
+   public boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
       return true;
    }
 
-   public InteractionResult m_6227_(BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interationHand, BlockHitResult blockHitResult) {
-      if (level.f_46443_) {
+   public InteractionResult use(BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interationHand, BlockHitResult blockHitResult) {
+      if (level.isClientSide) {
          return InteractionResult.SUCCESS;
       } else {
-         BlockEntity blockEntity = level.m_7702_(blockPos);
-         if (blockEntity instanceof PrinterBlockEntity) {
-            PrinterBlockEntity wbe = (PrinterBlockEntity)blockEntity;
-            if (wbe.getState() == PrinterBlockEntity.State.IDLE) {
-               player.m_5893_(blockState.m_60750_(level, blockPos));
-               player.m_36220_(Stats.f_12967_);
+         BlockEntity blockEntity = level.getBlockEntity(blockPos);
+         if (blockEntity instanceof PrinterBlockEntity wbe) {
+             if (wbe.getState() == State.IDLE) {
+               player.openMenu(blockState.getMenuProvider(level, blockPos));
+               player.awardStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
                return InteractionResult.CONSUME;
             }
          }
@@ -77,11 +77,11 @@ public class PrinterBlock extends BaseEntityBlock implements EntityBlock {
    }
 
    @Nullable
-   public <T extends BlockEntity> BlockEntityTicker<T> m_142354_(Level level, BlockState blockState, BlockEntityType<T> entityType) {
-      return m_152132_(entityType, (BlockEntityType)BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), level.f_46443_ ? PrinterBlockEntity::clientTick : PrinterBlockEntity::serverTick);
+   public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState blockState, BlockEntityType<T> entityType) {
+      return createTickerHelper(entityType, BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), level.isClientSide ? PrinterBlockEntity::clientTick : PrinterBlockEntity::serverTick);
    }
 
    static {
-      FACING = BlockStateProperties.f_61372_;
+      FACING = BlockStateProperties.FACING;
    }
 }

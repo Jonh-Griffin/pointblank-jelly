@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.world.level.ItemLike;
 
 public class AmmoCount {
-   private Map<ItemLike, AtomicInteger> ammoByType = new HashMap();
+   private Map<ItemLike, AtomicInteger> ammoByType = new HashMap<>();
 
    private AtomicInteger get(FireModeInstance fireModeInstance) {
       return (AtomicInteger)this.ammoByType.computeIfAbsent(fireModeInstance.getAmmo(), (ati) -> {
@@ -23,7 +23,6 @@ public class AmmoCount {
    }
 
    public int getAmmoCount(FireModeInstance fireMode) {
-      int result = this.get(fireMode).get();
-      return result;
+       return this.get(fireMode).get();
    }
 }

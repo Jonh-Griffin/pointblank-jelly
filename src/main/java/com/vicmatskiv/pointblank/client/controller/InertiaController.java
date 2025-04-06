@@ -17,14 +17,14 @@ public class InertiaController implements GunStateListener {
    private double maxTiltAngle;
    private double tiltFactor;
    private double smoothingFactor;
-   private double dampingFactor = 0.01D;
-   private float threshold = 0.01F;
+   private final double dampingFactor = 0.01;
+   private final float threshold = 0.01F;
    private long lastUpdateTime = System.nanoTime();
    private double roll;
    private double pitch;
    private double yaw;
    private float dynamicModifier;
-   private RealtimeLinearEaser dynamicModifierEaser = new RealtimeLinearEaser(1000L);
+   private final RealtimeLinearEaser dynamicModifierEaser = new RealtimeLinearEaser(1000L);
 
    public InertiaController(double tiltFactor, double smoothingFactor, double maxTiltAngle) {
       this.tiltFactor = tiltFactor;
@@ -35,59 +35,59 @@ public class InertiaController implements GunStateListener {
 
    public void onUpdateState(LivingEntity player, GunClientState state) {
       long currentTime = System.nanoTime();
-      double deltaTime = (double)(currentTime - this.lastUpdateTime) / 1.0E9D;
+      double deltaTime = (double)(currentTime - this.lastUpdateTime) / (double)1.0E9F;
       this.lastUpdateTime = currentTime;
-      float currentYaw = player.m_146908_();
+      float currentYaw = player.getYRot();
       double deltaYaw = (double)currentYaw - this.previousYaw;
       double yawTurnSpeed = deltaYaw / deltaTime;
-      float currentPitch = player.m_146909_();
+      float currentPitch = player.getXRot();
       double deltaPitch = (double)currentPitch - this.previousPitch;
       double pitchTurnSpeed = deltaPitch / deltaTime;
       double scaledTiltFactor = this.tiltFactor * (double)this.dynamicModifierEaser.update(this.dynamicModifier);
       double yawInterpolationSpeed = this.smoothingFactor * deltaTime;
       if (Math.abs(yawTurnSpeed) >= (double)this.threshold) {
-         this.targetYawTiltAngle = yawTurnSpeed * (state.isAiming() ? 0.2D : 1.0D) * scaledTiltFactor;
+         this.targetYawTiltAngle = yawTurnSpeed * (state.isAiming() ? 0.2 : (double)1.0F) * scaledTiltFactor;
       } else {
          this.targetYawTiltAngle *= this.dampingFactor;
-         yawInterpolationSpeed *= 30.0D;
+         yawInterpolationSpeed *= 30.0F;
       }
 
       double pitchInterpolationSpeed = this.smoothingFactor * deltaTime;
       if (Math.abs(pitchTurnSpeed) >= (double)this.threshold) {
-         this.targetPitchTiltAngle = pitchTurnSpeed * (state.isAiming() ? 0.2D : 1.0D) * scaledTiltFactor;
+         this.targetPitchTiltAngle = pitchTurnSpeed * (state.isAiming() ? 0.2 : (double)1.0F) * scaledTiltFactor;
       } else {
          this.targetPitchTiltAngle *= this.dampingFactor;
-         pitchInterpolationSpeed *= 30.0D;
+         pitchInterpolationSpeed *= 30.0F;
       }
 
-      this.targetYawTiltAngle = Mth.m_14008_(this.targetYawTiltAngle, -this.maxTiltAngle, this.maxTiltAngle);
-      this.targetPitchTiltAngle = Mth.m_14008_(this.targetPitchTiltAngle, -this.maxTiltAngle, this.maxTiltAngle);
+      this.targetYawTiltAngle = Mth.clamp(this.targetYawTiltAngle, -this.maxTiltAngle, this.maxTiltAngle);
+      this.targetPitchTiltAngle = Mth.clamp(this.targetPitchTiltAngle, -this.maxTiltAngle, this.maxTiltAngle);
       this.yaw += (this.targetYawTiltAngle - this.yaw) * yawInterpolationSpeed;
       this.pitch += (this.targetPitchTiltAngle - this.pitch) * pitchInterpolationSpeed;
       this.roll += (this.targetYawTiltAngle - this.roll) * yawInterpolationSpeed;
-      this.previousYaw = (double)currentYaw;
-      this.previousPitch = (double)currentPitch;
+      this.previousYaw = currentYaw;
+      this.previousPitch = currentPitch;
    }
 
    public void onRenderTick(LivingEntity player, GunClientState state, ItemStack itemStack, ItemDisplayContext itemDisplayContext, float partialTicks) {
    }
 
    public void reset() {
-      this.yaw = 0.0D;
-      this.pitch = 0.0D;
-      this.roll = 0.0D;
-      this.previousYaw = 0.0D;
-      this.previousPitch = 0.0D;
+      this.yaw = 0.0F;
+      this.pitch = 0.0F;
+      this.roll = 0.0F;
+      this.previousYaw = 0.0F;
+      this.previousPitch = 0.0F;
       this.dynamicModifier = 1.0F;
       this.lastUpdateTime = System.nanoTime();
    }
 
    public void reset(Player player) {
-      this.yaw = 0.0D;
-      this.pitch = 0.0D;
-      this.roll = 0.0D;
-      this.previousYaw = (double)player.m_146908_();
-      this.previousPitch = (double)player.m_146909_();
+      this.yaw = 0.0F;
+      this.pitch = 0.0F;
+      this.roll = 0.0F;
+      this.previousYaw = player.getYRot();
+      this.previousPitch = player.getXRot();
       this.dynamicModifier = 1.0F;
       this.lastUpdateTime = System.nanoTime();
    }

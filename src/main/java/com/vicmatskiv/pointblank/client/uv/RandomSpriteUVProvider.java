@@ -3,13 +3,13 @@ package com.vicmatskiv.pointblank.client.uv;
 import java.util.Random;
 
 public class RandomSpriteUVProvider implements SpriteUVProvider {
-   private Random random = new Random();
-   private int totalSprites;
-   private int rows;
-   private int columns;
-   private int seed;
-   private long frameDurationMillis;
-   private long lifetimeMillis;
+   private final Random random = new Random();
+   private final int totalSprites;
+   private final int rows;
+   private final int columns;
+   private final int seed;
+   private final long frameDurationMillis;
+   private final long lifetimeMillis;
 
    public RandomSpriteUVProvider(int rows, int columns, int spritesPerSecond, long lifetimeMillis) {
       this.rows = rows;
@@ -21,9 +21,9 @@ public class RandomSpriteUVProvider implements SpriteUVProvider {
    }
 
    public float[] getSpriteUV(float progress) {
-      double elapsedTimeMillis = (double)(progress * (float)this.lifetimeMillis);
+      double elapsedTimeMillis = progress * (float)this.lifetimeMillis;
       int elapsedTimeSeed = this.seed + (int)(elapsedTimeMillis / (double)this.frameDurationMillis);
-      this.random.setSeed((long)elapsedTimeSeed);
+      this.random.setSeed(elapsedTimeSeed);
       int spriteIndex = this.random.nextInt(this.totalSprites);
       return SpriteUVProvider.getSpriteUV(spriteIndex, this.rows, this.columns);
    }

@@ -2,6 +2,7 @@ package com.vicmatskiv.pointblank.inventory;
 
 import com.vicmatskiv.pointblank.Enableable;
 import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity;
+import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity.State;
 import com.vicmatskiv.pointblank.crafting.PointBlankIngredient;
 import com.vicmatskiv.pointblank.crafting.PointBlankRecipe;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
@@ -9,7 +10,6 @@ import com.vicmatskiv.pointblank.registry.MenuRegistry;
 import com.vicmatskiv.pointblank.util.InventoryUtils;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -24,7 +24,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
@@ -42,113 +41,91 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
    public static final SimpleContainer SEARCH_CONTAINER = new SimpleContainer(42);
    private final NonNullList<ItemStack> items;
    private final AbstractContainerMenu inventoryMenu;
-   private List<ItemStack> displayItems;
-   private PrinterBlockEntity craftingBlockEntity;
-   private ContainerData containerData;
+   private final List<ItemStack> displayItems;
+   private final PrinterBlockEntity craftingBlockEntity;
+   private final ContainerData containerData;
    private FullTextSearchTree<ItemStack> searchTree;
-   private Player player;
+   private final Player player;
 
    public CraftingContainerMenu(int containerId, Inventory playerInventory) {
-      this(containerId, playerInventory, (PrinterBlockEntity)null, new SimpleContainerData(2));
+      this(containerId, playerInventory, null, new SimpleContainerData(2));
    }
 
    public CraftingContainerMenu(int containerId, Inventory playerInventory, PrinterBlockEntity craftingBlockEntity, ContainerData dataAccess) {
-      super((MenuType)MenuRegistry.CRAFTING.get(), containerId);
-      this.items = NonNullList.m_122779_();
-      this.displayItems = new ArrayList();
+      super(MenuRegistry.CRAFTING.get(), containerId);
+      this.items = NonNullList.create();
+      this.displayItems = new ArrayList<>();
       this.craftingBlockEntity = craftingBlockEntity;
       this.containerData = dataAccess;
-      this.player = playerInventory.f_35978_;
-      this.inventoryMenu = playerInventory.f_35978_.f_36095_;
-      this.m_38884_(dataAccess);
+      this.player = playerInventory.player;
+      this.inventoryMenu = playerInventory.player.inventoryMenu;
+      this.addDataSlots(dataAccess);
 
-      int i;
-      int j;
-      for(i = 0; i < 7; ++i) {
-         for(j = 0; j < 6; ++j) {
+      for(int i = 0; i < 7; ++i) {
+         for(int j = 0; j < 6; ++j) {
             SearchSlot slot = new SearchSlot(SEARCH_CONTAINER, i * 6 + j, 9 + j * 18, 18 + i * 18, true);
-            this.m_38897_(slot);
+            this.addSlot(slot);
          }
       }
 
-      for(i = 0; i < 2; ++i) {
-         for(j = 0; j < 5; ++j) {
+      for(int i = 0; i < 2; ++i) {
+         for(int j = 0; j < 5; ++j) {
             IngredientSlot slot = new IngredientSlot(INGREDIENT_CONTAINER, i * 5 + j, 151 + j * 18, 108 + i * 18);
-            this.m_38897_(slot);
+            this.addSlot(slot);
          }
       }
 
-      Iterator var10 = ItemRegistry.ITEMS.getItemsByName().values().iterator();
-
-      while(true) {
-         PointBlankRecipe recipe;
-         Enableable e;
-         do {
-            Item item;
-            do {
-               if (!var10.hasNext()) {
-                  if (MiscUtil.isClientSide(playerInventory.f_35978_)) {
-                     this.searchTree = new FullTextSearchTree((itemStack) -> {
-                        return itemStack.m_41651_((Player)null, Default.f_256752_.m_257777_()).stream().map((component) -> {
-                           return ChatFormatting.m_126649_(component.getString()).trim();
-                        }).filter((p_210809_) -> {
-                           return !p_210809_.isEmpty();
-                        });
-                     }, (itemStack) -> {
-                        return Stream.of(BuiltInRegistries.f_257033_.m_7981_(itemStack.m_41720_()));
-                     }, this.displayItems);
-                     this.searchTree.m_214078_();
-                  }
-
-                  this.scrollTo(0.0F);
-                  return;
+      for(Supplier<? extends Item> itemSupplier : ItemRegistry.ITEMS.getItemsByName().values()) {
+         Item item = itemSupplier.get();
+         PointBlankRecipe recipe = PointBlankRecipe.getRecipe(playerInventory.player.level(), item);
+         if (recipe != null) {
+            if (item instanceof Enableable e) {
+                if (!e.isEnabled()) {
+                  continue;
                }
-
-               Supplier<? extends Item> itemSupplier = (Supplier)var10.next();
-               item = (Item)itemSupplier.get();
-               recipe = PointBlankRecipe.getRecipe(playerInventory.f_35978_.m_9236_(), item);
-            } while(recipe == null);
-
-            if (!(item instanceof Enableable)) {
-               break;
             }
 
-            e = (Enableable)item;
-         } while(!e.isEnabled());
-
-         this.displayItems.add(recipe.getInitializedStack());
+            this.displayItems.add(recipe.getInitializedStack());
+         }
       }
+
+      if (MiscUtil.isClientSide(playerInventory.player)) {
+         this.searchTree = new FullTextSearchTree<>((itemStack) -> itemStack.getTooltipLines(null, Default.NORMAL.asCreative()).stream().map((component) -> ChatFormatting.stripFormatting(component.getString()).trim()).filter((p_210809_) -> !p_210809_.isEmpty()), (itemStack) -> Stream.of(BuiltInRegistries.ITEM.getKey(itemStack.getItem())), this.displayItems);
+         this.searchTree.refresh();
+      }
+
+      this.scrollTo(0.0F);
    }
 
    public PrinterBlockEntity getWorkstationBlockEntity() {
       return this.craftingBlockEntity;
    }
 
-   public void m_182406_(int slotIndex, int stateId, ItemStack itemStack) {
-      super.m_182406_(slotIndex, stateId, itemStack);
+   public void setItem(int slotIndex, int stateId, ItemStack itemStack) {
+      super.setItem(slotIndex, stateId, itemStack);
    }
 
-   public void m_182410_(int stateId, List<ItemStack> itemStacks, ItemStack carriedStack) {
+   public void initializeContents(int stateId, List<ItemStack> itemStacks, ItemStack carriedStack) {
    }
 
-   public boolean m_6875_(Player player) {
+   public boolean stillValid(Player player) {
       return true;
    }
 
    protected int calculateRowCount() {
-      return Mth.m_184652_(this.items.size(), 6) - 7;
+      return Mth.positiveCeilDiv(this.items.size(), 6) - 7;
    }
 
    public int getRowIndexForScroll(float scroll) {
-      return Math.max((int)((double)(scroll * (float)this.calculateRowCount()) + 0.5D), 0);
+      return Math.max((int)((double)(scroll * (float)this.calculateRowCount()) + (double)0.5F), 0);
    }
 
    public float getScrollForRowIndex(int rowIndex) {
-      return Mth.m_14036_((float)rowIndex / (float)this.calculateRowCount(), 0.0F, 1.0F);
+      return Mth.clamp((float)rowIndex / (float)this.calculateRowCount(), 0.0F, 1.0F);
    }
 
    public float subtractInputFromScroll(float scrolloffs, double scroll) {
-      return Mth.m_14036_(scrolloffs - (float)(scroll / (double)this.calculateRowCount()), 0.0F, 1.0F);
+      return Mth.clamp(scrolloffs - (float)(scroll / (double)this.calculateRowCount()), 0.0F, 1.0F);
    }
 
    public void scrollTo(float scroll) {
@@ -158,9 +135,9 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
          for(int k = 0; k < 6; ++k) {
             int l = k + (j + i) * 6;
             if (l >= 0 && l < this.items.size()) {
-               SEARCH_CONTAINER.m_6836_(k + j * 6, (ItemStack)this.items.get(l));
+               SEARCH_CONTAINER.setItem(k + j * 6, this.items.get(l));
             } else {
-               SEARCH_CONTAINER.m_6836_(k + j * 6, ItemStack.f_41583_);
+               SEARCH_CONTAINER.setItem(k + j * 6, ItemStack.EMPTY);
             }
          }
       }
@@ -171,31 +148,31 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
       return this.items.size() > 42;
    }
 
-   public ItemStack m_7648_(Player player, int slotIndex) {
-      if (slotIndex >= this.f_38839_.size() - 6 && slotIndex < this.f_38839_.size()) {
-         Slot slot = (Slot)this.f_38839_.get(slotIndex);
-         if (slot != null && slot.m_6657_()) {
-            slot.m_269060_(ItemStack.f_41583_);
+   public ItemStack quickMoveStack(Player player, int slotIndex) {
+      if (slotIndex >= this.slots.size() - 6 && slotIndex < this.slots.size()) {
+         Slot slot = this.slots.get(slotIndex);
+         if (slot != null && slot.hasItem()) {
+            slot.setByPlayer(ItemStack.EMPTY);
          }
       }
 
-      return ItemStack.f_41583_;
+      return ItemStack.EMPTY;
    }
 
-   public boolean m_5882_(ItemStack itemStack, Slot slot) {
-      return slot.f_40218_ != SEARCH_CONTAINER;
+   public boolean canTakeItemForPickAll(ItemStack itemStack, Slot slot) {
+      return slot.container != SEARCH_CONTAINER;
    }
 
-   public boolean m_5622_(Slot p_98653_) {
-      return p_98653_.f_40218_ != SEARCH_CONTAINER;
+   public boolean canDragTo(Slot p_98653_) {
+      return p_98653_.container != SEARCH_CONTAINER;
    }
 
-   public ItemStack m_142621_() {
-      return this.inventoryMenu.m_142621_();
+   public ItemStack getCarried() {
+      return this.inventoryMenu.getCarried();
    }
 
-   public void m_142503_(ItemStack itemStack) {
-      this.inventoryMenu.m_142503_(itemStack);
+   public void setCarried(ItemStack itemStack) {
+      this.inventoryMenu.setCarried(itemStack);
    }
 
    public void refreshSearchResults(String s) {
@@ -203,7 +180,7 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
       if (s.isEmpty()) {
          this.items.addAll(this.displayItems);
       } else {
-         this.items.addAll(this.searchTree.m_6293_(s.toLowerCase(Locale.ROOT)));
+         this.items.addAll(this.searchTree.search(s.toLowerCase(Locale.ROOT)));
       }
 
       this.scrollTo(0.0F);
@@ -212,12 +189,12 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
    public boolean updateIngredientSlots(PointBlankRecipe selectedItemRecipe) {
       boolean isCraftable = true;
       List<PointBlankIngredient> ingredients = selectedItemRecipe.getPointBlankIngredients();
-      if (ingredients.size() <= INGREDIENT_CONTAINER.m_6643_()) {
-         int ingredientSlotOffset = SEARCH_CONTAINER.m_6643_();
+      if (ingredients.size() <= INGREDIENT_CONTAINER.getContainerSize()) {
+         int ingredientSlotOffset = SEARCH_CONTAINER.getContainerSize();
 
          for(int i = 0; i < ingredients.size(); ++i) {
-            PointBlankIngredient ingredient = (PointBlankIngredient)ingredients.get(i);
-            IngredientSlot ingredientSlot = (IngredientSlot)this.f_38839_.get(ingredientSlotOffset + i);
+            PointBlankIngredient ingredient = ingredients.get(i);
+            IngredientSlot ingredientSlot = (IngredientSlot)this.slots.get(ingredientSlotOffset + i);
             ClientUtils.getClientPlayer();
             boolean hasIngredient = InventoryUtils.hasIngredient(ClientUtils.getClientPlayer(), ingredient);
             ingredientSlot.setIngredient(ingredient, hasIngredient);
@@ -229,32 +206,32 @@ public class CraftingContainerMenu extends AbstractContainerMenu {
    }
 
    public void clearIngredientSlots() {
-      int ingredientSlotOffset = SEARCH_CONTAINER.m_6643_();
+      int ingredientSlotOffset = SEARCH_CONTAINER.getContainerSize();
 
-      for(int i = 0; i < INGREDIENT_CONTAINER.m_6643_(); ++i) {
-         IngredientSlot ingredientSlot = (IngredientSlot)this.f_38839_.get(ingredientSlotOffset + i);
-         ingredientSlot.setIngredient((PointBlankIngredient)null, true);
+      for(int i = 0; i < INGREDIENT_CONTAINER.getContainerSize(); ++i) {
+         IngredientSlot ingredientSlot = (IngredientSlot)this.slots.get(ingredientSlotOffset + i);
+         ingredientSlot.setIngredient(null, true);
       }
 
-      INGREDIENT_CONTAINER.m_6211_();
+      INGREDIENT_CONTAINER.clearContent();
    }
 
    public boolean isCreativeSlot(Slot slot) {
-      return slot != null && slot.f_40218_ == SEARCH_CONTAINER;
+      return slot != null && slot.container == SEARCH_CONTAINER;
    }
 
    public boolean isIdle() {
-      return PrinterBlockEntity.State.values()[this.containerData.m_6413_(0)] == PrinterBlockEntity.State.IDLE;
+      return State.values()[this.containerData.get(0)] == State.IDLE;
    }
 
    public boolean isCrafting() {
       boolean result = false;
-      PrinterBlockEntity.State state = PrinterBlockEntity.State.values()[this.containerData.m_6413_(0)];
-      if (state == PrinterBlockEntity.State.CRAFTING) {
+      PrinterBlockEntity.State state = State.values()[this.containerData.get(0)];
+      if (state == State.CRAFTING) {
          Level level = MiscUtil.getLevel(this.player);
-         int playerEntityId = this.containerData.m_6413_(1);
+         int playerEntityId = this.containerData.get(1);
          if (playerEntityId >= 0) {
-            result = this.player == level.m_6815_(playerEntityId);
+            result = this.player == level.getEntity(playerEntityId);
          }
       }
 

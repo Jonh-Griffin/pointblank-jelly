@@ -21,10 +21,10 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 public abstract class FeaturePassLayer<T extends GeoAnimatable> extends GeoRenderLayer<T> implements RenderPassRenderer<T>, RenderApprover {
    protected static final Collection<String> ALL_PARTS = Collections.emptySet();
-   private RenderPass renderPass;
-   private Class<? extends Feature> featureType;
-   private boolean isEffectLayer;
-   private Collection<String> renderedParts;
+   private final RenderPass renderPass;
+   private final Class<? extends Feature> featureType;
+   private final boolean isEffectLayer;
+   private final Collection<String> renderedParts;
    protected Object effectId;
 
    public FeaturePassLayer(GeoRenderer<T> renderer, Class<? extends Feature> featureType, RenderPass renderPass, Collection<String> renderedParts, boolean isEffectLayer, Object effectId) {
@@ -39,7 +39,7 @@ public abstract class FeaturePassLayer<T extends GeoAnimatable> extends GeoRende
    public void render(PoseStack poseStack, T animatable, BakedGeoModel bakedModel, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
       this.renderPass(() -> {
          RenderType renderType2 = this.getRenderType();
-         this.render(this.getDefaultBakedModel(animatable), poseStack, bufferSource, animatable, renderType2, bufferSource.m_6299_(renderType2), partialTick, packedLight, OverlayTexture.f_118083_, 1.0F, 1.0F, 1.0F, 1.0F);
+         this.render(this.getDefaultBakedModel(animatable), poseStack, bufferSource, animatable, renderType2, bufferSource.getBuffer(renderType2), partialTick, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
       });
    }
 
@@ -66,10 +66,9 @@ public abstract class FeaturePassLayer<T extends GeoAnimatable> extends GeoRende
    public static <F extends Feature> F getFeature(Class<F> featureType) {
       HierarchicalRenderContext hrc = HierarchicalRenderContext.current();
       if (hrc != null) {
-         Item var3 = hrc.getItemStack().m_41720_();
-         if (var3 instanceof FeatureProvider) {
-            FeatureProvider fp = (FeatureProvider)var3;
-            HierarchicalRenderContext root = HierarchicalRenderContext.getRoot();
+         Item var3 = hrc.getItemStack().getItem();
+         if (var3 instanceof FeatureProvider fp) {
+             HierarchicalRenderContext root = HierarchicalRenderContext.getRoot();
             F feature = fp.getFeature(featureType);
             if (feature != null && feature.isEnabledForAttachment(root.getItemStack(), hrc.getItemStack())) {
                return feature;

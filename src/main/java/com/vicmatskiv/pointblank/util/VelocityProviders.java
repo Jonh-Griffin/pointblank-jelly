@@ -8,20 +8,21 @@ import net.minecraft.world.phys.Vec3;
 public class VelocityProviders {
    private static Random random = new Random();
 
+   public VelocityProviders() {
+   }
+
    public static Supplier<Vec3> randomVelocityProvider(double magnitude) {
-      return () -> {
-         return new Vec3((random.nextDouble() - 0.5D) * 2.0D * magnitude, (random.nextDouble() - 0.5D) * 2.0D * magnitude, (random.nextDouble() - 0.5D) * 2.0D * magnitude);
-      };
+      return () -> new Vec3((random.nextDouble() - (double)0.5F) * (double)2.0F * magnitude, (random.nextDouble() - (double)0.5F) * (double)2.0F * magnitude, (random.nextDouble() - (double)0.5F) * (double)2.0F * magnitude);
    }
 
    public static Supplier<Vec3> sphereVelocityProvider(float radius, Distribution radialDistribution) {
       return () -> {
          double adjustedRadius = radialDistribution.transform((double)radius);
-         float theta = 6.2831855F * random.nextFloat();
+         float theta = ((float)Math.PI * 2F) * random.nextFloat();
          float phi = (float)Math.acos((double)(2.0F * random.nextFloat() - 1.0F));
-         float sinPhi = Mth.m_14031_(phi);
-         double x = adjustedRadius * (double)sinPhi * (double)Mth.m_14089_(theta);
-         double z = adjustedRadius * (double)sinPhi * (double)Mth.m_14031_(theta);
+         float sinPhi = Mth.sin(phi);
+         double x = adjustedRadius * (double)sinPhi * (double)Mth.cos(theta);
+         double z = adjustedRadius * (double)sinPhi * (double)Mth.sin(theta);
          double y = adjustedRadius * Math.cos((double)phi);
          return new Vec3(x, y, z);
       };
@@ -30,11 +31,11 @@ public class VelocityProviders {
    public static Supplier<Vec3> hemisphereVelocityProvider(double radius, Distribution radialDistribution) {
       return () -> {
          double adjustedRadius = radialDistribution.transform(radius);
-         float theta = 6.2831855F * random.nextFloat();
+         float theta = ((float)Math.PI * 2F) * random.nextFloat();
          float phi = (float)Math.acos((double)random.nextFloat());
-         float sinPhi = Mth.m_14031_(phi);
-         double x = adjustedRadius * (double)sinPhi * (double)Mth.m_14089_(theta);
-         double z = adjustedRadius * (double)sinPhi * (double)Mth.m_14031_(theta);
+         float sinPhi = Mth.sin(phi);
+         double x = adjustedRadius * (double)sinPhi * (double)Mth.cos(theta);
+         double z = adjustedRadius * (double)sinPhi * (double)Mth.sin(theta);
          double y = adjustedRadius * Math.cos((double)phi);
          return new Vec3(x, y, z);
       };
@@ -63,23 +64,13 @@ public class VelocityProviders {
 
       private double transform(double value) {
          double adjustedValue;
-         switch(this) {
-         case CONSTANT:
-            adjustedValue = value;
-            break;
-         case UNIFORM:
-            adjustedValue = VelocityProviders.random.nextDouble() * value;
-            break;
-         default:
-            adjustedValue = Mth.m_14008_((VelocityProviders.random.nextGaussian() * (double)this.mean + (double)this.standardDeviation) * value, (double)this.lowerBound, (double)this.upperBound);
+         switch (this) {
+            case CONSTANT -> adjustedValue = value;
+            case UNIFORM -> adjustedValue = VelocityProviders.random.nextDouble() * value;
+            default -> adjustedValue = Mth.clamp((VelocityProviders.random.nextGaussian() * (double)this.mean + (double)this.standardDeviation) * value, (double)this.lowerBound, (double)this.upperBound);
          }
 
          return adjustedValue;
-      }
-
-      // $FF: synthetic method
-      private static Distribution[] $values() {
-         return new Distribution[]{CONSTANT, UNIFORM, NORMAL, TIGHT};
       }
    }
 }

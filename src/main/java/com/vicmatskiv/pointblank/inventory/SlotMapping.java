@@ -2,9 +2,7 @@ package com.vicmatskiv.pointblank.inventory;
 
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.player.Player;
@@ -16,8 +14,8 @@ public class SlotMapping {
    private static final long EXPIRATION_DURATION = 604800000L;
    public static final String TAG_SLOT_MAPPING = "pointblank:attachmentSlotMapping";
    private static final Logger logger = LogManager.getLogger("pointblank");
-   private Map<String, Map<Integer, AttachmentCategory>> mapping = new HashMap();
-   private Player player;
+   private final Map<String, Map<Integer, AttachmentCategory>> mapping = new HashMap<>();
+   private final Player player;
 
    static SlotMapping getOrCreate(Player player) {
       SlotMapping slotMapping = new SlotMapping(player);
@@ -31,11 +29,11 @@ public class SlotMapping {
 
    Map<Integer, AttachmentCategory> getOrCreateSlotMapping(VirtualInventory virtualInventory) {
       String key = virtualInventory.getPath();
-      Map<Integer, AttachmentCategory> result = null;
+      Map<Integer, AttachmentCategory> result;
       if (key == null) {
          return null;
       } else {
-         result = (Map)this.mapping.get(key);
+         result = this.mapping.get(key);
          if (result != null && !virtualInventory.isValidSlotMapping(result)) {
             logger.debug("Invalid slot mapping found for key {} in inventory {}. Here it is: {}", key, virtualInventory, result);
             result = null;
@@ -57,18 +55,18 @@ public class SlotMapping {
    }
 
    Map<Integer, AttachmentCategory> getStackSlotMapping(VirtualInventory virtualInventory) {
-      return (Map)this.mapping.get(virtualInventory.getPath());
+      return this.mapping.get(virtualInventory.getPath());
    }
 
    void saveSlotMapping() {
       CompoundTag persistentData = this.player.getPersistentData();
       CompoundTag slotMappingTag = this.serializeSlotMapping();
-      persistentData.m_128365_("pointblank:attachmentSlotMapping", slotMappingTag);
+      persistentData.put("pointblank:attachmentSlotMapping", slotMappingTag);
    }
 
    private void loadSlotMapping() {
       CompoundTag persistentData = this.player.getPersistentData();
-      CompoundTag slotMappingTag = persistentData.m_128469_("pointblank:attachmentSlotMapping");
+      CompoundTag slotMappingTag = persistentData.getCompound("pointblank:attachmentSlotMapping");
       if (slotMappingTag != null) {
          this.deserializeStackIdSlotMapping(slotMappingTag);
       }
@@ -78,52 +76,46 @@ public class SlotMapping {
    CompoundTag serializeSlotMapping() {
       CompoundTag rootTag = new CompoundTag();
       long currentTime = System.currentTimeMillis();
-      rootTag.m_128405_("Version", 1);
-      rootTag.m_128356_("Timestamp", currentTime);
+      rootTag.putInt("Version", 1);
+      rootTag.putLong("Timestamp", currentTime);
       ListTag mappingsList = new ListTag();
-      Iterator var5 = this.mapping.entrySet().iterator();
 
-      while(var5.hasNext()) {
-         Entry<String, Map<Integer, AttachmentCategory>> entry = (Entry)var5.next();
+      for(Map.Entry<String, Map<Integer, AttachmentCategory>> entry : this.mapping.entrySet()) {
          CompoundTag mappingTag = new CompoundTag();
-         mappingTag.m_128359_("id", (String)entry.getKey());
-         mappingTag.m_128356_("CreationTime", currentTime);
+         mappingTag.putString("id", entry.getKey());
+         mappingTag.putLong("CreationTime", currentTime);
          CompoundTag slotMappingsTag = new CompoundTag();
-         Iterator var9 = ((Map)entry.getValue()).entrySet().iterator();
 
-         while(var9.hasNext()) {
-            Entry<Integer, AttachmentCategory> slotEntry = (Entry)var9.next();
-            slotMappingsTag.m_128359_(((Integer)slotEntry.getKey()).toString(), ((AttachmentCategory)slotEntry.getValue()).getName());
+         for(Map.Entry<Integer, AttachmentCategory> slotEntry : (entry.getValue()).entrySet()) {
+            slotMappingsTag.putString(slotEntry.getKey().toString(), slotEntry.getValue().getName());
          }
 
-         mappingTag.m_128365_("SlotMappings", slotMappingsTag);
+         mappingTag.put("SlotMappings", slotMappingsTag);
          mappingsList.add(mappingTag);
       }
 
-      rootTag.m_128365_("Mappings", mappingsList);
+      rootTag.put("Mappings", mappingsList);
       return rootTag;
    }
 
    void deserializeStackIdSlotMapping(CompoundTag rootTag) {
-      int storedVersion = rootTag.m_128451_("Version");
-      long storedTimestamp = rootTag.m_128454_("Timestamp");
+      int storedVersion = rootTag.getInt("Version");
+      long storedTimestamp = rootTag.getLong("Timestamp");
       long currentTime = System.currentTimeMillis();
       if (storedVersion == 1 && currentTime - storedTimestamp <= 604800000L) {
          this.mapping.clear();
-         ListTag mappingsList = rootTag.m_128437_("Mappings", 10);
+         ListTag mappingsList = rootTag.getList("Mappings", 10);
 
          for(int i = 0; i < mappingsList.size(); ++i) {
-            CompoundTag mappingTag = mappingsList.m_128728_(i);
-            long creationTime = mappingTag.m_128454_("CreationTime");
+            CompoundTag mappingTag = mappingsList.getCompound(i);
+            long creationTime = mappingTag.getLong("CreationTime");
             if (currentTime - creationTime <= 604800000L) {
-               String stackId = mappingTag.m_128461_("id");
-               CompoundTag slotMappingsTag = mappingTag.m_128469_("SlotMappings");
-               Map<Integer, AttachmentCategory> slotMappings = new HashMap();
-               Iterator var15 = slotMappingsTag.m_128431_().iterator();
+               String stackId = mappingTag.getString("id");
+               CompoundTag slotMappingsTag = mappingTag.getCompound("SlotMappings");
+               Map<Integer, AttachmentCategory> slotMappings = new HashMap<>();
 
-               while(var15.hasNext()) {
-                  String slotKey = (String)var15.next();
-                  String slotValue = slotMappingsTag.m_128461_(slotKey);
+               for(String slotKey : slotMappingsTag.getAllKeys()) {
+                  String slotValue = slotMappingsTag.getString(slotKey);
                   slotMappings.put(Integer.parseInt(slotKey), AttachmentCategory.fromString(slotValue));
                }
 

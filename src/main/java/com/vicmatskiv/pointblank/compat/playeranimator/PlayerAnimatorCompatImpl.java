@@ -11,7 +11,6 @@ import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import dev.kosmx.playerAnim.core.util.Ease;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -25,7 +24,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class PlayerAnimatorCompatImpl extends PlayerAnimatorCompat {
    private static final int DEFAULT_FADE_OUT_TICKS = 8;
-   private PlayerAnimationRegistry<KeyframeAnimation> animationRegistry = new PlayerAnimationRegistryImpl();
+   private final PlayerAnimationRegistry<KeyframeAnimation> animationRegistry = new PlayerAnimationRegistryImpl();
    private boolean isClearRequired;
 
    protected PlayerAnimatorCompatImpl() {
@@ -35,18 +34,13 @@ public class PlayerAnimatorCompatImpl extends PlayerAnimatorCompat {
       return Config.thirdPersonAnimationsEnabled;
    }
 
-   public void m_6213_(ResourceManager resourceManager) {
-      super.m_6213_(resourceManager);
+   public void onResourceManagerReload(ResourceManager resourceManager) {
       this.isClearRequired = true;
       this.animationRegistry.reload();
    }
 
    public void registerAnimationTypes() {
-      PlayerAnimationPartGroup[] var1 = PlayerAnimationPartGroup.values();
-      int var2 = var1.length;
-
-      for(int var3 = 0; var3 < var2; ++var3) {
-         PlayerAnimationPartGroup type = var1[var3];
+      for(PlayerAnimationPartGroup type : PlayerAnimationPartGroup.values()) {
          PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(type.getLayerResource(), 42 + type.ordinal(), type.getAnimationFactory());
       }
 
@@ -114,11 +108,9 @@ public class PlayerAnimatorCompatImpl extends PlayerAnimatorCompat {
    private static String getCurrentAnimationName(ModifierLayer<IAnimation> animationLayer) {
       IAnimation animation = animationLayer.getAnimation();
       String animationName = null;
-      if (animation != null && animation instanceof KeyframeAnimationPlayer) {
-         KeyframeAnimationPlayer kap = (KeyframeAnimationPlayer)animation;
+      if (animation != null && animation instanceof KeyframeAnimationPlayer kap) {
          Object var5 = kap.getData().extraData.get("name");
-         if (var5 instanceof String) {
-            String s = (String)var5;
+         if (var5 instanceof String s) {
             animationName = s;
             if (s.charAt(0) == '"') {
                animationName = s.substring(1);
@@ -137,83 +129,80 @@ public class PlayerAnimatorCompatImpl extends PlayerAnimatorCompat {
       ModifierLayer<IAnimation> animationLayer = getAnimationLayer(player, group.getLayerResource());
       if (animationLayer != null) {
          AbstractFadeModifier fadeModifier = AbstractFadeModifier.standardFadeIn(3, Ease.OUTCUBIC);
-         animationLayer.replaceAnimationWithFade(fadeModifier, (IAnimation)null);
+         animationLayer.replaceAnimationWithFade(fadeModifier, null);
       }
    }
 
    private KeyframeAnimationPlayer getKeyframeAnimation(String ownerId, String fallbackOwnerId, PlayerAnimationType animationType, PlayerAnimationPartGroup group) {
       List<PlayerAnimation<KeyframeAnimation>> playerAnimations = this.animationRegistry.getAnimations(ownerId, animationType);
       KeyframeAnimation keyframeAnimation = null;
-      Iterator var7 = playerAnimations.iterator();
 
-      while(var7.hasNext()) {
-         PlayerAnimation<KeyframeAnimation> playerAnimation = (PlayerAnimation)var7.next();
+      for(PlayerAnimation<KeyframeAnimation> playerAnimation : playerAnimations) {
          if (playerAnimation.group() == group) {
-            keyframeAnimation = (KeyframeAnimation)playerAnimation.keyframeAnimation();
+            keyframeAnimation = playerAnimation.keyframeAnimation();
             break;
          }
       }
 
       if (keyframeAnimation == null && fallbackOwnerId != null) {
-         return this.getKeyframeAnimation(fallbackOwnerId, (String)null, animationType, group);
+         return this.getKeyframeAnimation(fallbackOwnerId, null, animationType, group);
       } else {
          return keyframeAnimation != null ? new KeyframeAnimationPlayer(keyframeAnimation) : null;
       }
    }
 
-   private static final ModifierLayer<IAnimation> getAnimationLayer(Player player, ResourceLocation location) {
-      return (ModifierLayer)PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayer)player).get(location);
+   private static ModifierLayer<IAnimation> getAnimationLayer(Player player, ResourceLocation location) {
+      return (ModifierLayer<IAnimation>)PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayer)player).get(location);
    }
 
    public void handlePlayerThirdPersonMovement(Player player, float partialTick) {
-      ItemStack itemStack = player.m_21205_();
+      ItemStack itemStack = player.getMainHandItem();
       if (!this.isClearRequired && itemStack != null) {
-         Item var5 = itemStack.m_41720_();
-         if (var5 instanceof GunItem) {
-            GunItem gunItem = (GunItem)var5;
-            double dmx = player.m_20185_() - player.f_19854_;
-            double dmz = player.m_20189_() - player.f_19856_;
+         Item item = itemStack.getItem();
+         if (item instanceof GunItem gunItem) {
+             double dmx = player.getX() - player.xo;
+            double dmz = player.getZ() - player.zo;
             PlayerAnimationType upperBodyState = PlayerAnimationType.IDLE;
             PlayerAnimationType lowerBodyState = PlayerAnimationType.IDLE;
-            float walkingSpeed = Mth.m_14036_(player.f_267362_.m_267711_(partialTick), 0.0F, 1.0F);
-            if (!player.m_20096_()) {
+            float walkingSpeed = Mth.clamp(player.walkAnimation.speed(partialTick), 0.0F, 1.0F);
+            if (!player.onGround()) {
                upperBodyState = PlayerAnimationType.OFF_GROUND;
                lowerBodyState = PlayerAnimationType.OFF_GROUND;
-            } else if (player.m_20096_() && (dmx != 0.0D || dmz != 0.0D) && (double)walkingSpeed > 0.01D) {
-               Vec3 horizontalMovement = new Vec3(dmx, 0.0D, dmz);
-               Vec3 viewVector = player.m_20252_(0.0F);
-               Vec3 facingDir = viewVector.m_82541_();
-               Vec3 movementDir = horizontalMovement.m_82541_();
-               double dotProduct = movementDir.m_82526_(facingDir);
-               if (player.m_20142_() && !player.m_6047_()) {
+            } else if (player.onGround() && (dmx != (double)0.0F || dmz != (double)0.0F) && (double)walkingSpeed > 0.01) {
+               Vec3 horizontalMovement = new Vec3(dmx, 0.0F, dmz);
+               Vec3 viewVector = player.getViewVector(0.0F);
+               Vec3 facingDir = viewVector.normalize();
+               Vec3 movementDir = horizontalMovement.normalize();
+               double dotProduct = movementDir.dot(facingDir);
+               if (player.isSprinting() && !player.isCrouching()) {
                   lowerBodyState = PlayerAnimationType.RUNNING;
-               } else if (dotProduct < -0.4D) {
-                  if (player.m_6047_()) {
+               } else if (dotProduct < -0.4) {
+                  if (player.isCrouching()) {
                      lowerBodyState = PlayerAnimationType.CROUCH_WALKING_BACKWARDS;
                   } else {
                      lowerBodyState = PlayerAnimationType.WALKING_BACKWARDS;
                   }
-               } else if (dotProduct > 0.4D) {
-                  if (player.m_6047_()) {
+               } else if (dotProduct > 0.4) {
+                  if (player.isCrouching()) {
                      lowerBodyState = PlayerAnimationType.CROUCH_WALKING;
                   } else {
                      lowerBodyState = PlayerAnimationType.WALKING;
                   }
                } else {
-                  double crossProduct = movementDir.m_82537_(facingDir).f_82480_;
-                  if (crossProduct > 0.0D) {
-                     if (player.m_6047_()) {
+                  double crossProduct = movementDir.cross(facingDir).y;
+                  if (crossProduct > (double)0.0F) {
+                     if (player.isCrouching()) {
                         lowerBodyState = PlayerAnimationType.CROUCH_WALKING_RIGHT;
                      } else {
                         lowerBodyState = PlayerAnimationType.WALKING_RIGHT;
                      }
-                  } else if (player.m_6047_()) {
+                  } else if (player.isCrouching()) {
                      lowerBodyState = PlayerAnimationType.CROUCH_WALKING_LEFT;
                   } else {
                      lowerBodyState = PlayerAnimationType.WALKING_LEFT;
                   }
                }
-            } else if (player.m_6047_()) {
+            } else if (player.isCrouching()) {
                lowerBodyState = PlayerAnimationType.CROUCHING;
             }
 

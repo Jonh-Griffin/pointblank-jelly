@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class BiDirectionalInterpolator implements GunStateListener {
    private long startTime;
-   private long fullDuration;
+   private final long fullDuration;
    private long duration;
    private boolean isDone;
    private Position targetPosition;
@@ -32,7 +32,7 @@ public class BiDirectionalInterpolator implements GunStateListener {
       long elapsedTime = System.nanoTime() - this.startTime;
       double t = (double)elapsedTime / (double)this.duration;
       t = t < 0.5D ? 4.0D * t * t * t : (t - 1.0D) * (2.0D * t - 2.0D) * (2.0D * t - 2.0D) + 1.0D;
-      this.progress = Mth.m_14008_(t, 0.0D, 1.0D);
+      this.progress = Mth.clamp(t, 0.0D, 1.0D);
       return this.progress;
    }
 
@@ -87,13 +87,8 @@ public class BiDirectionalInterpolator implements GunStateListener {
       }
    }
 
-   public static enum Position {
+   public enum Position {
       START,
-      END;
-
-      // $FF: synthetic method
-      private static Position[] $values() {
-         return new Position[]{START, END};
-      }
+      END
    }
 }

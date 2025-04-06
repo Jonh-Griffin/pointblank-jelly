@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GunStateTicker extends Thread {
    public static final long STATE_TICK_INTERVAL_MILLIS = 5L;
-   private AtomicBoolean running = new AtomicBoolean(true);
-   private ClientEventHandler clientEventHandler;
+   private final AtomicBoolean running = new AtomicBoolean(true);
+   private final ClientEventHandler clientEventHandler;
 
    public GunStateTicker(ClientEventHandler clientEventHandler) {
       this.setDaemon(true);

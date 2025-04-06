@@ -3,13 +3,13 @@ package com.vicmatskiv.pointblank.entity;
 import javax.annotation.Nullable;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerTrades.ItemListing;
+import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.ItemLike;
 
-public class ItemsAndEmeraldsToItems implements ItemListing {
+public class ItemsAndEmeraldsToItems implements VillagerTrades.ItemListing {
    private final ItemStack fromItem;
    private final int fromCount;
    private final ItemStack toItem;
@@ -29,7 +29,7 @@ public class ItemsAndEmeraldsToItems implements ItemListing {
    }
 
    @Nullable
-   public MerchantOffer m_213663_(Entity entity, RandomSource randomSource) {
-      return new MerchantOffer(new ItemStack(this.fromItem.m_41720_(), this.fromCount), new ItemStack(this.toItem.m_41720_(), this.toCount), this.maxUses, this.villagerXp, this.priceMultiplier);
+   public MerchantOffer getOffer(Entity entity, RandomSource randomSource) {
+      return new MerchantOffer(new ItemStack(this.fromItem.getItem(), this.fromCount), new ItemStack(this.toItem.getItem(), this.toCount), this.maxUses, this.villagerXp, this.priceMultiplier);
    }
 }

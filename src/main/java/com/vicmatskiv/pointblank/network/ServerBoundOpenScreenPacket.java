@@ -9,8 +9,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkHooks;
-import net.minecraftforge.network.NetworkEvent.Context;
 
 public class ServerBoundOpenScreenPacket {
    private ScreenType screenType;
@@ -23,42 +23,36 @@ public class ServerBoundOpenScreenPacket {
    }
 
    public static void encode(ServerBoundOpenScreenPacket packet, FriendlyByteBuf buf) {
-      buf.m_130068_(packet.screenType);
+      buf.writeEnum(packet.screenType);
    }
 
    public static ServerBoundOpenScreenPacket decode(FriendlyByteBuf buf) {
-      return new ServerBoundOpenScreenPacket((ScreenType)buf.m_130066_(ScreenType.class));
+      return new ServerBoundOpenScreenPacket(buf.readEnum(ScreenType.class));
    }
 
-   public static void handle(ServerBoundOpenScreenPacket packet, Supplier<Context> context) {
-      ((Context)context.get()).enqueueWork(() -> {
-         ServerPlayer player = ((Context)context.get()).getSender();
-         switch(packet.screenType) {
-         case CRAFTING:
-            NetworkHooks.openScreen(player, new SimpleMenuProvider((windowId, playerInventory, p) -> {
-               return new CraftingContainerMenu(windowId, playerInventory);
-            }, Component.m_237115_("screen.pointblank.crafting")));
-            break;
-         case ATTACHMENTS:
-            ItemStack heldItem = player.m_21205_();
-            if (player != null && heldItem.m_41720_() instanceof AttachmentHost) {
-               NetworkHooks.openScreen(player, new SimpleMenuProvider((windowId, playerInventory, p) -> {
-                  return new AttachmentContainerMenu(windowId, playerInventory, heldItem);
-               }, Component.m_237115_("screen.pointblank.attachments")));
-            }
+   public static void handle(ServerBoundOpenScreenPacket packet, Supplier<NetworkEvent.Context> context) {
+      context.get().enqueueWork(() -> {
+         ServerPlayer player = context.get().getSender();
+         switch (packet.screenType) {
+            case CRAFTING:
+               NetworkHooks.openScreen(player, new SimpleMenuProvider((windowId, playerInventory, p) -> new CraftingContainerMenu(windowId, playerInventory), Component.translatable("screen.pointblank.crafting")));
+               break;
+            case ATTACHMENTS:
+               ItemStack heldItem = player.getMainHandItem();
+               if (player != null && heldItem.getItem() instanceof AttachmentHost) {
+                  NetworkHooks.openScreen(player, new SimpleMenuProvider((windowId, playerInventory, p) -> new AttachmentContainerMenu(windowId, playerInventory, heldItem), Component.translatable("screen.pointblank.attachments")));
+               }
          }
 
       });
-      ((Context)context.get()).setPacketHandled(true);
+      context.get().setPacketHandled(true);
    }
 
-   public static enum ScreenType {
+   public enum ScreenType {
       ATTACHMENTS,
       CRAFTING;
 
-      // $FF: synthetic method
-      private static ScreenType[] $values() {
-         return new ScreenType[]{ATTACHMENTS, CRAFTING};
+      ScreenType() {
       }
    }
 }

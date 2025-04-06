@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,13 +35,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
+import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public final class AttachmentItem extends Item implements GeoItem, Attachment, AttachmentHost, FeatureProvider, Craftable, Tradeable {
@@ -62,7 +60,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
    public List<Supplier<Attachment>> defaultAttachmentSuppliers;
 
    public AttachmentItem() {
-      super(new Properties());
+      super(new Item.Properties());
       SingletonGeoAnimatable.registerSyncedAnimatable(this);
    }
 
@@ -80,7 +78,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       });
    }
 
-   public void registerControllers(ControllerRegistrar controllers) {
+   public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
    }
 
    public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -99,7 +97,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       return this.descriptionLines;
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
    }
 
    public AttachmentCategory getCategory() {
@@ -116,27 +114,17 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
    public Collection<Attachment> getCompatibleAttachments() {
       if (this.compatibleAttachments == null) {
-         this.compatibleAttachments = new ArrayList();
-         Iterator var1 = this.compatibleAttachmentSuppliers.iterator();
+         this.compatibleAttachments = new ArrayList<>();
 
-         while(var1.hasNext()) {
-            Supplier<Attachment> cas = (Supplier)var1.next();
-            this.compatibleAttachments.add((Attachment)cas.get());
+         for(Supplier<Attachment> cas : this.compatibleAttachmentSuppliers) {
+            this.compatibleAttachments.add(cas.get());
          }
 
-         var1 = this.compatibleAttachmentGroups.iterator();
-
-         while(var1.hasNext()) {
-            String group = (String)var1.next();
-            List<Supplier<? extends Item>> groupAtttachments = ItemRegistry.ITEMS.getAttachmentsForGroup(group);
-            Iterator var4 = groupAtttachments.iterator();
-
-            while(var4.hasNext()) {
-               Supplier<? extends Item> ga = (Supplier)var4.next();
-               Item item = (Item)ga.get();
-               if (item instanceof Attachment) {
-                  Attachment attachment = (Attachment)item;
-                  this.compatibleAttachments.add(attachment);
+         for(String group : this.compatibleAttachmentGroups) {
+            for(Supplier<? extends Item> ga : ItemRegistry.ITEMS.getAttachmentsForGroup(group)) {
+               Item item = ga.get();
+               if (item instanceof Attachment attachment) {
+                   this.compatibleAttachments.add(attachment);
                }
             }
          }
@@ -145,12 +133,12 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       return this.compatibleAttachments;
    }
 
-   public Component m_7626_(ItemStack itemStack) {
-      return Component.m_237115_(this.m_5671_(itemStack));
+   public Component getName(ItemStack itemStack) {
+      return Component.translatable(this.getDescriptionId(itemStack));
    }
 
    public <T extends Feature> T getFeature(Class<T> featureClass) {
-      return (Feature)featureClass.cast(this.features.get(featureClass));
+      return featureClass.cast(this.features.get(featureClass));
    }
 
    public long getCraftingDuration() {
@@ -173,26 +161,22 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       return this.defaultAttachmentSuppliers.stream().map(Supplier::get).toList();
    }
 
-   public void m_6883_(ItemStack itemStack, Level level, Entity entity, int itemSlot, boolean isSelected) {
-      if (!level.f_46443_) {
+   public void inventoryTick(ItemStack itemStack, Level level, Entity entity, int itemSlot, boolean isSelected) {
+      if (!level.isClientSide) {
          this.ensureItemStack(itemStack);
       }
 
    }
 
    public void ensureItemStack(ItemStack itemStack) {
-      CompoundTag stateTag = itemStack.m_41783_();
+      CompoundTag stateTag = itemStack.getTag();
       if (stateTag == null) {
          stateTag = new CompoundTag();
-         itemStack.m_41751_(stateTag);
-         Item var4 = itemStack.m_41720_();
-         if (var4 instanceof AttachmentHost) {
-            AttachmentHost attachmentHost = (AttachmentHost)var4;
-            Collection<Attachment> defaultAttachments = attachmentHost.getDefaultAttachments();
-            Iterator var5 = defaultAttachments.iterator();
+         itemStack.setTag(stateTag);
+         Item defaultAttachments = itemStack.getItem();
+         if (defaultAttachments instanceof AttachmentHost attachmentHost) {
 
-            while(var5.hasNext()) {
-               Attachment attachment = (Attachment)var5.next();
+             for(Attachment attachment : attachmentHost.getDefaultAttachments()) {
                Attachments.addAttachment(itemStack, new ItemStack(attachment), true);
             }
          }
@@ -207,16 +191,19 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       private static final int DEFAULT_TRADE_BUNDLE_QUANTITY = 1;
       private String name;
       private AttachmentCategory category;
-      private List<Supplier<Attachment>> compatibleAttachmentSuppliers = new ArrayList();
-      private List<String> compatibleAttachmentGroups = new ArrayList();
-      private Set<String> groups = new HashSet();
-      private List<FeatureBuilder<?, ?>> featureBuilders = new ArrayList();
+      private final List<Supplier<Attachment>> compatibleAttachmentSuppliers = new ArrayList<>();
+      private final List<String> compatibleAttachmentGroups = new ArrayList<>();
+      private final Set<String> groups = new HashSet<>();
+      private final List<FeatureBuilder<?, ?>> featureBuilders = new ArrayList<>();
       private long craftingDuration = 750L;
       private float tradePrice = Float.NaN;
       private int tradeBundleQuantity = 1;
       private int tradeLevel = 0;
-      private List<Component> descriptionLines = new ArrayList();
-      private List<Supplier<Attachment>> defaultAttachments = new ArrayList();
+      private final List<Component> descriptionLines = new ArrayList<>();
+      private final List<Supplier<Attachment>> defaultAttachments = new ArrayList<>();
+
+      public Builder() {
+      }
 
       public Builder withName(String name) {
          this.name = name;
@@ -239,7 +226,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       }
 
       public Builder withDescription(String description) {
-         this.descriptionLines.add(Component.m_237115_(description).m_130940_(ChatFormatting.RED).m_130940_(ChatFormatting.ITALIC));
+         this.descriptionLines.add(Component.translatable(description).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
          return this;
       }
 
@@ -250,14 +237,9 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
       @SafeVarargs
       public final Builder withCompatibleAttachment(Supplier<? extends Attachment>... attachmentSuppliers) {
-         Supplier[] var2 = attachmentSuppliers;
-         int var3 = attachmentSuppliers.length;
-
-         for(int var4 = 0; var4 < var3; ++var4) {
-            Supplier<? extends Attachment> s = var2[var4];
-            List var10000 = this.compatibleAttachmentSuppliers;
-            Objects.requireNonNull(s);
-            var10000.add(s::get);
+         for(Supplier<? extends Attachment> s : attachmentSuppliers) {
+             Objects.requireNonNull(s);
+            this.compatibleAttachmentSuppliers.add(s::get);
          }
 
          return this;
@@ -274,7 +256,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       }
 
       public Builder withCraftingDuration(int duration, TimeUnit timeUnit) {
-         this.craftingDuration = timeUnit.toMillis((long)duration);
+         this.craftingDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -291,14 +273,9 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
       @SafeVarargs
       public final Builder withDefaultAttachment(Supplier<? extends Attachment>... attachmentSuppliers) {
-         Supplier[] var2 = attachmentSuppliers;
-         int var3 = attachmentSuppliers.length;
-
-         for(int var4 = 0; var4 < var3; ++var4) {
-            Supplier<? extends Attachment> s = var2[var4];
-            List var10000 = this.defaultAttachments;
-            Objects.requireNonNull(s);
-            var10000.add(s::get);
+         for(Supplier<? extends Attachment> s : attachmentSuppliers) {
+             Objects.requireNonNull(s);
+            this.defaultAttachments.add(s::get);
          }
 
          return this;
@@ -306,49 +283,36 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
       public Builder withJsonObject(JsonObject obj) {
          this.withName(JsonUtil.getJsonString(obj, "name"));
-         String description = JsonUtil.getJsonString(obj, "description", (String)null);
+         String description = JsonUtil.getJsonString(obj, "description", null);
          if (description != null) {
             this.withDescription(description);
          }
 
          this.withCategory(JsonUtil.getJsonString(obj, "category"));
-         this.withTradePrice((double)JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
+         this.withTradePrice(JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
          this.withCraftingDuration(JsonUtil.getJsonInt(obj, "craftingDuration", 750), TimeUnit.MILLISECOND);
          List<String> groups = JsonUtil.getStrings(obj, "groups");
          this.groups.addAll(groups);
-         Iterator var4 = JsonUtil.getJsonObjects(obj, "features").iterator();
 
-         while(var4.hasNext()) {
-            JsonObject featureObj = (JsonObject)var4.next();
+         for(JsonObject featureObj : JsonUtil.getJsonObjects(obj, "features")) {
             FeatureBuilder<?, ?> featureBuilder = Features.fromJson(featureObj);
             this.withFeature(featureBuilder);
          }
 
-         List<String> compatibleAttachmentNames = JsonUtil.getStrings(obj, "compatibleAttachments");
-         Iterator var11 = compatibleAttachmentNames.iterator();
-
-         while(var11.hasNext()) {
-            String compatibleAttachmentName = (String)var11.next();
+         for(String compatibleAttachmentName : JsonUtil.getStrings(obj, "compatibleAttachments")) {
             Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(compatibleAttachmentName);
             if (ri != null) {
-               this.withCompatibleAttachment(() -> {
-                  return (Attachment)ri.get();
-               });
+               this.withCompatibleAttachment(() -> (Attachment)ri.get());
             }
          }
 
          List<String> compatibleAttachmentGroups = JsonUtil.getStrings(obj, "compatibleAttachmentGroups");
          this.compatibleAttachmentGroups.addAll(compatibleAttachmentGroups);
-         List<String> defaultAttachmentNames = JsonUtil.getStrings(obj, "defaultAttachments");
-         Iterator var15 = defaultAttachmentNames.iterator();
 
-         while(var15.hasNext()) {
-            String defaultAttachmentName = (String)var15.next();
+         for(String defaultAttachmentName : JsonUtil.getStrings(obj, "defaultAttachments")) {
             Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(defaultAttachmentName);
             if (ri != null) {
-               this.withDefaultAttachment(() -> {
-                  return (Attachment)ri.get();
-               });
+               this.withDefaultAttachment(() -> (Attachment)ri.get());
             }
          }
 
@@ -368,22 +332,15 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
             attachment.compatibleAttachmentSuppliers = Collections.unmodifiableList(this.compatibleAttachmentSuppliers);
             attachment.compatibleAttachmentGroups = Collections.unmodifiableList(this.compatibleAttachmentGroups);
             attachment.groups = Collections.unmodifiableSet(this.groups);
-            Map<Class<? extends Feature>, Feature> features = new HashMap();
-            Iterator var3 = this.category.getDefaultFeatures().iterator();
+            Map<Class<? extends Feature>, Feature> features = new HashMap<>();
 
-            FeatureBuilder featureBuilder;
-            Feature feature;
-            while(var3.hasNext()) {
-               featureBuilder = (FeatureBuilder)var3.next();
-               feature = featureBuilder.build(attachment);
+            for(FeatureBuilder<?, ?> featureBuilder : this.category.getDefaultFeatures()) {
+               Feature feature = featureBuilder.build(attachment);
                features.put(feature.getClass(), feature);
             }
 
-            var3 = this.featureBuilders.iterator();
-
-            while(var3.hasNext()) {
-               featureBuilder = (FeatureBuilder)var3.next();
-               feature = featureBuilder.build(attachment);
+            for(FeatureBuilder<?, ?> featureBuilder : this.featureBuilders) {
+               Feature feature = featureBuilder.build(attachment);
                features.put(feature.getClass(), feature);
             }
 

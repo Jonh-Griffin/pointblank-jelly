@@ -29,7 +29,7 @@ public final class PipFeature extends ConditionalFeature {
    }
 
    public MutableComponent getDescription() {
-      return Component.m_237115_("description.pointblank.enablesPipWithZoom").m_7220_(Component.m_237113_(String.format(" %.0f%%", this.zoom * 100.0F)));
+      return Component.translatable("description.pointblank.enablesPipWithZoom").append(Component.literal(String.format(" %.0f%%", this.zoom * 100.0F)));
    }
 
    public float getZoom() {
@@ -50,17 +50,16 @@ public final class PipFeature extends ConditionalFeature {
 
    public static Optional<Float> getZoom(ItemStack itemStack) {
       Pair<String, ItemStack> selected = Attachments.getSelectedAttachment(itemStack, AttachmentCategory.SCOPE);
-      ItemStack selectedStack = null;
+      ItemStack selectedStack;
       if (selected != null) {
-         selectedStack = (ItemStack)selected.getSecond();
+         selectedStack = selected.getSecond();
       } else {
          selectedStack = itemStack;
       }
 
-      Item var4 = selectedStack.m_41720_();
-      if (var4 instanceof FeatureProvider) {
-         FeatureProvider fp = (FeatureProvider)var4;
-         PipFeature feature = (PipFeature)fp.getFeature(PipFeature.class);
+      Item item = selectedStack.getItem();
+      if (item instanceof FeatureProvider fp) {
+         PipFeature feature = fp.getFeature(PipFeature.class);
          if (feature != null) {
             return Optional.of(feature.getZoom());
          }
@@ -71,17 +70,16 @@ public final class PipFeature extends ConditionalFeature {
 
    public static ResourceLocation getMaskTexture(ItemStack itemStack) {
       Pair<String, ItemStack> selected = Attachments.getSelectedAttachment(itemStack, AttachmentCategory.SCOPE);
-      ItemStack selectedStack = null;
+      ItemStack selectedStack;
       if (selected != null) {
-         selectedStack = (ItemStack)selected.getSecond();
+         selectedStack = selected.getSecond();
       } else {
          selectedStack = itemStack;
       }
 
-      Item var4 = selectedStack.m_41720_();
-      if (var4 instanceof FeatureProvider) {
-         FeatureProvider fp = (FeatureProvider)var4;
-         PipFeature feature = (PipFeature)fp.getFeature(PipFeature.class);
+      Item item = selectedStack.getItem();
+      if (item instanceof FeatureProvider fp) {
+         PipFeature feature = fp.getFeature(PipFeature.class);
          if (feature != null) {
             return feature.getMaskTexture();
          }
@@ -92,13 +90,12 @@ public final class PipFeature extends ConditionalFeature {
 
    public static PipFeature getSelected(ItemStack itemStack) {
       Pair<String, ItemStack> selected = Attachments.getSelectedAttachment(itemStack, AttachmentCategory.SCOPE);
-      ItemStack selectedStack = null;
+      ItemStack selectedStack;
       if (selected != null) {
-         selectedStack = (ItemStack)selected.getSecond();
-         Item var4 = selectedStack.m_41720_();
-         if (var4 instanceof FeatureProvider) {
-            FeatureProvider fp = (FeatureProvider)var4;
-            return (PipFeature)fp.getFeature(PipFeature.class);
+         selectedStack = selected.getSecond();
+         Item var4 = selectedStack.getItem();
+         if (var4 instanceof FeatureProvider fp) {
+             return fp.getFeature(PipFeature.class);
          } else {
             return null;
          }
@@ -110,13 +107,14 @@ public final class PipFeature extends ConditionalFeature {
    public static class Builder implements FeatureBuilder<Builder, PipFeature> {
       private static final float DEFAULT_ZOOM = 0.9F;
       private static final String DEFAULT_MASK_TEXTURE = "textures/gui/pip_mask_solid_rect.png";
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private ResourceLocation overlayTexture;
       private ResourceLocation maskTexture;
       private float zoom;
       private boolean isParallaxEnabled;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -150,12 +148,12 @@ public final class PipFeature extends ConditionalFeature {
 
          this.isParallaxEnabled = JsonUtil.getJsonBoolean(obj, "parallax", false);
          this.isParallaxEnabled = JsonUtil.getJsonBoolean(obj, "parallax", false);
-         String overlayTextureName = JsonUtil.getJsonString(obj, "overlayTexture", (String)null);
+         String overlayTextureName = JsonUtil.getJsonString(obj, "overlayTexture", null);
          if (overlayTextureName != null) {
             this.withOverlayTexture(overlayTextureName);
          }
 
-         String maskTextureName = JsonUtil.getJsonString(obj, "maskTexture", (String)null);
+         String maskTextureName = JsonUtil.getJsonString(obj, "maskTexture", null);
          if (maskTextureName == null && this.isParallaxEnabled) {
             maskTextureName = "textures/gui/pip_mask_solid_rect.png";
          }
@@ -164,7 +162,7 @@ public final class PipFeature extends ConditionalFeature {
             this.withMaskTexture(maskTextureName);
          }
 
-         this.withZoom((double)JsonUtil.getJsonFloat(obj, "zoom", 0.9F));
+         this.withZoom(JsonUtil.getJsonFloat(obj, "zoom", 0.9F));
          return this;
       }
 

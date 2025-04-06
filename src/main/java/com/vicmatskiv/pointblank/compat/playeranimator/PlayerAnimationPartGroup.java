@@ -1,11 +1,13 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.compat.playeranimator;
 
 import com.vicmatskiv.pointblank.item.GunItem;
-import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
-import dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier;
 import dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier;
-import dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier.PartModifier;
 import dev.kosmx.playerAnim.core.util.Vec3f;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import java.util.Locale;
@@ -19,26 +21,12 @@ import net.minecraft.world.entity.player.Player;
 import software.bernie.geckolib.util.ClientUtils;
 
 public enum PlayerAnimationPartGroup {
-   ARMS("arms", (p) -> {
-      return new ModifierLayer();
-   }),
-   LEGS("legs", (p) -> {
-      return new ModifierLayer();
-   }),
-   TORSO("torso", (p) -> {
-      return new ModifierLayer();
-   }),
-   HEAD("head", (p) -> {
-      return new ModifierLayer();
-   }),
-   BODY("body", (p) -> {
-      return new ModifierLayer();
-   }),
-   AUX("aux", (p) -> {
-      return new ModifierLayer((IAnimation)null, new AbstractModifier[]{new AdjustmentModifier((bodyPart) -> {
-         return correctRotation(p, bodyPart);
-      })});
-   });
+   ARMS("arms", (p) -> new ModifierLayer<>()),
+   LEGS("legs", (p) -> new ModifierLayer<>()),
+   TORSO("torso", (p) -> new ModifierLayer<>()),
+   HEAD("head", (p) -> new ModifierLayer<>()),
+   BODY("body", (p) -> new ModifierLayer<>()),
+   AUX("aux", (p) -> new ModifierLayer<>(null, new AdjustmentModifier((bodyPart) -> correctRotation(p, bodyPart))));
 
    private final String name;
    private final ResourceLocation resourceLocation;
@@ -46,7 +34,7 @@ public enum PlayerAnimationPartGroup {
    private static final float MAX_BODY_HEAD_YAW = 75.0F;
    private static final Set<String> ROTATED_PARTS = Set.of("head", "leftArm", "rightArm");
 
-   private PlayerAnimationPartGroup(String name, PlayerAnimationFactory playerAnimationFactory) {
+   PlayerAnimationPartGroup(String name, PlayerAnimationFactory playerAnimationFactory) {
       this.name = name;
       this.playerAnimationFactory = playerAnimationFactory;
       this.resourceLocation = new ResourceLocation("pointblank", this.name().toLowerCase(Locale.ROOT));
@@ -68,14 +56,9 @@ public enum PlayerAnimationPartGroup {
       return this.playerAnimationFactory;
    }
 
-   private static Optional<PartModifier> correctRotation(Player player, String partName) {
-      Minecraft mc = Minecraft.m_91087_();
+   private static Optional<AdjustmentModifier.PartModifier> correctRotation(Player player, String partName) {
+      Minecraft mc = Minecraft.getInstance();
       Player mainPlayer = ClientUtils.getClientPlayer();
-      return (player != mainPlayer || mc.f_91066_.m_92176_() != CameraType.FIRST_PERSON) && mc.f_91080_ == null && ROTATED_PARTS.contains(partName) && mainPlayer.m_21205_().m_41720_() instanceof GunItem ? Optional.of(new PartModifier(new Vec3f(player.m_5686_(mc.getPartialTick()) * 0.017453292F, Mth.m_14036_(Mth.m_14177_(Mth.m_14189_(mc.getPartialTick(), player.f_20886_ - player.f_20884_, player.f_20885_ - player.f_20883_)), -75.0F, 75.0F) * 0.017453292F, 0.0F), Vec3f.ZERO)) : Optional.empty();
-   }
-
-   // $FF: synthetic method
-   private static PlayerAnimationPartGroup[] $values() {
-      return new PlayerAnimationPartGroup[]{ARMS, LEGS, TORSO, HEAD, BODY, AUX};
+      return (player != mainPlayer || mc.options.getCameraType() != CameraType.FIRST_PERSON) && mc.screen == null && ROTATED_PARTS.contains(partName) && mainPlayer.getMainHandItem().getItem() instanceof GunItem ? Optional.of(new AdjustmentModifier.PartModifier(new Vec3f(player.getViewXRot(mc.getPartialTick()) * ((float)Math.PI / 180F), Mth.clamp(Mth.wrapDegrees(Mth.rotLerp(mc.getPartialTick(), player.yHeadRotO - player.yBodyRotO, player.yHeadRot - player.yBodyRot)), -75.0F, 75.0F) * ((float)Math.PI / 180F), 0.0F), Vec3f.ZERO)) : Optional.empty();
    }
 }

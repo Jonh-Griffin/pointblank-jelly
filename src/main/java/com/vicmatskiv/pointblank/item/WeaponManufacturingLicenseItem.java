@@ -11,7 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import software.bernie.geckolib.animatable.GeoItem;
@@ -41,7 +40,7 @@ public class WeaponManufacturingLicenseItem extends Item implements GeoItem, Tra
 
          public BlockEntityWithoutLevelRenderer getCustomRenderer() {
             if (this.renderer == null) {
-               this.renderer = new GeoItemRenderer(new DefaultedBlockGeoModel(new ResourceLocation("pointblank", "wml")));
+               this.renderer = new GeoItemRenderer<>(new DefaultedBlockGeoModel<>(new ResourceLocation("pointblank", "wml")));
             }
 
             return this.renderer;
@@ -49,7 +48,7 @@ public class WeaponManufacturingLicenseItem extends Item implements GeoItem, Tra
       });
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+   public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
    }
 
    public float getPrice() {

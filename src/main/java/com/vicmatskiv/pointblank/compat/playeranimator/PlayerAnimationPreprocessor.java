@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 public class PlayerAnimationPreprocessor {
-   private static Gson gson = new Gson();
+   private static final Gson gson = new Gson();
 
    static void preprocess(Reader inputReader, Consumer<Reader> outputConsumer) {
       JsonObject originalJson = JsonParser.parseReader(inputReader).getAsJsonObject();
@@ -43,7 +43,7 @@ public class PlayerAnimationPreprocessor {
    }
 
    private static JsonObject deepCopyJsonObject(JsonObject original) {
-      return (JsonObject)gson.fromJson(gson.toJson(original), JsonObject.class);
+      return gson.fromJson(gson.toJson(original), JsonObject.class);
    }
 
    private static void filterBones(JsonObject jsonObject, PlayerAnimationPartGroup group) {
@@ -51,7 +51,7 @@ public class PlayerAnimationPreprocessor {
       if (animations != null) {
          JsonObject updatedAnimations = new JsonObject();
          String categorySuffix = "." + group.name().toLowerCase();
-         Iterator var5 = animations.entrySet().iterator();
+         Iterator<Entry<String, JsonElement>> var5 = animations.entrySet().iterator();
 
          while(true) {
             String animationName;
@@ -63,24 +63,22 @@ public class PlayerAnimationPreprocessor {
                   return;
                }
 
-               Entry<String, JsonElement> animationEntry = (Entry)var5.next();
-               animationName = (String)animationEntry.getKey();
-               animation = ((JsonElement)animationEntry.getValue()).getAsJsonObject();
+               Entry<String, JsonElement> animationEntry = var5.next();
+               animationName = animationEntry.getKey();
+               animation = animationEntry.getValue().getAsJsonObject();
                bones = animation.getAsJsonObject("bones");
             } while(bones == null);
 
             JsonObject newBones = new JsonObject();
-            Iterator iterator = bones.entrySet().iterator();
 
-            while(iterator.hasNext()) {
-               Entry<String, JsonElement> boneEntry = (Entry)iterator.next();
-               String boneName = (String)boneEntry.getKey();
-               JsonElement boneData = (JsonElement)boneEntry.getValue();
-               String normalizedBoneName = toSnakeCase(boneName);
-               if (boneBelongsToCategory(normalizedBoneName, group)) {
-                  newBones.add(normalizedBoneName, boneData);
-               }
-            }
+             for (Entry<String, JsonElement> stringJsonElementEntry : bones.entrySet()) {
+                 String boneName = stringJsonElementEntry.getKey();
+                 JsonElement boneData = stringJsonElementEntry.getValue();
+                 String normalizedBoneName = toSnakeCase(boneName);
+                 if (boneBelongsToCategory(normalizedBoneName, group)) {
+                     newBones.add(normalizedBoneName, boneData);
+                 }
+             }
 
             if (newBones.size() > 0) {
                String newAnimationName = animationName + categorySuffix;
@@ -92,27 +90,20 @@ public class PlayerAnimationPreprocessor {
    }
 
    private static boolean boneBelongsToCategory(String boneName, PlayerAnimationPartGroup group) {
-      switch(group) {
-      case ARMS:
-         return isArmBone(boneName);
-      case LEGS:
-         return isLegBone(boneName);
-      case TORSO:
-         return isTorsoBone(boneName);
-      case HEAD:
-         return isHeadBone(boneName);
-      case BODY:
-         return isBodyBone(boneName);
-      default:
-         return false;
-      }
+       return switch (group) {
+           case ARMS -> isArmBone(boneName);
+           case LEGS -> isLegBone(boneName);
+           case TORSO -> isTorsoBone(boneName);
+           case HEAD -> isHeadBone(boneName);
+           case BODY -> isBodyBone(boneName);
+           default -> false;
+       };
    }
 
    private static String toSnakeCase(String input) {
       String regex = "([a-z])([A-Z]+)";
       String replacement = "$1_$2";
-      String snakeCase = input.replaceAll(regex, replacement).toLowerCase();
-      return snakeCase;
+       return input.replaceAll(regex, replacement).toLowerCase();
    }
 
    private static boolean isArmBone(String boneName) {

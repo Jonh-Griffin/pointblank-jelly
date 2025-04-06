@@ -21,7 +21,7 @@ public abstract class ConditionalFeature implements Feature {
    }
 
    public ConditionalFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders) {
-      this.effectBuilders = new HashMap();
+      this.effectBuilders = new HashMap<>();
       this.owner = owner;
       this.predicate = predicate;
       this.effectBuilders = Collections.unmodifiableMap(effectBuilders);

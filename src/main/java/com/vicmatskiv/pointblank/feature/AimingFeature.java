@@ -28,18 +28,18 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
 
    @OnlyIn(Dist.CLIENT)
    public static void applyAimingPosition(ItemStack itemStack, PoseStack poseStack, float rescale, float aimingProgress) {
-      if (itemStack.m_41720_() instanceof GunItem) {
+      if (itemStack.getItem() instanceof GunItem) {
          if (aimingProgress > 0.0F) {
             NavigableMap<String, Pair<ItemStack, Matrix4f>> poseMatrices = AttachmentModelInfo.findInverseBoneMatrices(itemStack, "scope", rescale);
             if (!poseMatrices.isEmpty()) {
                Features.EnabledFeature aimingFeature = Features.getFirstEnabledFeature(itemStack, AimingFeature.class);
                Pair<ItemStack, Matrix4f> attachmentPos = null;
                if (aimingFeature != null) {
-                  attachmentPos = (Pair)poseMatrices.get(aimingFeature.ownerPath());
+                  attachmentPos = poseMatrices.get(aimingFeature.ownerPath());
                }
 
                if (attachmentPos == null) {
-                  attachmentPos = (Pair)poseMatrices.firstEntry().getValue();
+                  attachmentPos = poseMatrices.firstEntry().getValue();
                }
 
                if (attachmentPos == null) {
@@ -47,13 +47,13 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
                }
 
                if (aimingProgress < 1.0F) {
-                  poseStack.m_252931_(AimSwitchAnimation.INSTANCE.update(IDENTITY_MATRIX, (Matrix4f)attachmentPos.getSecond(), aimingProgress));
+                  poseStack.mulPoseMatrix(AimingFeature.AimSwitchAnimation.INSTANCE.update(IDENTITY_MATRIX, attachmentPos.getSecond(), aimingProgress));
                } else {
-                  poseStack.m_252931_(AimSwitchAnimation.INSTANCE.update((Matrix4f)attachmentPos.getSecond()));
+                  poseStack.mulPoseMatrix(AimingFeature.AimSwitchAnimation.INSTANCE.update(attachmentPos.getSecond()));
                }
             }
 
-            poseStack.m_252880_(0.0F, aimingProgress * -0.6095F * rescale, aimingProgress * -0.7F * rescale);
+            poseStack.translate(0.0F, aimingProgress * -0.6095F * rescale, aimingProgress * -0.7F * rescale);
          }
 
       }
@@ -66,7 +66,7 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
    }
 
    public MutableComponent getDescription() {
-      return Component.m_237115_("description.pointblank.enablesAimingWithZoom").m_7220_(Component.m_237113_(String.format(" %.0f%%", this.zoom * 100.0F)));
+      return Component.translatable("description.pointblank.enablesAimingWithZoom").append(Component.literal(String.format(" %.0f%%", this.zoom * 100.0F)));
    }
 
    public float getZoom() {
@@ -81,22 +81,20 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       Pair<String, ItemStack> selected = Attachments.getSelectedAttachment(itemStack, AttachmentCategory.SCOPE);
       ItemStack selectedStack = null;
       if (selected != null) {
-         selectedStack = (ItemStack)selected.getSecond();
+         selectedStack = selected.getSecond();
       } else {
          selectedStack = itemStack;
       }
 
-      Item var5 = selectedStack.m_41720_();
-      if (var5 instanceof FeatureProvider) {
-         FeatureProvider fp = (FeatureProvider)var5;
-         AimingFeature feature = (AimingFeature)fp.getFeature(AimingFeature.class);
+      Item item = selectedStack.getItem();
+      if (item instanceof FeatureProvider fp) {
+         AimingFeature feature = fp.getFeature(AimingFeature.class);
          if (feature != null) {
             return feature.getZoom();
          }
       } else {
-         var5 = selectedStack.m_41720_();
-         if (var5 instanceof GunItem) {
-            GunItem gunItem = (GunItem)var5;
+         item = selectedStack.getItem();
+         if (item instanceof GunItem gunItem) {
             return (float)gunItem.getAimingZoom();
          }
       }
@@ -108,15 +106,14 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       Pair<String, ItemStack> selected = Attachments.getSelectedAttachment(itemStack, AttachmentCategory.SCOPE);
       ItemStack selectedStack = null;
       if (selected != null) {
-         selectedStack = (ItemStack)selected.getSecond();
+         selectedStack = selected.getSecond();
       } else {
          selectedStack = itemStack;
       }
 
-      Item var4 = selectedStack.m_41720_();
-      if (var4 instanceof FeatureProvider) {
-         FeatureProvider fp = (FeatureProvider)var4;
-         AimingFeature feature = (AimingFeature)fp.getFeature(AimingFeature.class);
+      Item item = selectedStack.getItem();
+      if (item instanceof FeatureProvider fp) {
+         AimingFeature feature = fp.getFeature(AimingFeature.class);
          if (feature != null) {
             return feature.getViewBobbing();
          }
@@ -142,11 +139,11 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
 
       protected float getProgress() {
          double progress = (double)(System.nanoTime() - this.startTime) / (double)this.nanoDuration;
-         if (progress > 1.0D) {
-            progress = 1.0D;
+         if (progress > (double)1.0F) {
+            progress = 1.0F;
          }
 
-         return Mth.m_14036_((float)progress, 0.0F, 1.0F);
+         return Mth.clamp((float)progress, 0.0F, 1.0F);
       }
 
       public void reset() {
@@ -179,11 +176,12 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
 
    public static class Builder implements FeatureBuilder<Builder, AimingFeature> {
       private static final float DEFAULT_ZOOM = 0.1F;
-      private Predicate<ConditionContext> condition = (ctx) -> {
-         return true;
-      };
+      private Predicate<ConditionContext> condition = (ctx) -> true;
       private float zoom;
       private float viewBobbing = 1.0F;
+
+      public Builder() {
+      }
 
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
@@ -196,7 +194,7 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       }
 
       public Builder withViewBobbing(double viewBobbing) {
-         this.viewBobbing = Mth.m_14036_((float)viewBobbing, 0.0F, 1.0F);
+         this.viewBobbing = Mth.clamp((float)viewBobbing, 0.0F, 1.0F);
          return this;
       }
 
@@ -205,8 +203,8 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
 
-         this.withZoom((double)JsonUtil.getJsonFloat(obj, "zoom", 0.1F));
-         this.withViewBobbing((double)JsonUtil.getJsonFloat(obj, "viewBobbing", 1.0F));
+         this.withZoom(JsonUtil.getJsonFloat(obj, "zoom", 0.1F));
+         this.withViewBobbing(JsonUtil.getJsonFloat(obj, "viewBobbing", 1.0F));
          return this;
       }
 

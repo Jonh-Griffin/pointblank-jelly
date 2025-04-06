@@ -25,10 +25,10 @@ import software.bernie.geckolib.cache.object.GeoBone;
 public class GlowAnimationController extends AbstractProceduralAnimationController {
    private boolean isGlowing;
    private final boolean hasCustomTexture;
-   private Set<String> glowingPartNames;
-   private Set<GunItem.FirePhase> firePhases;
-   private Set<Direction> directions;
-   private Supplier<SpriteUVProvider> spriteUVProviderSupplier;
+   private final Set<String> glowingPartNames;
+   private final Set<GunItem.FirePhase> firePhases;
+   private final Set<Direction> directions;
+   private final Supplier<SpriteUVProvider> spriteUVProviderSupplier;
 
    protected GlowAnimationController(long duration, Set<GunItem.FirePhase> firePhases, Set<String> glowingPartNames, Set<Direction> directions, boolean hasCustomTexture, Supplier<SpriteUVProvider> spriteUVProviderSupplier) {
       super(duration);
@@ -46,56 +46,36 @@ public class GlowAnimationController extends AbstractProceduralAnimationControll
 
    public void onStartFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
       this.reset();
-      if (!this.firePhases.contains(GunItem.FirePhase.FIRING) && !this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         this.isGlowing = false;
-      } else {
-         this.isGlowing = true;
-      }
+       this.isGlowing = this.firePhases.contains(GunItem.FirePhase.FIRING) || this.firePhases.contains(GunItem.FirePhase.ANY);
 
    }
 
    public void onPrepareFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
       this.reset();
-      if (!this.firePhases.contains(GunItem.FirePhase.PREPARING) && !this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         this.isGlowing = false;
-      } else {
-         this.isGlowing = true;
-      }
+       this.isGlowing = this.firePhases.contains(GunItem.FirePhase.PREPARING) || this.firePhases.contains(GunItem.FirePhase.ANY);
 
    }
 
    public void onCompleteFiring(LivingEntity player, GunClientState gunClientState, ItemStack itemStack) {
-      if (!this.firePhases.contains(GunItem.FirePhase.COMPLETETING) && !this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         this.isGlowing = false;
-      } else {
-         this.isGlowing = true;
-      }
+       this.isGlowing = this.firePhases.contains(GunItem.FirePhase.COMPLETETING) || this.firePhases.contains(GunItem.FirePhase.ANY);
 
    }
 
    public void onPrepareIdle(LivingEntity player, GunClientState gunClientState, ItemStack itemStack) {
-      if (this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         this.isGlowing = true;
-      } else {
-         this.isGlowing = false;
-      }
+       this.isGlowing = this.firePhases.contains(GunItem.FirePhase.ANY);
 
    }
 
    public void onIdle(LivingEntity player, GunClientState gunClientState, ItemStack itemStack) {
-      if (this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         this.isGlowing = true;
-      } else {
-         this.isGlowing = false;
-      }
+       this.isGlowing = this.firePhases.contains(GunItem.FirePhase.ANY);
 
    }
 
    public void renderCubesOfBone(GunItemRenderer gunItemRenderer, PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
       if (this.isGlowing || this.firePhases.contains(GunItem.FirePhase.ANY)) {
-         int packedLight = 240;
-         float progress = (float)this.getProgress((GunClientState)null, 0.0F);
-         gunItemRenderer.renderCubesOfBoneParent(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha, this.hasCustomTexture, this.directions, this.spriteUVProviderSupplier, progress);
+
+         float progress = (float)this.getProgress(null, 0.0F);
+         gunItemRenderer.renderCubesOfBoneParent(poseStack, bone, buffer, 240, packedOverlay, red, green, blue, alpha, this.hasCustomTexture, this.directions, this.spriteUVProviderSupplier, progress);
       }
 
    }
@@ -104,8 +84,8 @@ public class GlowAnimationController extends AbstractProceduralAnimationControll
       private static int effectIdCounter = 0;
       protected int effectId;
       protected ResourceLocation texture;
-      protected Set<String> glowingPartNames = new HashSet();
-      protected Set<GunItem.FirePhase> firePhases = new HashSet();
+      protected Set<String> glowingPartNames = new HashSet<>();
+      protected Set<GunItem.FirePhase> firePhases = new HashSet<>();
       protected AbstractEffect.SpriteInfo spriteInfo;
       protected Set<Direction> directions;
 
@@ -152,29 +132,19 @@ public class GlowAnimationController extends AbstractProceduralAnimationControll
       public GlowAnimationController build() {
          Supplier<SpriteUVProvider> spriteUVProviderSupplier = null;
          if (this.spriteInfo != null) {
-            switch(this.spriteInfo.type()) {
-            case STATIC:
-               spriteUVProviderSupplier = () -> {
-                  return StaticSpriteUVProvider.INSTANCE;
-               };
-               break;
-            case LOOP:
-               SpriteUVProvider spriteUVProvider = new LoopingSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
-               spriteUVProviderSupplier = () -> {
-                  return spriteUVProvider;
-               };
-               break;
-            case RANDOM:
-               spriteUVProviderSupplier = () -> {
-                  return new RandomSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
-               };
-               break;
-            case PLAY_ONCE:
-               SpriteUVProvider spriteUVProvider = new PlayOnceSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
-               spriteUVProviderSupplier = () -> {
-                  return spriteUVProvider;
-               };
-            }
+             spriteUVProviderSupplier = switch (this.spriteInfo.type()) {
+                 case STATIC -> () -> StaticSpriteUVProvider.INSTANCE;
+                 case LOOP -> {
+                     SpriteUVProvider spriteUVProvider = new LoopingSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
+                     yield () -> spriteUVProvider;
+                 }
+                 case RANDOM ->
+                         () -> new RandomSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
+                 case PLAY_ONCE -> {
+                     SpriteUVProvider spriteUVProvider2 = new PlayOnceSpriteUVProvider(this.spriteInfo.rows(), this.spriteInfo.columns(), this.spriteInfo.spritesPerSecond(), 2147483647L);
+                     yield () -> spriteUVProvider2;
+                 }
+             };
          }
 
          return new GlowAnimationController(2147483647L, this.firePhases, this.glowingPartNames, this.directions, this.texture != null, spriteUVProviderSupplier);

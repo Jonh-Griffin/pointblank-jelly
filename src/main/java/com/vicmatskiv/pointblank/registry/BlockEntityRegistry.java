@@ -1,9 +1,7 @@
 package com.vicmatskiv.pointblank.registry;
 
-import com.mojang.datafixers.types.Type;
 import com.vicmatskiv.pointblank.block.entity.PrinterBlockEntity;
 import com.vicmatskiv.pointblank.block.entity.WorkstationBlockEntity;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.BlockEntityType.Builder;
 import net.minecraftforge.registries.DeferredRegister;
@@ -17,11 +15,7 @@ public final class BlockEntityRegistry {
 
    static {
       BLOCK_ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, "pointblank");
-      WORKSTATION_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("workstation_block_entity", () -> {
-         return Builder.m_155273_(WorkstationBlockEntity::new, new Block[]{(Block)BlockRegistry.WORKSTATION.get()}).m_58966_((Type)null);
-      });
-      PRINTER_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("printer_block_entity", () -> {
-         return Builder.m_155273_(PrinterBlockEntity::new, new Block[]{(Block)BlockRegistry.PRINTER.get()}).m_58966_((Type)null);
-      });
+      WORKSTATION_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("workstation_block_entity", () -> Builder.of(WorkstationBlockEntity::new, BlockRegistry.WORKSTATION.get()).build(null));
+      PRINTER_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("printer_block_entity", () -> Builder.of(PrinterBlockEntity::new, BlockRegistry.PRINTER.get()).build(null));
    }
 }

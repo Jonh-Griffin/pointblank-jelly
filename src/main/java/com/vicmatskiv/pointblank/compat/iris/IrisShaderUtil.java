@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.compat.iris;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +21,11 @@ public class IrisShaderUtil {
    public static final String GLSL_VAR_AUX_POINTBLANK_TEX_COORD = "auxPointblankTexCoord";
 
    public static ProgramSource createProgramSource(String name, String vertexShaderSource, String fragmentShaderSource, ProgramSet parent, Supplier<ShaderProperties> shaderPropertiesSupplier, BlendModeOverride defaultBlendModeOverride) {
-      return new ProgramSource(name, vertexShaderSource, (String)null, (String)null, (String)null, fragmentShaderSource, parent, (ShaderProperties)shaderPropertiesSupplier.get(), defaultBlendModeOverride);
+      return new ProgramSource(name, vertexShaderSource, null, null, null, fragmentShaderSource, parent, shaderPropertiesSupplier.get(), defaultBlendModeOverride);
    }
 
    public static String getResource(String resourceName) throws IOException {
-      return new String(IOUtils.toByteArray((InputStream)Objects.requireNonNull(IrisShaderUtil.class.getResourceAsStream(resourceName))), StandardCharsets.UTF_8);
+      return new String(IOUtils.toByteArray(Objects.requireNonNull(IrisShaderUtil.class.getResourceAsStream(resourceName))), StandardCharsets.UTF_8);
    }
 
    public static String replaceRenderTargets(String template, int value) {
@@ -40,7 +39,7 @@ public class IrisShaderUtil {
       int result = -1;
 
       for(int i = 4; i < 16; ++i) {
-         RenderTargetSettings settings = (RenderTargetSettings)renderTargetSettings.get(i);
+         RenderTargetSettings settings = renderTargetSettings.get(i);
          if (settings != null && settings.shouldClear() && settings.getInternalFormat() == InternalTextureFormat.RGBA && renderTargets.get(i) == null) {
             result = i;
             break;
@@ -72,7 +71,7 @@ public class IrisShaderUtil {
       } else {
          List<String> layoutVars = GlslPatcher.extractVec3LayoutVariables(fsh);
          if (!layoutVars.isEmpty()) {
-            outIdentifier = (String)layoutVars.get(0);
+            outIdentifier = layoutVars.get(0);
             color = "vec4 pointblankAuxColor = texture(colortex" + auxIndex + ", " + auxPointblankTexCoordVar + ");\nif (pointblankAuxColor.a > 0.0) " + outIdentifier + " = pointblankAuxColor.xyz;\n";
          }
       }

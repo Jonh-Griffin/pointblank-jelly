@@ -11,11 +11,9 @@ import com.vicmatskiv.pointblank.util.MiscUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -41,8 +39,8 @@ public class VirtualInventory implements ContainerListener {
       this.owner = owner;
       this.category = category;
       this.parent = parent;
-      this.itemStack = itemStack != null ? itemStack : ItemStack.f_41583_;
-      this.elements = new LinkedHashMap();
+      this.itemStack = itemStack != null ? itemStack : ItemStack.EMPTY;
+      this.elements = new LinkedHashMap<>();
    }
 
    public ItemStack getItemStack() {
@@ -63,7 +61,7 @@ public class VirtualInventory implements ContainerListener {
    }
 
    public VirtualInventory getElement(AttachmentCategory category) {
-      return (VirtualInventory)this.elements.get(category);
+      return this.elements.get(category);
    }
 
    private Collection<AttachmentCategory> getCategories() {
@@ -76,28 +74,25 @@ public class VirtualInventory implements ContainerListener {
       } else if (!this.isCompatibleAttachment(attachmentStack)) {
          return false;
       } else {
-         AttachmentCategory attachmentCategory = ((Attachment)attachmentStack.m_41720_()).getCategory();
+         AttachmentCategory attachmentCategory = ((Attachment)attachmentStack.getItem()).getCategory();
          return !this.hasAttachmentInCategory(attachmentCategory);
       }
    }
 
    public boolean hasAttachments() {
-      return this.elements.values().stream().anyMatch((e) -> {
-         return e.itemStack != null && !e.itemStack.m_41619_();
-      });
+      return this.elements.values().stream().anyMatch((e) -> e.itemStack != null && !e.itemStack.isEmpty());
    }
 
    private boolean hasAttachmentInCategory(AttachmentCategory category) {
-      VirtualInventory e = (VirtualInventory)this.elements.get(category);
-      return e != null && e.itemStack != null && !e.itemStack.m_41619_();
+      VirtualInventory e = this.elements.get(category);
+      return e != null && e.itemStack != null && !e.itemStack.isEmpty();
    }
 
    private boolean isCompatibleAttachment(ItemStack attachmentStack) {
-      Item var3 = attachmentStack.m_41720_();
+      Item var3 = attachmentStack.getItem();
       boolean var10000;
-      if (var3 instanceof Attachment) {
-         Attachment attachment = (Attachment)var3;
-         if (((AttachmentHost)this.itemStack.m_41720_()).getCompatibleAttachments().contains(attachment)) {
+      if (var3 instanceof Attachment attachment) {
+         if (((AttachmentHost)this.itemStack.getItem()).getCompatibleAttachments().contains(attachment)) {
             var10000 = true;
             return var10000;
          }
@@ -113,15 +108,13 @@ public class VirtualInventory implements ContainerListener {
 
    String getPath() {
       if (this.parent != null) {
-         Item var2 = this.itemStack.m_41720_();
-         String var10000;
-         if (var2 instanceof Nameable) {
-            Nameable nameable = (Nameable)var2;
-            var10000 = this.parent.getPath();
-            return var10000 + "/" + nameable.getName();
+         Item var2 = this.itemStack.getItem();
+         if (var2 instanceof Nameable nameable) {
+             String var3 = this.parent.getPath();
+            return var3 + "/" + nameable.getName();
          } else {
-            var10000 = this.parent.getPath();
-            return var10000 + "/" + this.itemStack.m_41720_().toString();
+            String var10000 = this.parent.getPath();
+            return var10000 + "/" + this.itemStack.getItem();
          }
       } else {
          return MiscUtil.getItemStackId(this.itemStack).toString();
@@ -132,32 +125,30 @@ public class VirtualInventory implements ContainerListener {
       return this.parent != null ? this.parent.getRootStack() : this.itemStack;
    }
 
-   public void m_5757_(Container c) {
-      if (c instanceof SimpleAttachmentContainer) {
-         SimpleAttachmentContainer container = (SimpleAttachmentContainer)c;
+   public void containerChanged(Container c) {
+      if (c instanceof SimpleAttachmentContainer container) {
          AttachmentContainerMenu menu = container.getMenu();
-         logger.debug("Virtual inventory {} handling changes in container {}, stack tags {}", this, container, this.itemStack.m_41783_());
+         logger.debug("Virtual inventory {} handling changes in container {}, stack tags {}", this, container, this.itemStack.getTag());
          SlotMapping slotMapping = menu.getSlotMapping();
-         Map stackSlotMapping = slotMapping.getStackSlotMapping(this);
+         Map<Integer, AttachmentCategory> stackSlotMapping = slotMapping.getStackSlotMapping(this);
          if (stackSlotMapping == null) {
-            logger.warn("Slot mapping not found for container {}, stack tags {}", System.identityHashCode(container), this.itemStack.m_41783_());
+            logger.warn("Slot mapping not found for container {}, stack tags {}", System.identityHashCode(container), this.itemStack.getTag());
          } else {
             List<Attachment> removedItems = Attachments.removeAllAttachments(this.itemStack);
 
-            for(int i = 1; i < container.m_6643_(); ++i) {
-               ItemStack slotStack = container.m_8020_(i);
-               if (!slotStack.m_41619_()) {
-                  Item var10 = slotStack.m_41720_();
-                  if (var10 instanceof Attachment) {
-                     Attachment a1 = (Attachment)var10;
-                     logger.debug("Adding attachment '{}' from slot {} with tag {} to stack '{}'", slotStack, i, slotStack.m_41783_(), this.itemStack);
+            for(int i = 1; i < container.getContainerSize(); ++i) {
+               ItemStack slotStack = container.getItem(i);
+               if (!slotStack.isEmpty()) {
+                  Item category = slotStack.getItem();
+                  if (category instanceof Attachment a1) {
+                      logger.debug("Adding attachment '{}' from slot {} with tag {} to stack '{}'", slotStack, i, slotStack.getTag(), this.itemStack);
                      Attachments.addAttachment(this.itemStack, slotStack, true);
                      if (!removedItems.contains(a1)) {
                         AttachmentAddedEvent event = new AttachmentAddedEvent(this.itemStack, slotStack);
                         MinecraftForge.EVENT_BUS.post(event);
-                        logger.debug("Added new attachment '{}' from slot {} with tag {} to stack '{}' with tag {} and path {}", slotStack, i, slotStack.m_41783_(), this.itemStack, this.itemStack.m_41783_());
+                        logger.debug("Added new attachment '{}' from slot {} with tag {} to stack '{}' with tag {} and path {}", slotStack, i, slotStack.getTag(), this.itemStack, this.itemStack.getTag());
                      } else {
-                        logger.debug("Re-added existing attachment '{}' from slot {} with tag {} to stack '{}' with tag {}", slotStack, i, slotStack.m_41783_(), this.itemStack, this.itemStack.m_41783_());
+                        logger.debug("Re-added existing attachment '{}' from slot {} with tag {} to stack '{}' with tag {}", slotStack, i, slotStack.getTag(), this.itemStack, this.itemStack.getTag());
                      }
 
                      stackSlotMapping.put(i, a1.getCategory());
@@ -169,14 +160,14 @@ public class VirtualInventory implements ContainerListener {
                   }
                }
 
-               AttachmentCategory category = (AttachmentCategory)stackSlotMapping.remove(i);
+               AttachmentCategory category = stackSlotMapping.remove(i);
                if (category != null) {
-                  logger.debug("Removing attachment '{}' from slot {}, with tag {} from stack '{}'", slotStack, i, slotStack.m_41783_(), this.itemStack);
-                  VirtualInventory e = (VirtualInventory)this.elements.get(category);
+                  logger.debug("Removing attachment '{}' from slot {}, with tag {} from stack '{}'", slotStack, i, slotStack.getTag(), this.itemStack);
+                  VirtualInventory e = this.elements.get(category);
                   if (e != null) {
                      AttachmentRemovedEvent event = new AttachmentRemovedEvent(this.owner, this.getRootStack(), this.itemStack, slotStack);
                      MinecraftForge.EVENT_BUS.post(event);
-                     e.itemStack = ItemStack.f_41583_;
+                     e.itemStack = ItemStack.EMPTY;
                      e.elements.clear();
                   }
                }
@@ -188,16 +179,16 @@ public class VirtualInventory implements ContainerListener {
             }
 
             menu.updateAttachmentSlots();
-            menu.m_38946_();
-            logger.debug("Virtual inventory {} handled changes for container {}, stack tags {}", this, container, this.itemStack.m_41783_());
+            menu.broadcastChanges();
+            logger.debug("Virtual inventory {} handled changes for container {}, stack tags {}", this, container, this.itemStack.getTag());
          }
       }
    }
 
    private void onContentChange() {
-      logger.debug("Updating tag content for {}, tag: {}", this, this.itemStack.m_41783_());
+      logger.debug("Updating tag content for {}, tag: {}", this, this.itemStack.getTag());
       this.updateTag();
-      logger.debug("Updating tag content for {}, tag: {}", this, this.itemStack.m_41783_());
+      logger.debug("Updating tag content for {}, tag: {}", this, this.itemStack.getTag());
       if (this.parent != null) {
          this.parent.updateTag();
       }
@@ -207,48 +198,46 @@ public class VirtualInventory implements ContainerListener {
    private CompoundTag updateTag() {
       if (this.itemStack == null) {
          return null;
-      } else if (this.itemStack.m_41619_()) {
+      } else if (this.itemStack.isEmpty()) {
          logger.error("Virtual inventory {} attempted to update empty stack {}", this, this.itemStack);
          return null;
       } else {
-         CompoundTag tag = this.itemStack.m_41784_();
-         Item var3 = this.itemStack.m_41720_();
-         if (var3 instanceof Attachment) {
-            Attachment attachment = (Attachment)var3;
-            String attachmentId = ForgeRegistries.ITEMS.getKey(attachment.m_5456_()).toString();
-            tag.m_128359_("id", attachmentId);
-            boolean isRemovable = tag.m_128425_("rmv", 99) ? tag.m_128471_("rmv") : true;
-            tag.m_128379_("rmv", isRemovable);
+         CompoundTag tag = this.itemStack.getOrCreateTag();
+         Item item = this.itemStack.getItem();
+         if (item instanceof Attachment attachment) {
+            String attachmentId = ForgeRegistries.ITEMS.getKey(attachment.asItem()).toString();
+            tag.putString("id", attachmentId);
+            boolean isRemovable = !tag.contains("rmv", 99) || tag.getBoolean("rmv");
+            tag.putBoolean("rmv", isRemovable);
          }
 
-         ListTag nestedAttachments = tag.m_128437_("as", 10);
+         ListTag nestedAttachments = tag.getList("as", 10);
          nestedAttachments.clear();
-         Iterator var8 = this.elements.entrySet().iterator();
 
-         while(var8.hasNext()) {
-            Entry<AttachmentCategory, VirtualInventory> e = (Entry)var8.next();
-            CompoundTag nestedAttachmentTag = ((VirtualInventory)e.getValue()).updateTag();
+         for(Map.Entry<AttachmentCategory, VirtualInventory> e : this.elements.entrySet()) {
+            CompoundTag nestedAttachmentTag = e.getValue().updateTag();
             if (nestedAttachmentTag != null) {
                nestedAttachments.add(nestedAttachmentTag);
             }
          }
 
-         tag.m_128365_("as", nestedAttachments);
+         tag.put("as", nestedAttachments);
          return tag;
       }
    }
 
    Map<Integer, AttachmentCategory> createSlotMapping(String stackId) {
-      Map<Integer, AttachmentCategory> mapping = new HashMap();
+      Map<Integer, AttachmentCategory> mapping = new HashMap<>();
       int i = 1;
 
-      for(Iterator var4 = this.getCategories().iterator(); var4.hasNext(); ++i) {
-         AttachmentCategory category = (AttachmentCategory)var4.next();
+      for(AttachmentCategory category : this.getCategories()) {
          VirtualInventory e = this.getElement(category);
          ItemStack itemStack = e.getItemStack();
-         if (itemStack != null && !itemStack.m_41619_()) {
+         if (itemStack != null && !itemStack.isEmpty()) {
             mapping.put(i, category);
          }
+
+         ++i;
       }
 
       return mapping;
@@ -265,64 +254,54 @@ public class VirtualInventory implements ContainerListener {
    private static VirtualInventory createInventory(Player owner, VirtualInventory parentInventory, ItemStack currentStack) {
       AttachmentCategory currentCategory = null;
       if (currentStack != null) {
-         Item var5 = currentStack.m_41720_();
-         if (var5 instanceof Attachment) {
-            Attachment attachment = (Attachment)var5;
-            currentCategory = attachment.getCategory();
+         Item currentTag = currentStack.getItem();
+         if (currentTag instanceof Attachment attachment) {
+             currentCategory = attachment.getCategory();
          }
       }
 
       VirtualInventory currentInventory = new VirtualInventory(owner, currentCategory, parentInventory, currentStack);
-      if (currentStack == null) {
-         return currentInventory;
-      } else {
-         CompoundTag currentTag = currentStack.m_41784_();
-         Item var7 = currentStack.m_41720_();
-         if (!(var7 instanceof AttachmentHost)) {
-            return currentInventory;
-         } else {
-            AttachmentHost attachmentHost = (AttachmentHost)var7;
-            HashMap attachmentStacks = new HashMap();
-            if (currentTag.m_128425_("as", 9)) {
-               ListTag attachmentsList = currentTag.m_128437_("as", 10);
+       if (currentStack != null) {
+           CompoundTag currentTag = currentStack.getOrCreateTag();
+           Item attachmentStacks = currentStack.getItem();
+           if (attachmentStacks instanceof AttachmentHost attachmentHost) {
+               HashMap<AttachmentCategory, ItemStack> var17 = new HashMap<>();
+               if (currentTag.contains("as", 9)) {
+                   ListTag attachmentsList = currentTag.getList("as", 10);
 
-               for(int i = 0; i < attachmentsList.size(); ++i) {
-                  CompoundTag attachmentTag = attachmentsList.m_128728_(i);
-                  String itemId = attachmentTag.m_128461_("id");
-                  Item item = (Item)ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
-                  if (item instanceof Attachment) {
-                     Attachment attachment = (Attachment)item;
-                     ItemStack attachmentItemStack = new ItemStack(item);
-                     attachmentItemStack.m_41751_(attachmentTag);
-                     attachmentStacks.put(attachment.getCategory(), attachmentItemStack);
-                  }
-               }
-            }
-
-            Iterator var18 = attachmentHost.getCompatibleAttachmentCategories().iterator();
-
-            while(var18.hasNext()) {
-               AttachmentCategory category = (AttachmentCategory)var18.next();
-               ItemStack attachmentStack = (ItemStack)attachmentStacks.get(category);
-               VirtualInventory nestedInventory;
-               if (attachmentStack == null) {
-                  nestedInventory = new VirtualInventory(owner, category, currentInventory, (ItemStack)null);
-               } else {
-                  nestedInventory = createInventory(owner, currentInventory, attachmentStack);
+                   for (int i = 0; i < attachmentsList.size(); ++i) {
+                       CompoundTag attachmentTag = attachmentsList.getCompound(i);
+                       String itemId = attachmentTag.getString("id");
+                       Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+                       if (item instanceof Attachment attachment) {
+                           ItemStack attachmentItemStack = new ItemStack(item);
+                           attachmentItemStack.setTag(attachmentTag);
+                           var17.put(attachment.getCategory(), attachmentItemStack);
+                       }
+                   }
                }
 
-               if (nestedInventory != null) {
-                  currentInventory.addElement(nestedInventory);
-               }
-            }
+               for (AttachmentCategory category : attachmentHost.getCompatibleAttachmentCategories()) {
+                   ItemStack attachmentStack = var17.get(category);
+                   VirtualInventory nestedInventory;
+                   if (attachmentStack == null) {
+                       nestedInventory = new VirtualInventory(owner, category, currentInventory, null);
+                   } else {
+                       nestedInventory = createInventory(owner, currentInventory, attachmentStack);
+                   }
 
-            logger.debug("Created {} with stack: {}, tag {}, elements: {}", currentInventory, currentStack, currentStack.m_41783_(), currentInventory.elements);
-            return currentInventory;
-         }
-      }
+                   if (nestedInventory != null) {
+                       currentInventory.addElement(nestedInventory);
+                   }
+               }
+
+               logger.debug("Created {} with stack: {}, tag {}, elements: {}", currentInventory, currentStack, currentStack.getTag(), currentInventory.elements);
+           }
+       }
+       return currentInventory;
    }
 
    public static VirtualInventory createInventory(Player owner, ItemStack mainStack) {
-      return createInventory(owner, (VirtualInventory)null, mainStack);
+      return createInventory(owner, null, mainStack);
    }
 }

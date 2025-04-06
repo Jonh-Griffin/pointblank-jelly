@@ -5,8 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf.Reader;
-import net.minecraft.network.FriendlyByteBuf.Writer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Cat;
@@ -18,42 +17,40 @@ import net.minecraftforge.entity.PartEntity;
 import org.joml.Quaternionf;
 
 public class MiscUtil {
-   private static final double EPSILON = 1.0E-8D;
-   public static final Writer<Vec3> VEC3_WRITER = (buf, vec3) -> {
-      buf.writeDouble(vec3.f_82479_);
-      buf.writeDouble(vec3.f_82480_);
-      buf.writeDouble(vec3.f_82481_);
+   private static final double EPSILON = 1.0E-8;
+   public static final FriendlyByteBuf.Writer<Vec3> VEC3_WRITER = (buf, vec3) -> {
+      buf.writeDouble(vec3.x);
+      buf.writeDouble(vec3.y);
+      buf.writeDouble(vec3.z);
    };
-   public static final Reader<Vec3> VEC3_READER = (buf) -> {
-      return new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble());
-   };
+   public static final FriendlyByteBuf.Reader<Vec3> VEC3_READER = (buf) -> new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble());
+
+   public MiscUtil() {
+   }
 
    public static boolean isNearlyZero(double value) {
-      return Math.abs(value) < 1.0E-8D;
+      return Math.abs(value) < 1.0E-8;
    }
 
    public static boolean isGreaterThanZero(double value) {
-      return value > 1.0E-8D;
+      return value > 1.0E-8;
    }
 
    public static Level getLevel(Entity entity) {
-      return entity.m_9236_();
+      return entity.level();
    }
 
    public static boolean isClientSide(Entity entity) {
-      return entity.m_9236_().f_46443_;
+      return entity.level().isClientSide;
    }
 
    public LivingEntity asLivingEntity(Entity entity) {
-      if (entity instanceof LivingEntity) {
-         LivingEntity livingEntity = (LivingEntity)entity;
+      if (entity instanceof LivingEntity livingEntity) {
          return livingEntity;
       } else {
-         if (entity instanceof PartEntity) {
-            PartEntity entityPart = (PartEntity)entity;
+         if (entity instanceof PartEntity entityPart) {
             Entity var5 = entityPart.getParent();
-            if (var5 instanceof LivingEntity) {
-               LivingEntity livingEntity = (LivingEntity)var5;
+            if (var5 instanceof LivingEntity livingEntity) {
                return livingEntity;
             }
          }
@@ -67,64 +64,50 @@ public class MiscUtil {
    }
 
    public static Optional<GunItem> getMainHeldGun(LivingEntity entity) {
-      ItemStack itemStack = entity.m_21205_();
-      return itemStack != null && itemStack.m_41720_() instanceof GunItem ? Optional.of((GunItem)itemStack.m_41720_()) : Optional.empty();
+      ItemStack itemStack = entity.getMainHandItem();
+      return itemStack != null && itemStack.getItem() instanceof GunItem ? Optional.of((GunItem)itemStack.getItem()) : Optional.empty();
    }
 
    public static Quaternionf getRotation(Direction face) {
       Quaternionf quaternionf = null;
-      switch(face) {
-      case DOWN:
-         quaternionf = (new Quaternionf()).rotationXYZ(1.5707964F, 0.0F, 0.0F);
-      case UP:
-         break;
-      case NORTH:
-         quaternionf = (new Quaternionf()).rotationXYZ(0.0F, 0.0F, 1.5707964F);
-         break;
-      case SOUTH:
-         quaternionf = (new Quaternionf()).rotationXYZ(0.0F, 0.0F, 1.5707964F);
-         break;
-      case WEST:
-         quaternionf = (new Quaternionf()).rotationXYZ(0.0F, 1.5707964F, 0.0F);
-         break;
-      case EAST:
-         quaternionf = (new Quaternionf()).rotationXYZ(0.0F, 1.5707964F, 0.0F);
-         break;
-      default:
-         throw new IncompatibleClassChangeError();
+      switch (face) {
+         case DOWN -> quaternionf = (new Quaternionf()).rotationXYZ(((float)Math.PI / 2F), 0.0F, 0.0F);
+         case UP -> { }
+         case NORTH, SOUTH -> quaternionf = (new Quaternionf()).rotationXYZ(0.0F, 0.0F, ((float)Math.PI / 2F));
+          case WEST, EAST -> quaternionf = (new Quaternionf()).rotationXYZ(0.0F, ((float)Math.PI / 2F), 0.0F);
+          default -> throw new IncompatibleClassChangeError();
       }
 
       return quaternionf;
    }
 
    public static double timeToTravel(double initialSpeed, double acceleration, double distance) {
-      if (acceleration == 0.0D) {
+      if (acceleration == (double)0.0F) {
          return distance / initialSpeed;
       } else {
-         double a = 0.5D * acceleration;
+         double a = (double)0.5F * acceleration;
          double c = -distance;
-         double discriminant = initialSpeed * initialSpeed - 4.0D * a * c;
-         return discriminant < 0.0D ? -1.0D : (-initialSpeed + Math.sqrt(discriminant)) / (2.0D * a);
+         double discriminant = initialSpeed * initialSpeed - (double)4.0F * a * c;
+         return discriminant < (double)0.0F ? (double)-1.0F : (-initialSpeed + Math.sqrt(discriminant)) / ((double)2.0F * a);
       }
    }
 
    public static double adjustDivisor(double dividend, double divisor) {
-      if (divisor == 0.0D) {
+      if (divisor == (double)0.0F) {
          throw new IllegalArgumentException("Divisor cannot be zero.");
       } else {
          double quotient = dividend / divisor;
          long roundedQuotient = Math.round(quotient);
-         double adjustedDivisor = dividend / (double)roundedQuotient;
-         return adjustedDivisor;
+          return dividend / (double)roundedQuotient;
       }
    }
 
    public static UUID getTagId(CompoundTag tag) {
-      return tag != null ? new UUID(tag.m_128454_("mid"), tag.m_128454_("lid")) : null;
+      return tag != null ? new UUID(tag.getLong("mid"), tag.getLong("lid")) : null;
    }
 
    public static UUID getItemStackId(ItemStack itemStack) {
-      CompoundTag idTag = itemStack.m_41783_();
+      CompoundTag idTag = itemStack.getTag();
       return getTagId(idTag);
    }
 }

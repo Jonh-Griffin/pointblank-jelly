@@ -21,17 +21,17 @@ public class GunHandsItemLayer<T extends GeoAnimatable> extends GeoRenderLayer<T
    }
 
    public void render(PoseStack poseStack, T animatable, BakedGeoModel bakedModel, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, float partialTick, int packedLight, int packedOverlay) {
-      Minecraft mc = Minecraft.m_91087_();
-      ResourceLocation texture = mc.f_91074_.m_108560_();
+      Minecraft mc = Minecraft.getInstance();
+      ResourceLocation texture = mc.player.getSkinTextureLocation();
       ItemDisplayContext itemDisplayContext = HierarchicalRenderContext.current().getItemDisplayContext();
       if (itemDisplayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || itemDisplayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND) {
-         RenderType handRenderType = this.renderer.getRenderType(animatable, texture, bufferSource, Minecraft.m_91087_().m_91296_());
+         RenderType handRenderType = this.renderer.getRenderType(animatable, texture, bufferSource, Minecraft.getInstance().getPartialTick());
          RenderPass.push(RenderPass.HANDS);
 
          try {
-            poseStack.m_85836_();
-            this.getRenderer().reRender(this.getDefaultBakedModel(animatable), poseStack, bufferSource, animatable, handRenderType, bufferSource.m_6299_(handRenderType), partialTick, packedLight, OverlayTexture.f_118083_, 1.0F, 1.0F, 1.0F, 1.0F);
-            poseStack.m_85849_();
+            poseStack.pushPose();
+            this.getRenderer().reRender(this.getDefaultBakedModel(animatable), poseStack, bufferSource, animatable, handRenderType, bufferSource.getBuffer(handRenderType), partialTick, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            poseStack.popPose();
          } finally {
             RenderPass.pop();
          }

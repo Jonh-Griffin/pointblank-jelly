@@ -3,7 +3,6 @@ package com.vicmatskiv.pointblank.registry;
 import com.vicmatskiv.pointblank.client.render.ProjectileItemEntityRenderer;
 import com.vicmatskiv.pointblank.entity.SlowProjectile;
 import com.vicmatskiv.pointblank.item.AmmoItem;
-import com.vicmatskiv.pointblank.item.ItemBuilder;
 import com.vicmatskiv.pointblank.item.ThrowableItem;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.TopDownAttackTrajectory;
@@ -42,67 +41,53 @@ public class AmmoRegistry {
    }
 
    public static void registerTabItems(Consumer<ItemLike> entries) {
-      entries.accept((ItemLike)AMMOCREATIVE.get());
-      entries.accept((ItemLike)AMMO9MM.get());
-      entries.accept((ItemLike)AMMO45ACP.get());
-      entries.accept((ItemLike)AMMO57.get());
-      entries.accept((ItemLike)AMMO357.get());
-      entries.accept((ItemLike)AMMO50AE.get());
-      entries.accept((ItemLike)AMMO46.get());
-      entries.accept((ItemLike)AMMO545.get());
-      entries.accept((ItemLike)AMMO556.get());
-      entries.accept((ItemLike)AMMO68.get());
-      entries.accept((ItemLike)AMMO762.get());
-      entries.accept((ItemLike)AMMO762X51.get());
-      entries.accept((ItemLike)AMMO338LAPUA.get());
-      entries.accept((ItemLike)AMMO50BMG.get());
-      entries.accept((ItemLike)AMMO12GAUGE.get());
-      entries.accept((ItemLike)AMMOLASERCHARGE.get());
-      entries.accept((ItemLike)GRENADE20MM.get());
-      entries.accept((ItemLike)GRENADE40MM.get());
-      entries.accept((ItemLike)SMAW_ROCKET.get());
-      entries.accept((ItemLike)AT4_ROCKET.get());
-      entries.accept((ItemLike)JAVELIN_ROCKET.get());
-      entries.accept((ItemLike)GRENADE.get());
+      entries.accept(AMMOCREATIVE.get());
+      entries.accept(AMMO9MM.get());
+      entries.accept(AMMO45ACP.get());
+      entries.accept(AMMO57.get());
+      entries.accept(AMMO357.get());
+      entries.accept(AMMO50AE.get());
+      entries.accept(AMMO46.get());
+      entries.accept(AMMO545.get());
+      entries.accept(AMMO556.get());
+      entries.accept(AMMO68.get());
+      entries.accept(AMMO762.get());
+      entries.accept(AMMO762X51.get());
+      entries.accept(AMMO338LAPUA.get());
+      entries.accept(AMMO50BMG.get());
+      entries.accept(AMMO12GAUGE.get());
+      entries.accept(AMMOLASERCHARGE.get());
+      entries.accept(GRENADE20MM.get());
+      entries.accept(GRENADE40MM.get());
+      entries.accept(SMAW_ROCKET.get());
+      entries.accept(AT4_ROCKET.get());
+      entries.accept(JAVELIN_ROCKET.get());
+      entries.accept(GRENADE.get());
    }
 
    static {
-      AMMO9MM = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo9mm").withTradePrice(100.0D, 30, 1));
-      DEFAULT_AMMO_POOL = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammodefault"));
-      AMMO45ACP = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo45acp").withTradePrice(100.0D, 10, 1));
-      AMMO46 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo46").withTradePrice(100.0D, 10, 1));
-      AMMO357 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo357").withTradePrice(100.0D, 10, 1));
-      AMMO57 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo57").withTradePrice(100.0D, 10, 1));
-      AMMO50AE = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo50ae").withTradePrice(100.0D, 10, 1));
-      AMMO545 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo545").withTradePrice(100.0D, 10, 1));
-      AMMO556 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo556").withTradePrice(100.0D, 10, 1));
-      AMMO68 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo68").withTradePrice(100.0D, 10, 1));
-      AMMO762 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo762").withTradePrice(100.0D, 10, 1));
-      AMMO762X51 = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo762x51").withTradePrice(100.0D, 10, 1));
-      AMMO338LAPUA = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo338lapua").withTradePrice(100.0D, 10, 1));
-      AMMO50BMG = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo50bmg").withTradePrice(100.0D, 10, 1));
-      AMMO12GAUGE = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammo12gauge").withTradePrice(100.0D, 10, 1));
-      AMMOLASERCHARGE = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammolasercharge"));
-      AMMOCREATIVE = ItemRegistry.ITEMS.register((ItemBuilder)(new AmmoItem.Builder()).withName("ammocreative"));
-      GRENADE40MM = ItemRegistry.ITEMS.register((ItemBuilder)((AmmoItem.Builder)(new AmmoItem.Builder()).withName("grenade40mm").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.08D).withProjectileEffect(EffectRegistry.GRENADE_TRAIL).withExplosion(3.0F, false, ExplosionInteraction.BLOCK, (String)null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS))).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
-      GRENADE20MM = ItemRegistry.ITEMS.register((ItemBuilder)((AmmoItem.Builder)(new AmmoItem.Builder()).withName("grenade20mm").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.05D).withProjectileEffect(EffectRegistry.GRENADE_TRAIL).withExplosion(2.0F, false, ExplosionInteraction.BLOCK, (String)null, 6.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS))).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
-      SMAW_ROCKET = ItemRegistry.ITEMS.register((ItemBuilder)((AmmoItem.Builder)(new AmmoItem.Builder()).withName("smaw_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, (String)null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS))).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
-      AT4_ROCKET = ItemRegistry.ITEMS.register((ItemBuilder)((AmmoItem.Builder)(new AmmoItem.Builder()).withName("at4_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, (String)null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS))).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
-      JAVELIN_ROCKET = ItemRegistry.ITEMS.register((ItemBuilder)((AmmoItem.Builder)(new AmmoItem.Builder()).withName("javelin_rocket").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.002D).withProjectileTopDownAttackEnabled(true).withProjectileEffect(EffectRegistry.JAVELIN_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME, SlowProjectile.topDownTrajectoryPhasePredicate((t) -> {
-         return t.getPhase() != TopDownAttackTrajectory.Phase.SOFT_LAUNCH;
-      })).withProjectileTopDownAttackPhaseSound(TopDownAttackTrajectory.Phase.CLIMB, SoundRegistry.IGNITE, 4.0F).withExplosion(7.0F, false, ExplosionInteraction.BLOCK, (String)null, 10.0F, List.of(EffectRegistry.EXPLOSION_BIG, EffectRegistry.DEBRIS))).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
-      GRENADE = ItemRegistry.ITEMS.register((ItemBuilder)((ThrowableItem.Builder)(new ThrowableItem.Builder()).withName("grenade").withTradePrice(100.0D, 1).withProjectileInitialVelocity(25.0D).withProjectileGravity(0.03D).withDrawCooldownDuration(380L, TimeUnit.MILLISECOND).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, (String)null, 4.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS))).withProjectileMaxLifetime(5000, TimeUnit.MILLISECOND).withProjectileRicochet(true).withProjectileRenderer(() -> {
-         return new ProjectileItemEntityRenderer.Builder();
-      }));
+      AMMO9MM = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo9mm").withTradePrice(100.0D, 30, 1));
+      DEFAULT_AMMO_POOL = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammodefault"));
+      AMMO45ACP = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo45acp").withTradePrice(100.0D, 10, 1));
+      AMMO46 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo46").withTradePrice(100.0D, 10, 1));
+      AMMO357 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo357").withTradePrice(100.0D, 10, 1));
+      AMMO57 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo57").withTradePrice(100.0D, 10, 1));
+      AMMO50AE = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo50ae").withTradePrice(100.0D, 10, 1));
+      AMMO545 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo545").withTradePrice(100.0D, 10, 1));
+      AMMO556 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo556").withTradePrice(100.0D, 10, 1));
+      AMMO68 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo68").withTradePrice(100.0D, 10, 1));
+      AMMO762 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo762").withTradePrice(100.0D, 10, 1));
+      AMMO762X51 = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo762x51").withTradePrice(100.0D, 10, 1));
+      AMMO338LAPUA = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo338lapua").withTradePrice(100.0D, 10, 1));
+      AMMO50BMG = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo50bmg").withTradePrice(100.0D, 10, 1));
+      AMMO12GAUGE = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammo12gauge").withTradePrice(100.0D, 10, 1));
+      AMMOLASERCHARGE = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammolasercharge"));
+      AMMOCREATIVE = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("ammocreative"));
+      GRENADE40MM = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("grenade40mm").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.08D).withProjectileEffect(EffectRegistry.GRENADE_TRAIL).withExplosion(3.0F, false, ExplosionInteraction.BLOCK, null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
+      GRENADE20MM = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("grenade20mm").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.05D).withProjectileEffect(EffectRegistry.GRENADE_TRAIL).withExplosion(2.0F, false, ExplosionInteraction.BLOCK, null, 6.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
+      SMAW_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("smaw_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
+      AT4_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("at4_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
+      JAVELIN_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("javelin_rocket").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.002D).withProjectileTopDownAttackEnabled(true).withProjectileEffect(EffectRegistry.JAVELIN_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME, SlowProjectile.topDownTrajectoryPhasePredicate((t) -> t.getPhase() != TopDownAttackTrajectory.Phase.SOFT_LAUNCH)).withProjectileTopDownAttackPhaseSound(TopDownAttackTrajectory.Phase.CLIMB, SoundRegistry.IGNITE, 4.0F).withExplosion(7.0F, false, ExplosionInteraction.BLOCK, null, 10.0F, List.of(EffectRegistry.EXPLOSION_BIG, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
+      GRENADE = ItemRegistry.ITEMS.register((new ThrowableItem.Builder()).withName("grenade").withTradePrice(100.0D, 1).withProjectileInitialVelocity(25.0D).withProjectileGravity(0.03D).withDrawCooldownDuration(380L, TimeUnit.MILLISECOND).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 4.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileMaxLifetime(5000, TimeUnit.MILLISECOND).withProjectileRicochet(true).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
    }
 }

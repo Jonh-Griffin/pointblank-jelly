@@ -14,39 +14,34 @@ public enum RenderPass {
    PIP_MASK,
    PIP_OVERLAY;
 
-   private static Deque<StackFrame> renderPassStack = new ArrayDeque();
+   private static final Deque<StackFrame> renderPassStack = new ArrayDeque<>();
 
    public static void push(RenderPass renderPass) {
       renderPassStack.addFirst(new StackFrame(renderPass));
    }
 
    public static RenderPass pop() {
-      StackFrame stackFrame = (StackFrame)renderPassStack.removeFirst();
+      StackFrame stackFrame = renderPassStack.removeFirst();
       return stackFrame != null ? stackFrame.renderPass : null;
    }
 
    public static RenderPass current() {
-      StackFrame stackFrame = (StackFrame)renderPassStack.peekFirst();
+      StackFrame stackFrame = renderPassStack.peekFirst();
       return stackFrame != null ? stackFrame.renderPass : null;
    }
 
    public static Object getEffectId() {
-      StackFrame stackFrame = (StackFrame)renderPassStack.peekFirst();
+      StackFrame stackFrame = renderPassStack.peekFirst();
       return stackFrame != null ? stackFrame.effectId : null;
    }
 
    public static void setEffectId(Object effectId) {
-      StackFrame stackFrame = (StackFrame)renderPassStack.peekFirst();
+      StackFrame stackFrame = renderPassStack.peekFirst();
       if (stackFrame == null) {
          throw new IllegalStateException("RenderPass stack is empty");
       } else {
          stackFrame.effectId = effectId;
       }
-   }
-
-   // $FF: synthetic method
-   private static RenderPass[] $values() {
-      return new RenderPass[]{MAIN_ITEM, HANDS, RETICLE, MUZZLE_FLASH, GLOW, ATTACHMENTS, PIP, PIP_MASK, PIP_OVERLAY};
    }
 
    private static class StackFrame {

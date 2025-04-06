@@ -3,7 +3,6 @@ package com.vicmatskiv.pointblank.client.model;
 import com.vicmatskiv.pointblank.client.controller.BlendingAnimationProcessor;
 import com.vicmatskiv.pointblank.item.GunItem;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.GeckoLibException;
@@ -16,17 +15,15 @@ import software.bernie.geckolib.model.DefaultedItemGeoModel;
 
 public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
    private BakedGeoModel currentModel = null;
-   private final List<ResourceLocation> fallbackAnimations = new ArrayList();
-   private final BlendingAnimationProcessor<GunItem> anotherAnimationProcessor = new BlendingAnimationProcessor(this);
+   private final List<ResourceLocation> fallbackAnimations = new ArrayList<>();
+   private final BlendingAnimationProcessor<GunItem> anotherAnimationProcessor = new BlendingAnimationProcessor<>(this);
 
    public GunGeoModel(ResourceLocation assetSubpath, List<ResourceLocation> fallbackAnimations) {
       super(assetSubpath);
-      Iterator var3 = fallbackAnimations.iterator();
 
-      while(var3.hasNext()) {
-         ResourceLocation fallbackAnimation = (ResourceLocation)var3.next();
-         this.fallbackAnimations.add(this.buildFormattedAnimationPath(fallbackAnimation));
-      }
+       for (ResourceLocation fallbackAnimation : fallbackAnimations) {
+           this.fallbackAnimations.add(this.buildFormattedAnimationPath(fallbackAnimation));
+       }
 
    }
 
@@ -35,7 +32,7 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
    }
 
    public BakedGeoModel getBakedModel(ResourceLocation location) {
-      BakedGeoModel model = (BakedGeoModel)GeckoLibCache.getBakedModels().get(location);
+      BakedGeoModel model = GeckoLibCache.getBakedModels().get(location);
       if (model == null) {
          throw new GeckoLibException(location, "Unable to find model");
       } else {
@@ -50,25 +47,23 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 
    public Animation getAnimation(GunItem animatable, String name) {
       ResourceLocation location = this.getAnimationResource(animatable);
-      BakedAnimations bakedAnimations = (BakedAnimations)GeckoLibCache.getBakedAnimations().get(location);
+      BakedAnimations bakedAnimations = GeckoLibCache.getBakedAnimations().get(location);
       Animation bakedAnimation = null;
       if (bakedAnimations != null) {
          bakedAnimation = bakedAnimations.getAnimation(name);
       }
 
       if (bakedAnimation == null) {
-         Iterator var6 = this.fallbackAnimations.iterator();
 
-         while(var6.hasNext()) {
-            ResourceLocation animationLocation = (ResourceLocation)var6.next();
-            BakedAnimations altAnimations = (BakedAnimations)GeckoLibCache.getBakedAnimations().get(animationLocation);
-            if (altAnimations != null) {
-               bakedAnimation = altAnimations.getAnimation(name);
-               if (bakedAnimation != null) {
-                  break;
-               }
-            }
-         }
+          for (ResourceLocation animationLocation : this.fallbackAnimations) {
+              BakedAnimations altAnimations = GeckoLibCache.getBakedAnimations().get(animationLocation);
+              if (altAnimations != null) {
+                  bakedAnimation = altAnimations.getAnimation(name);
+                  if (bakedAnimation != null) {
+                      break;
+                  }
+              }
+          }
       }
 
       return bakedAnimation;

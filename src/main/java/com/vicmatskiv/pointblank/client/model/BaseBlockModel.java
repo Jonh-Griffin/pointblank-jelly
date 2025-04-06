@@ -11,7 +11,7 @@ import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.model.DefaultedBlockGeoModel;
 
 public class BaseBlockModel<T extends GeoAnimatable> extends DefaultedBlockGeoModel<T> {
-   private Map<String, Predicate<BlockEntity>> glowingParts;
+   private final Map<String, Predicate<BlockEntity>> glowingParts;
 
    private BaseBlockModel(ResourceLocation resource, Map<String, Predicate<BlockEntity>> glowingParts) {
       super(resource);
@@ -19,7 +19,7 @@ public class BaseBlockModel<T extends GeoAnimatable> extends DefaultedBlockGeoMo
    }
 
    public RenderType getRenderType(T animatable, ResourceLocation texture) {
-      return RenderType.m_110473_(this.getTextureResource(animatable));
+      return RenderType.entityTranslucent(this.getTextureResource(animatable));
    }
 
    public Map<String, Predicate<BlockEntity>> getGlowingParts() {
@@ -28,7 +28,7 @@ public class BaseBlockModel<T extends GeoAnimatable> extends DefaultedBlockGeoMo
 
    public static class Builder<T extends GeoAnimatable> {
       private ResourceLocation resource;
-      private Map<String, Predicate<BlockEntity>> glowingParts = new HashMap();
+      private final Map<String, Predicate<BlockEntity>> glowingParts = new HashMap<>();
 
       public Builder<T> withResource(ResourceLocation resource) {
          this.resource = resource;
@@ -36,9 +36,7 @@ public class BaseBlockModel<T extends GeoAnimatable> extends DefaultedBlockGeoMo
       }
 
       public Builder<T> withGlow(String glowingPartName) {
-         return this.withGlow(glowingPartName, (x) -> {
-            return true;
-         });
+         return this.withGlow(glowingPartName, (x) -> true);
       }
 
       public Builder<T> withGlow(String glowingPartName, Predicate<BlockEntity> predicate) {
@@ -50,18 +48,14 @@ public class BaseBlockModel<T extends GeoAnimatable> extends DefaultedBlockGeoMo
          if (this.resource == null) {
             throw new IllegalStateException("Model resource not set");
          } else {
-            return new BaseBlockModel(this.resource, this.glowingParts);
+            return new BaseBlockModel<>(this.resource, this.glowingParts);
          }
       }
    }
 
-   public static record GlowingPart(String partName, Predicate<?> predicate) {
-      public GlowingPart(String partName, Predicate<?> predicate) {
-         this.partName = partName;
-         this.predicate = predicate;
-      }
+   public record GlowingPart(String partName, Predicate<?> predicate) {
 
-      public String partName() {
+       public String partName() {
          return this.partName;
       }
 

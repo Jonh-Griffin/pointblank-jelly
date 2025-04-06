@@ -16,7 +16,7 @@ class IrisCompatImpl extends IrisCompat {
    }
 
    public boolean isShaderPackEnabled() {
-      return !Iris.getCurrentPack().isEmpty();
+      return Iris.getCurrentPack().isPresent();
    }
 
    public void onStartRenderShadows() {
@@ -36,7 +36,6 @@ class IrisCompatImpl extends IrisCompat {
    }
 
    public int getColorBalance() {
-      int colorBalance = Config.pipScopeColorBalanceRed << 24 | Config.pipScopeColorBalanceGreen << 16 | Config.pipScopeColorBalanceBlue << 8 | 255;
-      return colorBalance;
+       return Config.pipScopeColorBalanceRed << 24 | Config.pipScopeColorBalanceGreen << 16 | Config.pipScopeColorBalanceBlue << 8 | 255;
    }
 }

@@ -8,40 +8,41 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 public class GunItemOverlay {
    private static final ResourceLocation OVERLAY_RESOURCE = new ResourceLocation("pointblank", "textures/gui/ammo.png");
 
+   public GunItemOverlay() {
+   }
+
    public static void renderGunOverlay(GuiGraphics guiGraphics, ItemStack stack) {
-      Minecraft mc = Minecraft.m_91087_();
-      int slotIndex = mc.f_91074_.m_150109_().f_35977_;
-      GunClientState gunClientState = GunClientState.getState(mc.f_91074_, stack, slotIndex, false);
+      Minecraft mc = Minecraft.getInstance();
+      int slotIndex = mc.player.getInventory().selected;
+      GunClientState gunClientState = GunClientState.getState(mc.player, stack, slotIndex, false);
       if (gunClientState != null) {
          Component message = gunClientState.getCurrentMessage();
          int messageColor;
-         int currentAmmo;
          if (message != null) {
             messageColor = 14548736;
          } else {
             FireModeInstance fireModeInstance = GunItem.getFireModeInstance(stack);
-            currentAmmo = gunClientState.getAmmoCount(fireModeInstance);
-            GunItem gunItem = (GunItem)stack.m_41720_();
+            int currentAmmo = gunClientState.getAmmoCount(fireModeInstance);
+            GunItem gunItem = (GunItem)stack.getItem();
             int maxAmmo = gunItem.getMaxAmmoCapacity(stack, fireModeInstance);
             if (maxAmmo == Integer.MAX_VALUE) {
-               message = Component.m_237113_("∞");
+               message = Component.literal("∞");
             } else {
-               message = Component.m_237113_(String.format("%d/%d", currentAmmo, maxAmmo));
+               message = Component.literal(String.format("%d/%d", currentAmmo, maxAmmo));
             }
 
             messageColor = 16776960;
          }
 
-         Font font = mc.f_91062_;
-         currentAmmo = mc.m_91268_().m_85445_();
-         guiGraphics.m_280614_(font, (Component)message, currentAmmo - font.m_92852_((FormattedText)message) - 10, 10, messageColor, false);
+         Font font = mc.font;
+         int screenX = mc.getWindow().getGuiScaledWidth();
+         guiGraphics.drawString(font, message, screenX - font.width(message) - 10, 10, messageColor, false);
       }
    }
 
@@ -50,25 +51,25 @@ public class GunItemOverlay {
       int textureHeight = 32;
       RenderSystem.enableBlend();
       RenderSystem.disableDepthTest();
-      Minecraft mc = Minecraft.m_91087_();
+      Minecraft mc = Minecraft.getInstance();
       FireModeInstance fireModeInstance = GunItem.getFireModeInstance(stack);
       if (fireModeInstance != null) {
          String fireModeDisplayName = fireModeInstance.getDisplayName().getString();
-         int width = 9 + mc.f_91062_.m_92895_(fireModeDisplayName);
+         int width = 9 + mc.font.width(fireModeDisplayName);
          int height = 22;
-         int vOffset = mc.m_91268_().m_85446_() - height;
-         int hOffset = (mc.m_91268_().m_85445_() >> 1) + 97;
-         guiGraphics.m_280027_(OVERLAY_RESOURCE, hOffset, vOffset, width, height, 18, 4, textureWidth, textureHeight, 0, 0);
-         guiGraphics.m_280056_(mc.f_91062_, fireModeDisplayName, hOffset + 5 + 1, vOffset + 7, 0, false);
-         guiGraphics.m_280056_(mc.f_91062_, fireModeDisplayName, hOffset + 5 - 1, vOffset + 7, 0, false);
-         guiGraphics.m_280056_(mc.f_91062_, fireModeDisplayName, hOffset + 5, vOffset + 7 + 1, 0, false);
-         guiGraphics.m_280056_(mc.f_91062_, fireModeDisplayName, hOffset + 5, vOffset + 7 - 1, 0, false);
-         guiGraphics.m_280056_(mc.f_91062_, fireModeDisplayName, hOffset + 5, vOffset + 7, 8040160, false);
-         int slotIndex = mc.f_91074_.m_150109_().f_35977_;
-         GunClientState gunClientState = GunClientState.getState(mc.f_91074_, stack, slotIndex, false);
+         int vOffset = mc.getWindow().getGuiScaledHeight() - height;
+         int hOffset = (mc.getWindow().getGuiScaledWidth() >> 1) + 97;
+         guiGraphics.blitNineSliced(OVERLAY_RESOURCE, hOffset, vOffset, width, height, 18, 4, textureWidth, textureHeight, 0, 0);
+         guiGraphics.drawString(mc.font, fireModeDisplayName, hOffset + 5 + 1, vOffset + 7, 0, false);
+         guiGraphics.drawString(mc.font, fireModeDisplayName, hOffset + 5 - 1, vOffset + 7, 0, false);
+         guiGraphics.drawString(mc.font, fireModeDisplayName, hOffset + 5, vOffset + 7 + 1, 0, false);
+         guiGraphics.drawString(mc.font, fireModeDisplayName, hOffset + 5, vOffset + 7 - 1, 0, false);
+         guiGraphics.drawString(mc.font, fireModeDisplayName, hOffset + 5, vOffset + 7, 8040160, false);
+         int slotIndex = mc.player.getInventory().selected;
+         GunClientState gunClientState = GunClientState.getState(mc.player, stack, slotIndex, false);
          if (gunClientState != null) {
             int currentAmmo = gunClientState.getAmmoCount(fireModeInstance);
-            GunItem gunItem = (GunItem)stack.m_41720_();
+            GunItem gunItem = (GunItem)stack.getItem();
             int maxAmmo = gunItem.getMaxAmmoCapacity(stack, fireModeInstance);
             String counter;
             if (maxAmmo == Integer.MAX_VALUE) {
@@ -82,11 +83,11 @@ public class GunItemOverlay {
                counter = message.getString();
             }
 
-            guiGraphics.m_280056_(mc.f_91062_, counter, hOffset + 5 + 1, vOffset - 5, 0, false);
-            guiGraphics.m_280056_(mc.f_91062_, counter, hOffset + 5 - 1, vOffset - 5, 0, false);
-            guiGraphics.m_280056_(mc.f_91062_, counter, hOffset + 5, vOffset - 5 + 1, 0, false);
-            guiGraphics.m_280056_(mc.f_91062_, counter, hOffset + 5, vOffset - 5 - 1, 0, false);
-            guiGraphics.m_280056_(mc.f_91062_, counter, hOffset + 5, vOffset - 5, -1, false);
+            guiGraphics.drawString(mc.font, counter, hOffset + 5 + 1, vOffset - 5, 0, false);
+            guiGraphics.drawString(mc.font, counter, hOffset + 5 - 1, vOffset - 5, 0, false);
+            guiGraphics.drawString(mc.font, counter, hOffset + 5, vOffset - 5 + 1, 0, false);
+            guiGraphics.drawString(mc.font, counter, hOffset + 5, vOffset - 5 - 1, 0, false);
+            guiGraphics.drawString(mc.font, counter, hOffset + 5, vOffset - 5, -1, false);
          }
       }
    }

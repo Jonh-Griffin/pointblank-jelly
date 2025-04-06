@@ -10,6 +10,7 @@ import com.vicmatskiv.pointblank.item.AmmoItem;
 import com.vicmatskiv.pointblank.item.EffectBuilderInfo;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.HurtingItem;
+import com.vicmatskiv.pointblank.item.GunItem.FirePhase;
 import com.vicmatskiv.pointblank.registry.EntityRegistry;
 import com.vicmatskiv.pointblank.util.DirectAttackTrajectory;
 import com.vicmatskiv.pointblank.util.HitScan;
@@ -20,14 +21,13 @@ import com.vicmatskiv.pointblank.util.Trajectory;
 import com.vicmatskiv.pointblank.util.TrajectoryProvider;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -62,10 +62,10 @@ import org.apache.logging.log4j.Logger;
 
 public class SlowProjectile extends AbstractHurtingProjectile implements ProjectileLike, IEntityAdditionalSpawnData {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
-   private static final double MAX_RENDER_DISTANCE_SQR = 40000.0D;
+   private static final double MAX_RENDER_DISTANCE_SQR = 40000.0F;
    private static final float MAX_HIT_SCAN_DISTANCE = 10.0F;
    static final float DEFAULT_MAX_DISTANCE = 150.0F;
-   private static final double DEFAULT_GRAVITY = 0.05D;
+   private static final double DEFAULT_GRAVITY = 0.05;
    private static final EntityDataAccessor<OptionalInt> DATA_ATTACHED_TO_TARGET;
    private static final EntityDataAccessor<Boolean> DATA_SHOT_AT_ANGLE;
    private double initialVelocityBlocksPerTick;
@@ -75,10 +75,10 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
    private double gravity;
    @Nullable
    private LivingEntity attachedToEntity;
-   private float initialAngle;
-   private long startTimeMillis;
-   private List<EffectInfo> trailEffects;
-   private List<EffectInfo> attachedEffects;
+   private final float initialAngle;
+   private final long startTimeMillis;
+   private List<ProjectileLike.EffectInfo> trailEffects;
+   private List<ProjectileLike.EffectInfo> attachedEffects;
    private List<Effect> activeTrailEffects = Collections.emptyList();
    private List<Effect> activeAttachedEffects = Collections.emptyList();
    private Trajectory<?> trajectory;
@@ -92,59 +92,54 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
 
    public SlowProjectile(EntityType<? extends SlowProjectile> entityType, Level level) {
       super(entityType, level);
-      this.initialAngle = this.f_19796_.m_188501_() * 360.0F;
+      this.initialAngle = this.random.nextFloat() * 360.0F;
       this.startTimeMillis = System.currentTimeMillis();
    }
 
    public void launchAtLookTarget(LivingEntity entity, double inaccuracy, long seed) {
-      this.hitScanTarget = HitScan.getNearestObjectInCrosshair(entity, 0.0F, 150.0D, inaccuracy, seed, (block) -> {
-         return false;
-      }, (block) -> {
-         return false;
-      }, new ArrayList());
-      Vec3 hitLocation = this.hitScanTarget.m_82450_();
-      Vec3 muzzleWorldPos = this.m_20182_();
-      Vec3 eyePos = entity.m_146892_();
-      Vec3 viewHitVector = hitLocation.m_82546_(eyePos);
-      Vec3 spawnOffset = muzzleWorldPos.m_82546_(eyePos);
-      Vec3 direction = viewHitVector.m_82546_(spawnOffset).m_82541_();
-      this.shoot(direction.f_82479_, direction.f_82480_, direction.f_82481_, this.getInitialVelocityBlocksPerTick());
+      this.hitScanTarget = HitScan.getNearestObjectInCrosshair(entity, 0.0F, 150.0F, inaccuracy, seed, (block) -> false, (block) -> false, new ArrayList<>());
+      Vec3 hitLocation = this.hitScanTarget.getLocation();
+      Vec3 muzzleWorldPos = this.position();
+      Vec3 eyePos = entity.getEyePosition();
+      Vec3 viewHitVector = hitLocation.subtract(eyePos);
+      Vec3 spawnOffset = muzzleWorldPos.subtract(eyePos);
+      Vec3 direction = viewHitVector.subtract(spawnOffset).normalize();
+      this.shoot(direction.x, direction.y, direction.z, this.getInitialVelocityBlocksPerTick());
    }
 
    public void launchAtTargetEntity(LivingEntity player, HitResult hitResult, Entity targetEntity) {
       this.hitScanTarget = hitResult;
       this.targetEntity = targetEntity;
-      Vec3 hitLocation = this.hitScanTarget.m_82450_();
-      Vec3 muzzleWorldPos = this.m_20182_();
-      Vec3 eyePos = player.m_146892_();
-      Vec3 viewHitVector = hitLocation.m_82546_(eyePos);
-      Vec3 spawnOffset = muzzleWorldPos.m_82546_(eyePos);
-      Vec3 direction = viewHitVector.m_82546_(spawnOffset).m_82541_();
-      this.shoot(direction.f_82479_, direction.f_82480_, direction.f_82481_, this.getInitialVelocityBlocksPerTick());
+      Vec3 hitLocation = this.hitScanTarget.getLocation();
+      Vec3 muzzleWorldPos = this.position();
+      Vec3 eyePos = player.getEyePosition();
+      Vec3 viewHitVector = hitLocation.subtract(eyePos);
+      Vec3 spawnOffset = muzzleWorldPos.subtract(eyePos);
+      Vec3 direction = viewHitVector.subtract(spawnOffset).normalize();
+      this.shoot(direction.x, direction.y, direction.z, this.getInitialVelocityBlocksPerTick());
    }
 
    public void shoot(double dx, double dy, double dz, double initialSpeed) {
-      Vec3 deltaMovement = (new Vec3(dx, dy, dz)).m_82541_().m_82490_(initialSpeed);
-      this.m_20256_(deltaMovement);
-      double horizontalDistance = deltaMovement.m_165924_();
-      this.m_146922_((float)(Mth.m_14136_(deltaMovement.f_82479_, deltaMovement.f_82481_) * 57.2957763671875D));
-      this.m_146926_((float)(Mth.m_14136_(deltaMovement.f_82480_, horizontalDistance) * 57.2957763671875D));
-      this.f_19859_ = this.m_146908_();
-      this.f_19860_ = this.m_146909_();
+      Vec3 deltaMovement = (new Vec3(dx, dy, dz)).normalize().scale(initialSpeed);
+      this.setDeltaMovement(deltaMovement);
+      double horizontalDistance = deltaMovement.horizontalDistance();
+      this.setYRot((float)(Mth.atan2(deltaMovement.x, deltaMovement.z) * (double)(180F / (float)Math.PI)));
+      this.setXRot((float)(Mth.atan2(deltaMovement.y, horizontalDistance) * (double)(180F / (float)Math.PI)));
+      this.yRotO = this.getYRot();
+      this.xRotO = this.getXRot();
       LOGGER.debug("{} initializing projectile trajectory", System.currentTimeMillis() % 100000L);
-      this.initTrajectory(this.hitScanTarget.m_82450_());
+      this.initTrajectory(this.hitScanTarget.getLocation());
       LOGGER.debug("{} performed projectile shot", System.currentTimeMillis() % 100000L);
    }
 
    private void initTrajectory(Vec3 targetLocation) {
-      Vec3 startPosition = new Vec3(this.m_20185_(), this.m_20186_(), this.m_20189_());
-      if (this.hurtingItem instanceof TrajectoryProvider) {
-         TrajectoryProvider trajectoryProvider = (TrajectoryProvider)this.hurtingItem;
-         this.trajectory = trajectoryProvider.createTrajectory(this.m_9236_(), startPosition, targetLocation);
+      Vec3 startPosition = new Vec3(this.getX(), this.getY(), this.getZ());
+      if (this.hurtingItem instanceof TrajectoryProvider trajectoryProvider) {
+          this.trajectory = trajectoryProvider.createTrajectory(this.level(), startPosition, targetLocation);
       }
 
       if (this.trajectory == null) {
-         this.trajectory = new DirectAttackTrajectory(startPosition, this.m_20184_(), this.gravity);
+         this.trajectory = new DirectAttackTrajectory(startPosition, this.getDeltaMovement(), this.gravity);
       }
 
    }
@@ -157,31 +152,29 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       return this.lifetime;
    }
 
-   protected void m_8097_() {
-      this.f_19804_.m_135372_(DATA_ATTACHED_TO_TARGET, OptionalInt.empty());
-      this.f_19804_.m_135372_(DATA_SHOT_AT_ANGLE, false);
+   protected void defineSynchedData() {
+      this.entityData.define(DATA_ATTACHED_TO_TARGET, OptionalInt.empty());
+      this.entityData.define(DATA_SHOT_AT_ANGLE, false);
    }
 
-   public boolean m_6783_(double distance) {
-      return distance < 40000.0D;
+   public boolean shouldRenderAtSqrDistance(double distance) {
+      return distance < (double)40000.0F;
    }
 
-   public void m_8119_() {
+   public void tick() {
       Level level = MiscUtil.getLevel(this);
       if (MiscUtil.isClientSide(this)) {
-         Vec3 dm = this.m_20184_();
-         Iterator var3 = this.getActiveTrailEffects().iterator();
+         Vec3 dm = this.getDeltaMovement();
 
-         while(var3.hasNext()) {
-            Effect trailEffect = (Effect)var3.next();
-            ((TrailEffect)trailEffect).launchNext(this, new Vec3(this.m_20185_(), this.m_20186_(), this.m_20189_()), dm);
+         for(Effect trailEffect : this.getActiveTrailEffects()) {
+            ((TrailEffect)trailEffect).launchNext(this, new Vec3(this.getX(), this.getY(), this.getZ()), dm);
          }
       }
 
-      if (level.f_46443_ && this.attachedToEntity == null) {
-         int entityId = ((OptionalInt)this.f_19804_.m_135370_(DATA_ATTACHED_TO_TARGET)).orElse(-1);
+      if (level.isClientSide && this.attachedToEntity == null) {
+         int entityId = this.entityData.get(DATA_ATTACHED_TO_TARGET).orElse(-1);
          if (entityId >= 0) {
-            Entity entity = MiscUtil.getLevel(this).m_6815_(entityId);
+            Entity entity = MiscUtil.getLevel(this).getEntity(entityId);
             if (entity instanceof LivingEntity) {
                this.attachedToEntity = (LivingEntity)entity;
             }
@@ -189,87 +182,79 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       }
 
       if (this.life > this.getLifetime()) {
-         this.m_146870_();
+         this.discard();
       }
 
       if (this.trajectory != null) {
          this.trajectory.tick();
-         if (!level.f_46443_ && this.trajectory.isCompleted()) {
+         if (!level.isClientSide && this.trajectory.isCompleted()) {
             this.explode();
          }
       }
 
-      if (level.f_46443_) {
-         this.activeAttachedEffects = this.attachedEffects.stream().filter((ei) -> {
-            return ei.predicate().test(this);
-         }).map((ei) -> {
-            return ei.effect();
-         }).toList();
-         this.activeTrailEffects = this.trailEffects.stream().filter((ei) -> {
-            return ei.predicate().test(this);
-         }).map((ei) -> {
-            return ei.effect();
-         }).toList();
+      if (level.isClientSide) {
+         this.activeAttachedEffects = this.attachedEffects.stream().filter((ei) -> ei.predicate().test(this)).map(EffectInfo::effect).toList();
+         this.activeTrailEffects = this.trailEffects.stream().filter((ei) -> ei.predicate().test(this)).map(EffectInfo::effect).toList();
       }
 
       if (this.targetEntity != null) {
-         this.trajectory.setTargetPosition(this.targetEntity.m_20318_(0.0F));
+         this.trajectory.setTargetPosition(this.targetEntity.getPosition(0.0F));
       }
 
-      Entity entity = this.m_19749_();
-      if (!level.f_46443_ && (entity != null && entity.m_213877_() || !MiscUtil.getLevel(this).m_46805_(this.m_20183_()))) {
-         this.m_146870_();
-      } else {
+      Entity entity = this.getOwner();
+      if (level.isClientSide || (entity == null || !entity.isRemoved()) && MiscUtil.getLevel(this).hasChunkAt(this.blockPosition())) {
          HitResult hitresult = this.getHitResultOnMoveOrViewVector();
-         if (hitresult.m_6662_() != Type.MISS && !ForgeEventFactory.onProjectileImpact(this, hitresult)) {
-            this.m_6532_(hitresult);
+         if (hitresult.getType() != Type.MISS && !ForgeEventFactory.onProjectileImpact(this, hitresult)) {
+            this.onHit(hitresult);
          }
 
          if (this.trajectory != null) {
-            this.m_20256_(this.trajectory.getDeltaMovement());
-            this.m_146884_(this.trajectory.getEndOfTickPosition());
+            this.setDeltaMovement(this.trajectory.getDeltaMovement());
+            this.setPos(this.trajectory.getEndOfTickPosition());
          } else {
-            Vec3 deltaMovement = this.m_20184_();
-            double d0 = this.m_20185_() + deltaMovement.f_82479_;
-            double d1 = this.m_20186_() + deltaMovement.f_82480_;
-            double d2 = this.m_20189_() + deltaMovement.f_82481_;
-            this.m_20334_(deltaMovement.f_82479_, deltaMovement.f_82480_ - this.getGravity(), deltaMovement.f_82481_);
-            this.m_6034_(d0, d1, d2);
+            Vec3 deltaMovement = this.getDeltaMovement();
+            double d0 = this.getX() + deltaMovement.x;
+            double d1 = this.getY() + deltaMovement.y;
+            double d2 = this.getZ() + deltaMovement.z;
+            this.setDeltaMovement(deltaMovement.x, deltaMovement.y - this.getGravity(), deltaMovement.z);
+            this.setPos(d0, d1, d2);
          }
+      } else {
+         this.discard();
       }
 
-      if (!level.f_46443_ && this.life > this.getLifetime()) {
+      if (!level.isClientSide && this.life > this.getLifetime()) {
          this.explode();
       }
 
       ++this.life;
    }
 
-   public void m_6453_(double x, double y, double z, float xRot, float yRot, int p_19901_, boolean p_19902_) {
+   public void lerpTo(double x, double y, double z, float xRot, float yRot, int p_19901_, boolean p_19902_) {
    }
 
-   public void m_20334_(double dx, double dy, double dz) {
-      super.m_20334_(dx, dy, dz);
+   public void setDeltaMovement(double dx, double dy, double dz) {
+      super.setDeltaMovement(dx, dy, dz);
       double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-      this.m_146922_((float)(Mth.m_14136_(dx, dz) * 57.29577951308232D));
-      this.m_146926_((float)(Mth.m_14136_(dy, horizontalDistance) * 57.29577951308232D));
+      this.setYRot((float)(Mth.atan2(dx, dz) * (180D / Math.PI)));
+      this.setXRot((float)(Mth.atan2(dy, horizontalDistance) * (180D / Math.PI)));
    }
 
-   public void m_20256_(Vec3 dm) {
-      super.m_20256_(dm);
-      double horizontalDistance = Math.sqrt(dm.f_82479_ * dm.f_82479_ + dm.f_82481_ * dm.f_82481_);
-      this.m_146922_((float)(Mth.m_14136_(dm.f_82479_, dm.f_82481_) * 57.29577951308232D));
-      this.m_146926_((float)(Mth.m_14136_(dm.f_82480_, horizontalDistance) * 57.29577951308232D));
+   public void setDeltaMovement(Vec3 dm) {
+      super.setDeltaMovement(dm);
+      double horizontalDistance = Math.sqrt(dm.x * dm.x + dm.z * dm.z);
+      this.setYRot((float)(Mth.atan2(dm.x, dm.z) * (180D / Math.PI)));
+      this.setXRot((float)(Mth.atan2(dm.y, horizontalDistance) * (180D / Math.PI)));
    }
 
    private HitResult getHitResultOnMoveOrViewVector() {
-      Entity owner = this.m_19749_();
-      HitResult hitResult = ProjectileUtil.m_278158_(this, this::m_5603_);
+      Entity owner = this.getOwner();
+      HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
       if (owner != null) {
-         Vec3 ownerPos = owner.m_20182_();
-         Vec3 originalHitPos = hitResult.m_82450_();
-         double distanceToOwner = originalHitPos.m_82554_(ownerPos);
-         if (distanceToOwner <= 10.0D && this.hitScanTarget != null && this.hitScanTarget.m_82450_().m_82554_(ownerPos) <= 10.0D) {
+         Vec3 ownerPos = owner.position();
+         Vec3 originalHitPos = hitResult.getLocation();
+         double distanceToOwner = originalHitPos.distanceTo(ownerPos);
+         if (distanceToOwner <= (double)10.0F && this.hitScanTarget != null && this.hitScanTarget.getLocation().distanceTo(ownerPos) <= (double)10.0F) {
             hitResult = this.hitScanTarget;
          }
       }
@@ -277,8 +262,8 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       return hitResult;
    }
 
-   protected boolean m_5603_(Entity entity) {
-      return entity != this.m_19749_() && super.m_5603_(entity) && !entity.f_19794_;
+   protected boolean canHitEntity(Entity entity) {
+      return entity != this.getOwner() && super.canHitEntity(entity) && !entity.noPhysics;
    }
 
    protected float getWaterInertia() {
@@ -286,13 +271,13 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
    }
 
    protected EntityHitResult findHitEntity(Vec3 p_36758_, Vec3 p_36759_) {
-      return ProjectileUtil.m_37304_(MiscUtil.getLevel(this), this, p_36758_, p_36759_, this.m_20191_().m_82369_(this.m_20184_()).m_82400_(1.0D), this::m_5603_);
+      return ProjectileUtil.getEntityHitResult(MiscUtil.getLevel(this), this, p_36758_, p_36759_, this.getBoundingBox().expandTowards(this.getDeltaMovement()).inflate(1.0F), this::canHitEntity);
    }
 
-   protected void m_6532_(HitResult result) {
-      if (result.m_6662_() == Type.MISS || !ForgeEventFactory.onProjectileImpact(this, result)) {
-         super.m_6532_(result);
-         this.m_146870_();
+   protected void onHit(HitResult result) {
+      if (result.getType() == Type.MISS || !ForgeEventFactory.onProjectileImpact(this, result)) {
+         super.onHit(result);
+         this.discard();
       }
 
    }
@@ -302,15 +287,14 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
          this.hurtingItem.explodeProjectile(this);
       }
 
-      this.m_146870_();
+      this.discard();
    }
 
-   protected void m_5790_(EntityHitResult entityHitResult) {
-      super.m_5790_(entityHitResult);
-      Entity owner = this.m_19749_();
+   protected void onHitEntity(EntityHitResult entityHitResult) {
+      super.onHitEntity(entityHitResult);
+      Entity owner = this.getOwner();
       HurtingItem var4 = this.hurtingItem;
-      if (var4 instanceof AmmoItem) {
-         AmmoItem ammoItem = (AmmoItem)var4;
+      if (var4 instanceof AmmoItem ammoItem) {
          if (owner instanceof LivingEntity) {
             this.hurtingItem.hurtEntity((LivingEntity)owner, entityHitResult, this, new ItemStack(ammoItem));
          }
@@ -318,62 +302,62 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
 
    }
 
-   protected void m_8060_(BlockHitResult blockHitResult) {
-      BlockPos blockpos = new BlockPos(blockHitResult.m_82425_());
-      MiscUtil.getLevel(this).m_8055_(blockpos).m_60682_(MiscUtil.getLevel(this), blockpos, this);
-      Entity owner = this.m_19749_();
+   protected void onHitBlock(BlockHitResult blockHitResult) {
+      BlockPos blockpos = new BlockPos(blockHitResult.getBlockPos());
+      MiscUtil.getLevel(this).getBlockState(blockpos).entityInside(MiscUtil.getLevel(this), blockpos, this);
+      Entity owner = this.getOwner();
       if (this.hurtingItem != null && !MiscUtil.isClientSide(this) && owner instanceof LivingEntity) {
          this.hurtingItem.handleBlockHit((Player)owner, blockHitResult, this);
       }
 
-      super.m_8060_(blockHitResult);
+      super.onHitBlock(blockHitResult);
    }
 
    public boolean isShotAtAngle() {
-      return (Boolean)this.f_19804_.m_135370_(DATA_SHOT_AT_ANGLE);
+      return this.entityData.get(DATA_SHOT_AT_ANGLE);
    }
 
-   public void m_7380_(CompoundTag tag) {
-      super.m_7380_(tag);
-      tag.m_128405_("Life", this.life);
-      tag.m_128405_("LifeTime", this.getLifetime());
-      tag.m_128379_("ShotAtAngle", (Boolean)this.f_19804_.m_135370_(DATA_SHOT_AT_ANGLE));
+   public void addAdditionalSaveData(CompoundTag tag) {
+      super.addAdditionalSaveData(tag);
+      tag.putInt("Life", this.life);
+      tag.putInt("LifeTime", this.getLifetime());
+      tag.putBoolean("ShotAtAngle", this.entityData.get(DATA_SHOT_AT_ANGLE));
    }
 
-   public void m_7378_(CompoundTag compoundTag) {
-      this.m_146870_();
+   public void readAdditionalSaveData(CompoundTag compoundTag) {
+      this.discard();
    }
 
-   public boolean m_6097_() {
+   public boolean isAttackable() {
       return false;
    }
 
-   public Packet<ClientGamePacketListener> m_5654_() {
+   public Packet<ClientGamePacketListener> getAddEntityPacket() {
       return NetworkHooks.getEntitySpawningPacket(this);
    }
 
    public void writeSpawnData(FriendlyByteBuf buffer) {
-      Vec3 movement = this.m_20184_();
+      Vec3 movement = this.getDeltaMovement();
       buffer.writeInt(this.getLifetime());
-      buffer.writeDouble(this.m_20185_());
-      buffer.writeDouble(this.m_20186_());
-      buffer.writeDouble(this.m_20189_());
-      buffer.writeDouble(movement.f_82479_);
-      buffer.writeDouble(movement.f_82480_);
-      buffer.writeDouble(movement.f_82481_);
-      buffer.writeFloat(this.m_146909_());
-      buffer.writeFloat(this.m_6080_());
+      buffer.writeDouble(this.getX());
+      buffer.writeDouble(this.getY());
+      buffer.writeDouble(this.getZ());
+      buffer.writeDouble(movement.x);
+      buffer.writeDouble(movement.y);
+      buffer.writeDouble(movement.z);
+      buffer.writeFloat(this.getXRot());
+      buffer.writeFloat(this.getYHeadRot());
       Vec3 targetLocation;
       if (this.hitScanTarget != null) {
-         targetLocation = this.hitScanTarget.m_82450_();
+         targetLocation = this.hitScanTarget.getLocation();
       } else {
-         targetLocation = Vec3.f_82478_;
+         targetLocation = Vec3.ZERO;
       }
 
-      buffer.writeDouble(targetLocation.f_82479_);
-      buffer.writeDouble(targetLocation.f_82480_);
-      buffer.writeDouble(targetLocation.f_82481_);
-      buffer.writeInt(this.targetEntity != null ? this.targetEntity.m_19879_() : -1);
+      buffer.writeDouble(targetLocation.x);
+      buffer.writeDouble(targetLocation.y);
+      buffer.writeDouble(targetLocation.z);
+      buffer.writeInt(this.targetEntity != null ? this.targetEntity.getId() : -1);
    }
 
    public void readSpawnData(FriendlyByteBuf buffer) {
@@ -390,12 +374,12 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       double hitLocationY = buffer.readDouble();
       double hitLocationZ = buffer.readDouble();
       int entityId = buffer.readInt();
-      this.m_19890_(x, y, z, yRot, xRot);
-      this.m_20334_(dx, dy, dz);
-      this.m_5616_(yRot);
-      this.m_5618_(yRot);
+      this.absMoveTo(x, y, z, yRot, xRot);
+      this.setDeltaMovement(dx, dy, dz);
+      this.setYHeadRot(yRot);
+      this.setYBodyRot(yRot);
       if (entityId >= 0) {
-         this.targetEntity = this.m_9236_().m_6815_(entityId);
+         this.targetEntity = this.level().getEntity(entityId);
       }
 
       this.initTrajectory(new Vec3(hitLocationX, hitLocationY, hitLocationZ));
@@ -445,11 +429,11 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       return this.activeTrailEffects;
    }
 
-   public void setTrailEffects(List<EffectInfo> trailEffects) {
+   public void setTrailEffects(List<ProjectileLike.EffectInfo> trailEffects) {
       this.trailEffects = trailEffects;
    }
 
-   public void setAttachedEffects(List<EffectInfo> attachedEffects) {
+   public void setAttachedEffects(List<ProjectileLike.EffectInfo> attachedEffects) {
       this.attachedEffects = attachedEffects;
    }
 
@@ -461,10 +445,9 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       return (projectile) -> {
          boolean var10000;
          if (projectile.getTrajectory() != null) {
-            Trajectory patt29669$temp = projectile.getTrajectory();
-            if (patt29669$temp instanceof TopDownAttackTrajectory) {
-               TopDownAttackTrajectory tdat = (TopDownAttackTrajectory)patt29669$temp;
-               if (tp.test(tdat)) {
+            var patt29669$temp = projectile.getTrajectory();
+            if (patt29669$temp instanceof TopDownAttackTrajectory tdat) {
+                if (tp.test(tdat)) {
                   var10000 = true;
                   return var10000;
                }
@@ -477,8 +460,8 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
    }
 
    static {
-      DATA_ATTACHED_TO_TARGET = SynchedEntityData.m_135353_(SlowProjectile.class, EntityDataSerializers.f_135044_);
-      DATA_SHOT_AT_ANGLE = SynchedEntityData.m_135353_(SlowProjectile.class, EntityDataSerializers.f_135035_);
+      DATA_ATTACHED_TO_TARGET = SynchedEntityData.defineId(SlowProjectile.class, EntityDataSerializers.OPTIONAL_UNSIGNED_INT);
+      DATA_SHOT_AT_ANGLE = SynchedEntityData.defineId(SlowProjectile.class, EntityDataSerializers.BOOLEAN);
    }
 
    public static class Builder implements EntityBuilder<Builder, SlowProjectile> {
@@ -491,13 +474,13 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       private String name;
       private float width = 0.25F;
       private float height = 0.25F;
-      private int clientTrackingRange = 1024;
-      private int trackingRange = 1024;
+      private final int clientTrackingRange = 1024;
+      private final int trackingRange = 1024;
       private int updateInterval = 50;
       private double initialVelocityBlocksPerSecond;
       private int lifetimeTicks = 200;
       private double gravity;
-      private List<EffectBuilderInfo> effectBuilderSuppliers = new ArrayList();
+      private final List<EffectBuilderInfo> effectBuilderSuppliers = new ArrayList<>();
       private Supplier<EntityRendererBuilder<?, Entity, EntityRenderer<Entity>>> rendererBuilder;
       private Supplier<HurtingItem> hurtingItem;
 
@@ -510,9 +493,7 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       }
 
       public Builder withItem(Supplier<Item> hurtingItem) {
-         this.hurtingItem = () -> {
-            return (HurtingItem)hurtingItem.get();
-         };
+         this.hurtingItem = () -> (HurtingItem)hurtingItem.get();
          return this;
       }
 
@@ -547,12 +528,12 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       }
 
       public Builder withGravity(boolean isGravityEnabled) {
-         this.gravity = isGravityEnabled ? 0.05D : 0.0D;
+         this.gravity = isGravityEnabled ? 0.05 : (double)0.0F;
          return this;
       }
 
       public Builder withGravity(double gravity) {
-         this.gravity = Mth.m_14008_(gravity, -1.0D, 1.0D);
+         this.gravity = Mth.clamp(gravity, -1.0F, 1.0F);
          return this;
       }
 
@@ -561,23 +542,23 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
          return this;
       }
 
-      public EntityTypeExt getEntityTypeExt() {
+      public EntityBuilder.EntityTypeExt getEntityTypeExt() {
          return EntityTypeExt.PROJECTILE;
       }
 
       public EntityType.Builder<SlowProjectile> getEntityTypeBuilder() {
-         return EntityType.Builder.m_20704_(this::create, MobCategory.MISC).m_20699_(this.width, this.height).m_20702_(this.clientTrackingRange).setTrackingRange(this.trackingRange).m_20717_(this.updateInterval).setShouldReceiveVelocityUpdates(false);
+         return net.minecraft.world.entity.EntityType.Builder.of(this::create, MobCategory.MISC).sized(this.width, this.height).clientTrackingRange(this.clientTrackingRange).setTrackingRange(this.trackingRange).updateInterval(this.updateInterval).setShouldReceiveVelocityUpdates(false);
       }
 
       public SlowProjectile create(EntityType<SlowProjectile> entityType, Level level) {
          SlowProjectile projectile = new SlowProjectile(entityType, level);
-         if (level.f_46443_) {
+         if (level.isClientSide) {
             this.initEffects(projectile);
          }
 
          projectile.setGravity(this.gravity);
          if (this.hurtingItem != null) {
-            projectile.hurtingItem = (HurtingItem)this.hurtingItem.get();
+            projectile.hurtingItem = this.hurtingItem.get();
             projectile.hurtingItemStack = new ItemStack(projectile.hurtingItem);
          }
 
@@ -586,17 +567,17 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
 
       public SlowProjectile build(Level level) {
          Supplier<EntityType<?>> entityType = EntityRegistry.getTypeByName(this.name);
-         SlowProjectile projectile = new SlowProjectile((EntityType)entityType.get(), level);
-         projectile.setInitialVelocityBlocksPerTick(this.initialVelocityBlocksPerSecond * 0.05000000074505806D);
+         SlowProjectile projectile = new SlowProjectile((EntityType<? extends SlowProjectile>) entityType.get(), level);
+         projectile.setInitialVelocityBlocksPerTick(this.initialVelocityBlocksPerSecond * (double)0.05F);
          projectile.setLifetime(this.lifetimeTicks);
-         projectile.m_20242_(MiscUtil.isNearlyZero(this.gravity));
+         projectile.setNoGravity(MiscUtil.isNearlyZero(this.gravity));
          projectile.setGravity(this.gravity);
          if (this.hurtingItem != null) {
-            projectile.hurtingItem = (HurtingItem)this.hurtingItem.get();
+            projectile.hurtingItem = this.hurtingItem.get();
             projectile.hurtingItemStack = new ItemStack(projectile.hurtingItem);
          }
 
-         if (level.f_46443_) {
+         if (level.isClientSide) {
             this.initEffects(projectile);
          }
 
@@ -604,27 +585,24 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       }
 
       public void initEffects(SlowProjectile projectile) {
-         List<EffectInfo> trailEffects = new ArrayList();
-         List<EffectInfo> attachedEffects = new ArrayList();
-         GunItem.FirePhase phase = GunItem.FirePhase.FLYING;
-         Iterator var5 = this.effectBuilderSuppliers.iterator();
+         List<ProjectileLike.EffectInfo> trailEffects = new ArrayList<>();
+         List<ProjectileLike.EffectInfo> attachedEffects = new ArrayList<>();
+         GunItem.FirePhase phase = FirePhase.FLYING;
 
-         while(var5.hasNext()) {
-            EffectBuilderInfo effectBuilderInfo = (EffectBuilderInfo)var5.next();
-            EffectBuilder<?, ?> effectBuilder = (EffectBuilder)effectBuilderInfo.effectSupplier().get();
-            EffectBuilder.Context context;
-            if (effectBuilder.getCompatiblePhases().contains(GunItem.FirePhase.FLYING)) {
-               context = new EffectBuilder.Context();
+         for(EffectBuilderInfo effectBuilderInfo : this.effectBuilderSuppliers) {
+            EffectBuilder<?, ?> effectBuilder = effectBuilderInfo.effectSupplier().get();
+            if (effectBuilder.getCompatiblePhases().contains(FirePhase.FLYING)) {
+               EffectBuilder.Context context = new EffectBuilder.Context();
                TrailEffect effect = (TrailEffect)effectBuilder.build(context);
-               trailEffects.add(new EffectInfo(effect, effectBuilderInfo.predicate()));
+               trailEffects.add(new ProjectileLike.EffectInfo(effect, effectBuilderInfo.predicate()));
             } else {
                if (!(effectBuilder instanceof AttachedProjectileEffect.Builder)) {
                   throw new IllegalStateException("Effect builder " + effectBuilder + " is not compatible with phase '" + phase + "'. Check how you construct projectile: " + this.getName());
                }
 
-               context = new EffectBuilder.Context();
+               EffectBuilder.Context context = new EffectBuilder.Context();
                AttachedProjectileEffect effect = (AttachedProjectileEffect)effectBuilder.build(context);
-               attachedEffects.add(new EffectInfo(effect, effectBuilderInfo.predicate()));
+               attachedEffects.add(new ProjectileLike.EffectInfo(effect, effectBuilderInfo.predicate()));
             }
          }
 
@@ -637,8 +615,8 @@ public class SlowProjectile extends AbstractHurtingProjectile implements Project
       }
 
       @OnlyIn(Dist.CLIENT)
-      public EntityRenderer<Entity> createEntityRenderer(Context context) {
-         return ((EntityRendererBuilder)this.rendererBuilder.get()).build(context);
+      public EntityRenderer<Entity> createEntityRenderer(EntityRendererProvider.Context context) {
+         return (this.rendererBuilder.get()).build(context);
       }
 
       public Builder withJsonObject(JsonObject obj) {

@@ -19,8 +19,7 @@ public abstract class AbstractContainerScreenMixin {
 )}
    )
    public void beforeRenderingSlotItem(GuiGraphics guiGraphics, Slot slot, CallbackInfo callbackInfo) {
-      if (this instanceof AttachmentManagerScreen) {
-         AttachmentManagerScreen ams = (AttachmentManagerScreen)this;
+      if ((AbstractContainerScreen<?>)(Object)this instanceof AttachmentManagerScreen ams) {
          ams.beforeRenderingSlot(guiGraphics, slot);
       }
 

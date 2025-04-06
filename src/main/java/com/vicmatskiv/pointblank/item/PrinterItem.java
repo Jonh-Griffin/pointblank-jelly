@@ -4,7 +4,6 @@ import java.util.function.Consumer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import software.bernie.geckolib.animatable.GeoItem;
@@ -27,7 +26,7 @@ public class PrinterItem extends BlockItem implements GeoItem {
 
          public BlockEntityWithoutLevelRenderer getCustomRenderer() {
             if (this.renderer == null) {
-               this.renderer = new GeoItemRenderer(new DefaultedBlockGeoModel(new ResourceLocation("pointblank", "printer")));
+               this.renderer = new GeoItemRenderer<>(new DefaultedBlockGeoModel<>(new ResourceLocation("pointblank", "printer")));
             }
 
             return this.renderer;

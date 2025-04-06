@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class TimerController extends AbstractProceduralAnimationController {
-   private List<ScheduleEntry> eventHandlers = new ArrayList();
+   private final List<ScheduleEntry> eventHandlers = new ArrayList<>();
    private long lastExecutionTime = 0L;
 
    public TimerController(long duration) {
@@ -33,22 +33,20 @@ public class TimerController extends AbstractProceduralAnimationController {
       super.onRenderTick(player, state, itemStack, itemDisplayContext, partialTicks);
       if (!this.isDone) {
          long currentTime = System.nanoTime() - this.startTime;
-         Iterator var8 = this.eventHandlers.iterator();
 
-         while(var8.hasNext()) {
-            ScheduleEntry scheduleEntry = (ScheduleEntry)var8.next();
-            long handlerTime = scheduleEntry.time;
-            AbstractProceduralAnimationController handler = scheduleEntry.handler;
-            if (handlerTime <= currentTime && state.getReloadPhase() == scheduleEntry.reloadPhase && scheduleEntry.condition.test(new ConditionContext((Player)player, itemStack, state, (ItemDisplayContext)null))) {
-               if (handlerTime > this.lastExecutionTime) {
-                  handler.reset();
-               }
+          for (ScheduleEntry scheduleEntry : this.eventHandlers) {
+              long handlerTime = scheduleEntry.time;
+              AbstractProceduralAnimationController handler = scheduleEntry.handler;
+              if (handlerTime <= currentTime && state.getReloadPhase() == scheduleEntry.reloadPhase && scheduleEntry.condition.test(new ConditionContext(player, itemStack, state, null))) {
+                  if (handlerTime > this.lastExecutionTime) {
+                      handler.reset();
+                  }
 
-               if (!handler.isDone()) {
-                  handler.onRenderTick(player, state, itemStack, itemDisplayContext, partialTicks);
-               }
-            }
-         }
+                  if (!handler.isDone()) {
+                      handler.onRenderTick(player, state, itemStack, itemDisplayContext, partialTicks);
+                  }
+              }
+          }
 
          this.lastExecutionTime = currentTime;
       }
@@ -69,15 +67,9 @@ public class TimerController extends AbstractProceduralAnimationController {
       }).toList();
    }
 
-   private static record ScheduleEntry(GunItem.ReloadPhase reloadPhase, long time, AbstractProceduralAnimationController handler, Predicate<ConditionContext> condition) {
-      private ScheduleEntry(GunItem.ReloadPhase reloadPhase, long time, AbstractProceduralAnimationController handler, Predicate<ConditionContext> condition) {
-         this.reloadPhase = reloadPhase;
-         this.time = time;
-         this.handler = handler;
-         this.condition = condition;
-      }
+   private record ScheduleEntry(GunItem.ReloadPhase reloadPhase, long time, AbstractProceduralAnimationController handler, Predicate<ConditionContext> condition) {
 
-      public GunItem.ReloadPhase reloadPhase() {
+       public GunItem.ReloadPhase reloadPhase() {
          return this.reloadPhase;
       }
 

@@ -8,15 +8,15 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class ViewShakeAnimationController2 extends AbstractProceduralAnimationController implements GunStateListener {
-   private double initialAmplitude;
+   private final double initialAmplitude;
    private double initialAmplitudeAdj;
-   private double rateOfAmplitudeDecay;
+   private final double rateOfAmplitudeDecay;
    private double rateOfAmplitudeDecayAdj;
-   private double initialAngularFrequency;
+   private final double initialAngularFrequency;
    private double initialAngularFrequencyAdj;
-   private double rateOfFrequencyIncrease;
+   private final double rateOfFrequencyIncrease;
    private double rateOfFrequencyIncreaseAdj;
-   private Random random = new Random();
+   private final Random random = new Random();
 
    public ViewShakeAnimationController2(double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease, long duration) {
       super(duration);

@@ -16,6 +16,8 @@ import com.vicmatskiv.pointblank.client.DynamicGeoListener;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.GunStatePoseProvider;
 import com.vicmatskiv.pointblank.client.LockableTarget;
+import com.vicmatskiv.pointblank.client.GunClientState.FireState;
+import com.vicmatskiv.pointblank.client.GunStatePoseProvider.PoseContext;
 import com.vicmatskiv.pointblank.client.controller.AbstractProceduralAnimationController;
 import com.vicmatskiv.pointblank.client.controller.BlendingAnimationController;
 import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
@@ -31,6 +33,7 @@ import com.vicmatskiv.pointblank.client.effect.AbstractEffect;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
 import com.vicmatskiv.pointblank.client.effect.EffectLauncher;
 import com.vicmatskiv.pointblank.client.effect.MuzzleFlashEffect;
+import com.vicmatskiv.pointblank.client.effect.AbstractEffect.SpriteAnimationType;
 import com.vicmatskiv.pointblank.client.render.GunItemRenderer;
 import com.vicmatskiv.pointblank.crafting.Craftable;
 import com.vicmatskiv.pointblank.entity.ProjectileLike;
@@ -74,7 +77,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -113,10 +115,8 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.Item.Properties;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.AbstractGlassBlock;
@@ -146,7 +146,6 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
 import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.ClientUtils;
@@ -189,100 +188,100 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    public static final RawAnimation RAW_ANIMATION_PREPARE_RUNNING = RawAnimation.begin().thenPlay("animation.model.runningstart");
    public static final RawAnimation RAW_ANIMATION_COMPLETE_RUNNING = RawAnimation.begin().thenPlay("animation.model.runningend");
    public static final RawAnimation RAW_ANIMATION_RUNNING = RawAnimation.begin().thenPlay("animation.model.running");
-   private static final List<ResourceLocation> FALLBACK_COMMON_ANIMATIONS = List.of(new ResourceLocation("pointblank", "common"));
-   private static final List<ResourceLocation> FALLBACK_PISTOL_ANIMATIONS = List.of(new ResourceLocation("pointblank", "pistol"), new ResourceLocation("pointblank", "common"));
-   private static Random random = new Random();
-   private static final double MAX_SHOOTING_DISTANCE_WITHOUT_AIMING = 100.0D;
-   private static final ResourceLocation DEFAULT_SCOPE_OVERLAY = new ResourceLocation("pointblank", "textures/gui/scope.png");
+   private static final List<ResourceLocation> FALLBACK_COMMON_ANIMATIONS = List.of(ResourceLocation.fromNamespaceAndPath("pointblank", "common"));
+   private static final List<ResourceLocation> FALLBACK_PISTOL_ANIMATIONS = List.of(ResourceLocation.fromNamespaceAndPath("pointblank", "pistol"), ResourceLocation.fromNamespaceAndPath("pointblank", "common"));
+   private static final Random random = new Random();
+   private static final double MAX_SHOOTING_DISTANCE_WITHOUT_AIMING = 100.0F;
+   private static final ResourceLocation DEFAULT_SCOPE_OVERLAY = ResourceLocation.fromNamespaceAndPath("pointblank", "textures/gui/scope.png");
    private static final int MAX_ATTACHMENT_CATEGORIES = 11;
    private final String name;
-   private float tradePrice;
-   private int tradeLevel;
-   private int tradeBundleQuantity;
-   private int maxAmmoCapacity;
+   private final float tradePrice;
+   private final int tradeLevel;
+   private final int tradeBundleQuantity;
+   private final int maxAmmoCapacity;
    private boolean requiresPhasedReload;
-   private boolean isAimingEnabled;
+   private final boolean isAimingEnabled;
    private final int rpm;
    private final long prepareIdleCooldownDuration;
    private final long prepareFireCooldownDuration;
    private final long completeFireCooldownDuration;
    private final long enableFireModeCooldownDuration;
-   private long targetLockTimeTicks;
+   private final long targetLockTimeTicks;
    private final Set<Supplier<AmmoItem>> compatibleBullets;
-   private double viewRecoilAmplitude;
-   private double shakeRecoilAmplitude;
-   private int viewRecoilMaxPitch;
-   private long viewRecoilDuration;
-   private double shakeRecoilSpeed;
-   private double shakeDecay;
-   private long shakeRecoilDuration;
-   private double gunRecoilInitialAmplitude;
-   private double gunRecoilRateOfAmplitudeDecay;
-   private double gunRecoilInitialAngularFrequency;
-   private double gunRecoilRateOfFrequencyIncrease;
-   private double gunRecoilPitchMultiplier;
-   private long gunRecoilDuration;
-   private int shotsPerRecoil;
-   private int shotsPerTrace;
-   private long idleRandomizationDuration;
-   private long recoilRandomizationDuration;
-   private double gunRandomizationAmplitude;
-   private int burstShots;
-   private SoundEvent fireSound;
-   private float fireSoundVolume;
-   private SoundEvent targetLockedSound;
-   private SoundEvent targetStartLockingSound;
-   private long reloadCooldownTime;
-   private float bobbing;
-   private float bobbingOnAim;
-   private float bobbingRollMultiplier;
-   private double jumpMultiplier;
+   private final double viewRecoilAmplitude;
+   private final double shakeRecoilAmplitude;
+   private final int viewRecoilMaxPitch;
+   private final long viewRecoilDuration;
+   private final double shakeRecoilSpeed;
+   private final double shakeDecay;
+   private final long shakeRecoilDuration;
+   private final double gunRecoilInitialAmplitude;
+   private final double gunRecoilRateOfAmplitudeDecay;
+   private final double gunRecoilInitialAngularFrequency;
+   private final double gunRecoilRateOfFrequencyIncrease;
+   private final double gunRecoilPitchMultiplier;
+   private final long gunRecoilDuration;
+   private final int shotsPerRecoil;
+   private final int shotsPerTrace;
+   private final long idleRandomizationDuration;
+   private final long recoilRandomizationDuration;
+   private final double gunRandomizationAmplitude;
+   private final int burstShots;
+   private final SoundEvent fireSound;
+   private final float fireSoundVolume;
+   private final SoundEvent targetLockedSound;
+   private final SoundEvent targetStartLockingSound;
+   private final long reloadCooldownTime;
+   private final float bobbing;
+   private final float bobbingOnAim;
+   private final float bobbingRollMultiplier;
+   private final double jumpMultiplier;
    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-   private double aimingCurveX;
-   private double aimingCurveY;
-   private double aimingCurveZ;
-   private double aimingCurvePitch;
-   private double aimingCurveYaw;
-   private double aimingCurveRoll;
-   private double aimingZoom;
-   private double pipScopeZoom;
-   private ResourceLocation scopeOverlay;
-   private ResourceLocation targetLockOverlay;
-   private ResourceLocation modelResourceLocation;
-   private List<PhasedReload> phasedReloads;
+   private final double aimingCurveX;
+   private final double aimingCurveY;
+   private final double aimingCurveZ;
+   private final double aimingCurvePitch;
+   private final double aimingCurveYaw;
+   private final double aimingCurveRoll;
+   private final double aimingZoom;
+   private final double pipScopeZoom;
+   private final ResourceLocation scopeOverlay;
+   private final ResourceLocation targetLockOverlay;
+   private final ResourceLocation modelResourceLocation;
+   private final List<PhasedReload> phasedReloads;
    private AnimationProvider drawAnimationProvider;
    private AnimationProvider inspectAnimationProvider;
    private AnimationProvider idleAnimationProvider;
-   private String reloadAnimation;
+   private final String reloadAnimation;
    private int pelletCount;
-   private double pelletSpread;
-   private double inaccuracy;
-   private double inaccuracyAiming;
-   private double inaccuracySprinting;
-   private List<Tuple<Long, AbstractProceduralAnimationController>> reloadEffectControllers;
-   private List<GlowAnimationController.Builder> glowEffectBuilders;
-   private List<RotationAnimationController.Builder> rotationEffectBuilders;
-   private EffectLauncher effectLauncher;
-   private float hitScanSpeed;
-   private float hitScanAcceleration;
-   private float modelScale;
-   private List<Supplier<Attachment>> compatibleAttachmentSuppliers;
-   private List<String> compatibleAttachmentGroups;
+   private final double pelletSpread;
+   private final double inaccuracy;
+   private final double inaccuracyAiming;
+   private final double inaccuracySprinting;
+   private final List<Tuple<Long, AbstractProceduralAnimationController>> reloadEffectControllers;
+   private final List<GlowAnimationController.Builder> glowEffectBuilders;
+   private final List<RotationAnimationController.Builder> rotationEffectBuilders;
+   private final EffectLauncher effectLauncher;
+   private final float hitScanSpeed;
+   private final float hitScanAcceleration;
+   private final float modelScale;
+   private final List<Supplier<Attachment>> compatibleAttachmentSuppliers;
+   private final List<String> compatibleAttachmentGroups;
    private Set<Attachment> compatibleAttachments;
-   private List<Supplier<Attachment>> defaultAttachmentSuppliers;
-   private long craftingDuration;
-   private Map<Class<? extends Feature>, Feature> features;
-   private AnimationType animationType;
+   private final List<Supplier<Attachment>> defaultAttachmentSuppliers;
+   private final long craftingDuration;
+   private final Map<Class<? extends Feature>, Feature> features;
+   private final AnimationType animationType;
    private ResourceLocation firstPersonFallbackAnimations;
-   private String thirdPersonFallbackAnimations;
+   private final String thirdPersonFallbackAnimations;
 
    private GunItem(Builder builder, String namespace) {
-      super(new Properties(), builder);
+      super(new Item.Properties(), builder);
       this.name = builder.name;
       if (this.name.contains(":")) {
-         this.modelResourceLocation = new ResourceLocation(this.name);
+         this.modelResourceLocation = ResourceLocation.parse(this.name);
       } else {
-         this.modelResourceLocation = new ResourceLocation(namespace, this.name);
+         this.modelResourceLocation = ResourceLocation.fromNamespaceAndPath(namespace, this.name);
       }
 
       this.modelScale = builder.modelScale;
@@ -292,7 +291,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.maxAmmoCapacity = builder.maxAmmoCapacity;
       this.rpm = builder.rpm;
       this.isAimingEnabled = builder.isAimingEnabled;
-      this.compatibleBullets = builder.compatibleAmmo != null && builder.compatibleAmmo.size() > 0 ? builder.compatibleAmmo : Collections.emptySet();
+      this.compatibleBullets = builder.compatibleAmmo != null && !builder.compatibleAmmo.isEmpty() ? builder.compatibleAmmo : Collections.emptySet();
       this.targetLockTimeTicks = builder.targetLockTimeTicks;
       this.hitScanSpeed = builder.hitScanSpeed;
       this.hitScanAcceleration = builder.hitScanAcceleration;
@@ -316,7 +315,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.recoilRandomizationDuration = builder.recoilRandomizationDuration;
       this.jumpMultiplier = builder.jumpMultiplier;
       this.burstShots = builder.burstShots;
-      this.fireSound = builder.fireSound != null ? (SoundEvent)builder.fireSound.get() : null;
+      this.fireSound = builder.fireSound != null ? builder.fireSound.get() : null;
       this.fireSoundVolume = builder.fireSoundVolume;
       this.prepareIdleCooldownDuration = builder.prepareIdleCooldownDuration;
       this.prepareFireCooldownDuration = builder.prepareFireCooldownDuration;
@@ -331,10 +330,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.aimingCurveRoll = builder.aimingCurveRoll;
       this.pipScopeZoom = builder.pipScopeZoom;
       this.aimingZoom = builder.aimingZoom;
-      this.scopeOverlay = builder.scopeOverlay != null ? new ResourceLocation("pointblank", builder.scopeOverlay) : null;
-      this.targetLockOverlay = builder.targetLockOverlay != null ? new ResourceLocation("pointblank", builder.targetLockOverlay) : null;
-      this.targetLockedSound = builder.targetLockedSound != null ? (SoundEvent)builder.targetLockedSound.get() : null;
-      this.targetStartLockingSound = builder.targetStartLockingSound != null ? (SoundEvent)builder.targetStartLockingSound.get() : null;
+      this.scopeOverlay = builder.scopeOverlay != null ? ResourceLocation.fromNamespaceAndPath("pointblank", builder.scopeOverlay) : null;
+      this.targetLockOverlay = builder.targetLockOverlay != null ? ResourceLocation.fromNamespaceAndPath("pointblank", builder.targetLockOverlay) : null;
+      this.targetLockedSound = builder.targetLockedSound != null ? builder.targetLockedSound.get() : null;
+      this.targetStartLockingSound = builder.targetStartLockingSound != null ? builder.targetStartLockingSound.get() : null;
       this.bobbing = builder.bobbing;
       this.bobbingOnAim = builder.bobbingOnAim;
       this.bobbingRollMultiplier = builder.bobbingRollMultiplier;
@@ -354,13 +353,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
       this.animationType = builder.animationType;
       if (builder.firstPersonFallbackAnimations != null) {
-         this.firstPersonFallbackAnimations = new ResourceLocation("pointblank", builder.firstPersonFallbackAnimations);
+         this.firstPersonFallbackAnimations = ResourceLocation.fromNamespaceAndPath("pointblank", builder.firstPersonFallbackAnimations);
       }
 
       this.thirdPersonFallbackAnimations = builder.thirdPersonFallbackAnimations;
       this.pelletSpread = builder.pelletSpread;
       if (builder.pelletCount > 1) {
-         this.maxShootingDistance = Math.min(this.maxShootingDistance, 50.0D);
+         this.maxShootingDistance = Math.min(this.maxShootingDistance, 50.0F);
       }
 
       this.inaccuracyAiming = builder.inaccuracyAiming;
@@ -369,7 +368,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.reloadCooldownTime = builder.reloadCooldownTime;
       this.reloadAnimation = builder.reloadAnimation;
       if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
-         this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
+         this.phasedReloads.add(new PhasedReload(GunItem.ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
       } else {
          this.requiresPhasedReload = true;
       }
@@ -377,11 +376,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.compatibleAttachmentSuppliers = Collections.unmodifiableList(builder.compatibleAttachments);
       this.compatibleAttachmentGroups = Collections.unmodifiableList(builder.compatibleAttachmentGroups);
       this.defaultAttachmentSuppliers = Collections.unmodifiableList(builder.defaultAttachments);
-      Map<Class<? extends Feature>, Feature> features = new HashMap();
-      Iterator var4 = builder.featureBuilders.iterator();
+      Map<Class<? extends Feature>, Feature> features = new HashMap<>();
 
-      while(var4.hasNext()) {
-         FeatureBuilder<?, ?> featureBuilder = (FeatureBuilder)var4.next();
+      for(FeatureBuilder<?, ?> featureBuilder : builder.featureBuilders) {
          Feature feature = featureBuilder.build(this);
          features.put(feature.getClass(), feature);
       }
@@ -396,13 +393,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       if (fireModeFeature == null) {
          FireModeFeature.Builder fireModeFeatureBuilder = new FireModeFeature.Builder();
          if (builder.fireModes != null) {
-            FireMode[] var7 = builder.fireModes;
-            int var8 = var7.length;
-
-            for(int var9 = 0; var9 < var8; ++var9) {
-               FireMode fireMode = var7[var9];
+            for(FireMode fireMode : builder.fireModes) {
                AnimationProvider fireAnimationProvider = builder.fireAnimationsBuilder.build();
-               fireModeFeatureBuilder.withFireMode((new FireModeFeature.FireModeDescriptor.Builder()).withName(fireMode.name()).withType(fireMode).withDisplayName(Component.m_237115_(String.format("label.%s.fireMode.%s", "pointblank", fireMode.name().toLowerCase()))).withMaxAmmoCapacity(this.maxAmmoCapacity).withRpm(builder.rpm).withBurstShots(builder.burstShots).withDamage((double)this.getDamage()).withMaxShootingDistance((int)this.maxShootingDistance).withPelletCount(builder.pelletCount).withPelletSpread(builder.pelletSpread).withIsUsingDefaultMuzzle(true).withFireAnimationProvider(fireAnimationProvider).build());
+               fireModeFeatureBuilder.withFireMode((new FireModeFeature.FireModeDescriptor.Builder()).withName(fireMode.name()).withType(fireMode).withDisplayName(Component.translatable(String.format("label.%s.fireMode.%s", "pointblank", fireMode.name().toLowerCase()))).withMaxAmmoCapacity(this.maxAmmoCapacity).withRpm(builder.rpm).withBurstShots(builder.burstShots).withDamage(this.getDamage()).withMaxShootingDistance((int)this.maxShootingDistance).withPelletCount(builder.pelletCount).withPelletSpread(builder.pelletSpread).withIsUsingDefaultMuzzle(true).withFireAnimationProvider(fireAnimationProvider).build());
             }
          }
 
@@ -412,15 +405,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       MuzzleFlashFeature muzzleFlashFeature = (MuzzleFlashFeature)features.get(MuzzleFlashFeature.class);
       if (muzzleFlashFeature == null) {
          MuzzleFlashFeature.Builder muzzleFlashFeatureBulder = new MuzzleFlashFeature.Builder();
-         List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>> fbsl = (List)builder.effectBuilders.get(FirePhase.FIRING);
+         List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>> fbsl = builder.effectBuilders.get(FirePhase.FIRING);
          if (fbsl != null) {
-            Iterator it = fbsl.iterator();
-
-            while(it.hasNext()) {
-               Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> s = (Supplier)it.next();
-               EffectBuilder<? extends EffectBuilder<?, ?>, ?> eb = (EffectBuilder)s.get();
+            for(Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> s : fbsl) {
+               EffectBuilder<? extends EffectBuilder<?, ?>, ?> eb = s.get();
                if (eb instanceof MuzzleFlashEffect.Builder) {
-                  muzzleFlashFeatureBulder.withEffect(FirePhase.FIRING, s);
+                  muzzleFlashFeatureBulder.withEffect(GunItem.FirePhase.FIRING, s);
                }
             }
          }
@@ -464,8 +454,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       return this.name;
    }
 
-   public Component m_7626_(ItemStack itemStack) {
-      return Component.m_237115_(this.m_5671_(itemStack));
+   public Component getName(ItemStack itemStack) {
+      return Component.translatable(this.getDescriptionId(itemStack));
    }
 
    public float getModelScale() {
@@ -476,32 +466,33 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       return this.features.values();
    }
 
-   public void m_7373_(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
-      tooltip.add(Component.m_237115_("label.pointblank.damage").m_130946_(": ").m_130946_(String.format("%.2f", this.getDamage())).m_130940_(ChatFormatting.RED).m_130940_(ChatFormatting.ITALIC));
-      tooltip.add(Component.m_237115_("label.pointblank.rpm").m_130946_(": ").m_130946_(String.format("%d", this.rpm)).m_130940_(ChatFormatting.RED).m_130940_(ChatFormatting.ITALIC));
-      MutableComponent ammoDescription = Component.m_237115_("label.pointblank.ammo").m_130946_(": ");
+   public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+      tooltip.add(Component.translatable("label.pointblank.damage").append(": ").append(String.format("%.2f", this.getDamage())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+      tooltip.add(Component.translatable("label.pointblank.rpm").append(": ").append(String.format("%d", this.rpm)).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+      MutableComponent ammoDescription = Component.translatable("label.pointblank.ammo").append(": ");
       boolean isFirst = true;
 
-      for(Iterator var7 = this.compatibleBullets.iterator(); var7.hasNext(); isFirst = false) {
-         Supplier<AmmoItem> ammoItemSupplier = (Supplier)var7.next();
+      for(Supplier<AmmoItem> ammoItemSupplier : this.compatibleBullets) {
          if (!isFirst) {
-            ammoDescription.m_130946_(", ");
+            ammoDescription.append(", ");
          }
 
-         AmmoItem ammoItem = (AmmoItem)ammoItemSupplier.get();
+         AmmoItem ammoItem = ammoItemSupplier.get();
          if (ammoItem != null) {
-            ammoDescription.m_7220_(Component.m_237115_(((AmmoItem)ammoItemSupplier.get()).m_5524_()));
+            ammoDescription.append(Component.translatable(ammoItemSupplier.get().getDescriptionId()));
          } else {
-            ammoDescription.m_7220_(Component.m_237115_("missing_ammo"));
+            ammoDescription.append(Component.translatable("missing_ammo"));
          }
+
+         isFirst = false;
       }
 
-      ammoDescription.m_130940_(ChatFormatting.RED).m_130940_(ChatFormatting.ITALIC);
+      ammoDescription.withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC);
       tooltip.add(ammoDescription);
    }
 
    public MutableComponent getDisplayName() {
-      return Component.m_237115_(this.m_5524_() + ".desc").m_130940_(ChatFormatting.YELLOW);
+      return Component.translatable(this.getDescriptionId() + ".desc").withStyle(ChatFormatting.YELLOW);
    }
 
    public boolean requiresPhasedReload() {
@@ -509,7 +500,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public List<FireModeInstance> getMainFireModes() {
-      FireModeFeature fireModeFeature = (FireModeFeature)this.getFeature(FireModeFeature.class);
+      FireModeFeature fireModeFeature = this.getFeature(FireModeFeature.class);
       return fireModeFeature.getFireModes();
    }
 
@@ -574,11 +565,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public long getReloadingCooldownTime(ReloadPhase phase, LivingEntity player, GunClientState state, ItemStack itemStack) {
       long cooldownTime = 0L;
-      Iterator var7 = this.phasedReloads.iterator();
 
-      while(var7.hasNext()) {
-         PhasedReload reload = (PhasedReload)var7.next();
-         if (phase == reload.phase && reload.predicate.test(new ConditionContext(player, itemStack, state, (ItemDisplayContext)null))) {
+      for(PhasedReload reload : this.phasedReloads) {
+         if (phase == reload.phase && reload.predicate.test(new ConditionContext(player, itemStack, state, null))) {
             cooldownTime = reload.timeUnit.toMillis(reload.cooldownTime);
             break;
          }
@@ -588,7 +577,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public int getBurstShots(ItemStack itemStack, FireModeInstance fireModeInstance) {
-      FireModeFeature mainFireModeFeature = (FireModeFeature)this.getFeature(FireModeFeature.class);
+      FireModeFeature mainFireModeFeature = this.getFeature(FireModeFeature.class);
       if (mainFireModeFeature.getFireModes().contains(fireModeInstance)) {
          int burstShots;
          if (fireModeInstance.getBurstShots() == -1) {
@@ -605,7 +594,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public int getMaxAmmoCapacity(ItemStack itemStack, FireModeInstance fireModeInstance) {
-      FireModeFeature mainFireModeFeature = (FireModeFeature)this.getFeature(FireModeFeature.class);
+      FireModeFeature mainFireModeFeature = this.getFeature(FireModeFeature.class);
       if (mainFireModeFeature.getFireModes().contains(fireModeInstance)) {
          int ammoCapacity;
          if (fireModeInstance.getAmmo() == AmmoRegistry.DEFAULT_AMMO_POOL.get()) {
@@ -646,16 +635,16 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
          public BlockEntityWithoutLevelRenderer getCustomRenderer() {
             if (this.renderer == null) {
-               Object fallbackAnimations;
+               List<ResourceLocation> fallbackAnimations;
                if (GunItem.this.firstPersonFallbackAnimations != null) {
-                  fallbackAnimations = new ArrayList();
-                  ((List)fallbackAnimations).add(GunItem.this.firstPersonFallbackAnimations);
-                  ((List)fallbackAnimations).addAll(GunItem.this.animationType.getFallbackFirstPersonAnimations());
+                  fallbackAnimations = new ArrayList<>();
+                  fallbackAnimations.add(GunItem.this.firstPersonFallbackAnimations);
+                  fallbackAnimations.addAll(GunItem.this.animationType.getFallbackFirstPersonAnimations());
                } else {
                   fallbackAnimations = GunItem.this.animationType.getFallbackFirstPersonAnimations();
                }
 
-               this.renderer = new GunItemRenderer(GunItem.this.modelResourceLocation, (List)fallbackAnimations, GunItem.this.glowEffectBuilders);
+               this.renderer = new GunItemRenderer(GunItem.this.modelResourceLocation, fallbackAnimations, GunItem.this.glowEffectBuilders);
             }
 
             return this.renderer;
@@ -679,7 +668,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       return InteractionResult.SUCCESS;
    }
 
-   public InteractionResult m_6880_(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {
+   public InteractionResult interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {
       return InteractionResult.SUCCESS;
    }
 
@@ -691,27 +680,25 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       return true;
    }
 
-   public void registerControllers(ControllerRegistrar controllers) {
-      controllers.add(new AnimationController[]{(new BlendingAnimationController(this, "walking", 2, false, (state) -> {
-         return PlayState.STOP;
-      })).withTransition("animation.model.standing", "animation.model.walking", 2, false).withTransition("animation.model.standing", "animation.model.walking_backwards", 2, false).withTransition("animation.model.standing", "animation.model.runningstart", 2, false).withTransition("animation.model.walking", "animation.model.runningstart", 2, false).withTransition("animation.model.runningstart", "animation.model.running", 2, false).withTransition("animation.model.runningstart", "animation.model.runningend", 3, false).withTransition("animation.model.running", "animation.model.runningend", 2, false).withTransition("animation.model.runningend", "animation.model.walking", 3, false).withTransition("animation.model.runningend", "animation.model.standing", 3, false).withTransition("animation.model.runningend", "animation.model.runningstart", 2, false).withSpeedProvider((p, c) -> {
-         double speed = (double)p.m_6113_();
-         AttributeInstance attribute = p.m_21051_(Attributes.f_22279_);
-         double baseSpeed = attribute != null ? attribute.m_22115_() : speed;
-         if (baseSpeed == 0.0D) {
+   public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+      controllers.add((new BlendingAnimationController<>(this, "walking", 2, false, (state) -> PlayState.STOP)).withTransition("animation.model.standing", "animation.model.walking", 2, false).withTransition("animation.model.standing", "animation.model.walking_backwards", 2, false).withTransition("animation.model.standing", "animation.model.runningstart", 2, false).withTransition("animation.model.walking", "animation.model.runningstart", 2, false).withTransition("animation.model.runningstart", "animation.model.running", 2, false).withTransition("animation.model.runningstart", "animation.model.runningend", 3, false).withTransition("animation.model.running", "animation.model.runningend", 2, false).withTransition("animation.model.runningend", "animation.model.walking", 3, false).withTransition("animation.model.runningend", "animation.model.standing", 3, false).withTransition("animation.model.runningend", "animation.model.runningstart", 2, false).withSpeedProvider((p, c) -> {
+         double speed = p.getSpeed();
+         AttributeInstance attribute = p.getAttribute(Attributes.MOVEMENT_SPEED);
+         double baseSpeed = attribute != null ? attribute.getBaseValue() : speed;
+         if (baseSpeed == (double)0.0F) {
             baseSpeed = speed;
          }
 
-         if (p.m_20142_()) {
-            baseSpeed += baseSpeed * 0.3D;
+         if (p.isSprinting()) {
+            baseSpeed += baseSpeed * 0.3;
          }
 
          double ratio = speed / baseSpeed;
-         if (((LocalPlayer)p).m_108635_() || p.m_6069_() || p.m_20069_()) {
-            ratio *= 0.6D;
+         if (((LocalPlayer)p).isMovingSlowly() || p.isSwimming() || p.isInWater()) {
+            ratio *= 0.6;
          }
 
-         return Math.sqrt(Mth.m_14008_(ratio, 0.1D, 10.0D));
+         return Math.sqrt(Mth.clamp(ratio, 0.1, 10.0F));
       }).triggerableAnim("animation.model.walking", RAW_ANIMATION_WALKING).triggerableAnim("animation.model.crouching", RAW_ANIMATION_CROUCHING).triggerableAnim("animation.model.walking_aiming", RAW_ANIMATION_WALKING_AIMING).triggerableAnim("animation.model.walking_backwards", RAW_ANIMATION_WALKING_BACKWARDS).triggerableAnim("animation.model.walking_left", RAW_ANIMATION_WALKING_LEFT).triggerableAnim("animation.model.walking_right", RAW_ANIMATION_WALKING_RIGHT).triggerableAnim("animation.model.runningstart", RAW_ANIMATION_PREPARE_RUNNING).triggerableAnim("animation.model.running", RAW_ANIMATION_RUNNING).triggerableAnim("animation.model.runningend", RAW_ANIMATION_COMPLETE_RUNNING).triggerableAnim("animation.model.standing", RAW_ANIMATION_STANDING).triggerableAnim("animation.model.off_ground", RAW_ANIMATION_OFF_GROUND).triggerableAnim("animation.model.off_ground_sprinting", RAW_ANIMATION_OFF_GROUND_SPRINTING).setSoundKeyframeHandler((event) -> {
          Player player = ClientUtil.getClientPlayer();
          if (player != null) {
@@ -719,23 +706,17 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
-      })});
-      List<GunStateAnimationController> reloadAnimationControllers = this.createReloadAnimationControllers();
-      Iterator var3 = reloadAnimationControllers.iterator();
+      }));
 
-      GunStateAnimationController prepareFiringAnimationController;
-      while(var3.hasNext()) {
-         prepareFiringAnimationController = (GunStateAnimationController)var3.next();
-         controllers.add(new AnimationController[]{prepareFiringAnimationController});
+      for(GunStateAnimationController reloadAnimationController : this.createReloadAnimationControllers()) {
+         controllers.add(reloadAnimationController);
       }
 
-      AnimationController<GunItem> fireAnimationController = new GunStateAnimationController(this, "fire_controller", "animation.model.fire", (ctx) -> {
-         return ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_SINGLE || ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_AUTO || ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_BURST || ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_COOLDOWN_SINGLE || ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_COOLDOWN_AUTO || ctx.gunClientState().getFireState() == GunClientState.FireState.FIRE_COOLDOWN_BURST || this.completeFireCooldownDuration == 0L && ctx.gunClientState().isIdle();
-      }) {
+      AnimationController<GunItem> fireAnimationController = new GunStateAnimationController(this, "fire_controller", "animation.model.fire", (ctx) -> ctx.gunClientState().getFireState() == FireState.FIRE_SINGLE || ctx.gunClientState().getFireState() == FireState.FIRE_AUTO || ctx.gunClientState().getFireState() == FireState.FIRE_BURST || ctx.gunClientState().getFireState() == FireState.FIRE_COOLDOWN_SINGLE || ctx.gunClientState().getFireState() == FireState.FIRE_COOLDOWN_AUTO || ctx.gunClientState().getFireState() == FireState.FIRE_COOLDOWN_BURST || this.completeFireCooldownDuration == 0L && ctx.gunClientState().isIdle()) {
          public void onStartFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (ClientUtil.isFirstPerson(player)) {
                this.scheduleReset(player, state, itemStack, FireModeFeature.getFireAnimation(player, state, itemStack));
@@ -750,15 +731,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, this.fireSoundVolume, 1.0F);
+               player.playSound(soundEvent, this.fireSoundVolume, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{fireAnimationController});
-      prepareFiringAnimationController = new GunStateAnimationController(this, "prepare_fire_controller", "animation.model.preparefire", (ctx) -> {
-         return ctx.gunClientState().isPreparingFiring();
-      }) {
+      controllers.add(fireAnimationController);
+      AnimationController<GunItem> prepareFiringAnimationController = new GunStateAnimationController(this, "prepare_fire_controller", "animation.model.preparefire", (ctx) -> ctx.gunClientState().isPreparingFiring()) {
          public void onPrepareFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (ClientUtil.isFirstPerson(player)) {
                this.scheduleReset(player, state, itemStack, FireModeFeature.getPrepareFireAnimation(player, state, itemStack));
@@ -773,15 +752,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{prepareFiringAnimationController});
-      AnimationController<GunItem> completeFiringAnimationController = new GunStateAnimationController(this, "complete_fire_controller", "animation.model.completefire", (ctx) -> {
-         return ctx.gunClientState().isCompletingFiring();
-      }) {
+      controllers.add(prepareFiringAnimationController);
+      AnimationController<GunItem> completeFiringAnimationController = new GunStateAnimationController(this, "complete_fire_controller", "animation.model.completefire", (ctx) -> ctx.gunClientState().isCompletingFiring()) {
          public void onCompleteFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (ClientUtil.isFirstPerson(player)) {
                this.scheduleReset(player, state, itemStack, FireModeFeature.getCompleteFireAnimation(player, state, itemStack));
@@ -796,15 +773,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{completeFiringAnimationController});
-      AnimationController<GunItem> drawAnimationController = new GunStateAnimationController(this, "draw_controller", "animation.model.draw", (ctx) -> {
-         return ctx.gunClientState().isDrawing();
-      }) {
+      controllers.add(completeFiringAnimationController);
+      AnimationController<GunItem> drawAnimationController = new GunStateAnimationController(this, "draw_controller", "animation.model.draw", (ctx) -> ctx.gunClientState().isDrawing()) {
          private String getAnimationName(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (GunItem.this.drawAnimationProvider == null) {
                return null;
@@ -828,15 +803,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{drawAnimationController});
-      AnimationController<GunItem> inspectAnimationController = new GunStateAnimationController(this, "inspect_controller", "animation.model.inspect", (ctx) -> {
-         return ctx.gunClientState().isInspecting();
-      }) {
+      controllers.add(drawAnimationController);
+      AnimationController<GunItem> inspectAnimationController = new GunStateAnimationController(this, "inspect_controller", "animation.model.inspect", (ctx) -> ctx.gunClientState().isInspecting()) {
          private String getAnimationName(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (GunItem.this.inspectAnimationProvider == null) {
                return null;
@@ -860,15 +833,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{inspectAnimationController});
-      AnimationController<GunItem> idleAnimationController = new GunStateAnimationController(this, "idle_controller", "animation.model.idle", (ctx) -> {
-         return ctx.gunClientState().getFireState() == GunClientState.FireState.IDLE || ctx.gunClientState().getFireState() == GunClientState.FireState.IDLE_COOLDOWN;
-      }) {
+      controllers.add(inspectAnimationController);
+      AnimationController<GunItem> idleAnimationController = new GunStateAnimationController(this, "idle_controller", "animation.model.idle", (ctx) -> ctx.gunClientState().getFireState() == FireState.IDLE || ctx.gunClientState().getFireState() == FireState.IDLE_COOLDOWN) {
          private String getAnimationName(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (GunItem.this.idleAnimationProvider == null) {
                return null;
@@ -892,15 +863,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{idleAnimationController});
-      AnimationController<GunItem> enableFireModeAimationController = new GunStateAnimationController(this, "enable_fire_mode_controller", "animation.model.enablefiremode", (ctx) -> {
-         return ctx.gunClientState().isChangingFireMode();
-      }) {
+      controllers.add(idleAnimationController);
+      AnimationController<GunItem> enableFireModeAimationController = new GunStateAnimationController(this, "enable_fire_mode_controller", "animation.model.enablefiremode", (ctx) -> ctx.gunClientState().isChangingFireMode()) {
          public void onEnablingFireMode(LivingEntity player, GunClientState state, ItemStack itemStack) {
             if (ClientUtil.isFirstPerson(player)) {
                this.scheduleReset(player, state, itemStack, FireModeFeature.getEnableFireModeAnimation(player, state, itemStack));
@@ -915,28 +884,24 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             String soundName = soundKeyframeData.getSound();
             SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
             if (soundEvent != null) {
-               player.m_5496_(soundEvent, 1.0F, 1.0F);
+               player.playSound(soundEvent, 1.0F, 1.0F);
             }
          }
 
       });
-      controllers.add(new AnimationController[]{enableFireModeAimationController});
+      controllers.add(enableFireModeAimationController);
    }
 
    private static boolean isCompatibleBullet(Item ammoItem, ItemStack gunStack, FireModeInstance fireModeInstance) {
       boolean result = false;
-      Item var5 = gunStack.m_41720_();
-      if (var5 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var5;
-         List var8 = getFireModes(gunStack);
-         if (!var8.contains(fireModeInstance)) {
+      Item item = gunStack.getItem();
+      if (item instanceof GunItem gunItem) {
+         List<FireModeInstance> firModeInstances = getFireModes(gunStack);
+         if (!firModeInstances.contains(fireModeInstance)) {
             return false;
          } else {
             if (fireModeInstance.isUsingDefaultAmmoPool()) {
-               Iterator var6 = gunItem.compatibleBullets.iterator();
-
-               while(var6.hasNext()) {
-                  Supplier<AmmoItem> compatibleBullet = (Supplier)var6.next();
+               for(Supplier<AmmoItem> compatibleBullet : gunItem.compatibleBullets) {
                   if (Objects.equals(compatibleBullet.get(), ammoItem)) {
                      result = true;
                      break;
@@ -954,22 +919,21 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public int canReloadGun(ItemStack gunStack, Player player, FireModeInstance fireModeInstance) {
-      GunItem gunItem = (GunItem)gunStack.m_41720_();
+      GunItem gunItem = (GunItem)gunStack.getItem();
       int maxCapacity = gunItem.getMaxAmmoCapacity(gunStack, fireModeInstance);
       int currentAmmo = getAmmo(gunStack, fireModeInstance);
       int ammoNeeded = maxCapacity - currentAmmo;
       if (ammoNeeded <= 0) {
          return 0;
-      } else if (player.m_7500_()) {
+      } else if (player.isCreative()) {
          return ammoNeeded;
       } else {
          int availableBullets = 0;
 
-         int potentialReloadAmount;
-         for(potentialReloadAmount = 0; potentialReloadAmount < player.m_150109_().m_6643_(); ++potentialReloadAmount) {
-            ItemStack itemStack = player.m_150109_().m_8020_(potentialReloadAmount);
-            if (isCompatibleBullet(itemStack.m_41720_(), gunStack, fireModeInstance)) {
-               availableBullets += itemStack.m_41613_();
+         for(int i = 0; i < player.getInventory().getContainerSize(); ++i) {
+            ItemStack itemStack = player.getInventory().getItem(i);
+            if (isCompatibleBullet(itemStack.getItem(), gunStack, fireModeInstance)) {
+               availableBullets += itemStack.getCount();
             }
 
             if (availableBullets >= ammoNeeded) {
@@ -977,17 +941,16 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             }
          }
 
-         potentialReloadAmount = Math.min(ammoNeeded, availableBullets);
+         int potentialReloadAmount = Math.min(ammoNeeded, availableBullets);
          return potentialReloadAmount;
       }
    }
 
    int reloadGun(ItemStack gunStack, Player player, FireModeInstance fireModeInstance) {
-      if (!(gunStack.m_41720_() instanceof GunItem)) {
+      if (!(gunStack.getItem() instanceof GunItem gunItem)) {
          return 0;
       } else {
-         GunItem gunItem = (GunItem)gunStack.m_41720_();
-         if (!gunItem.isEnabled()) {
+          if (!gunItem.isEnabled()) {
             return 0;
          } else {
             int maxCapacity = gunItem.getMaxAmmoCapacity(gunStack, fireModeInstance);
@@ -995,69 +958,66 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             int neededAmmo = maxCapacity - currentAmmo;
             if (neededAmmo <= 0) {
                return currentAmmo;
+            } else if (player.isCreative()) {
+               int newAmmo = currentAmmo + neededAmmo;
+               setAmmo(gunStack, fireModeInstance, newAmmo);
+               return newAmmo;
             } else {
-               int foundAmmoCount;
-               if (player.m_7500_()) {
-                  foundAmmoCount = currentAmmo + neededAmmo;
-                  setAmmo(gunStack, fireModeInstance, foundAmmoCount);
-                  return foundAmmoCount;
-               } else {
-                  foundAmmoCount = 0;
+               int foundAmmoCount = 0;
 
-                  int i;
-                  for(i = 0; i < player.m_150109_().f_35974_.size(); ++i) {
-                     ItemStack inventoryItem = (ItemStack)player.m_150109_().f_35974_.get(i);
-                     if (isCompatibleBullet(inventoryItem.m_41720_(), gunStack, fireModeInstance)) {
-                        int availableBullets = inventoryItem.m_41613_();
-                        if (availableBullets <= neededAmmo) {
-                           foundAmmoCount += availableBullets;
-                           neededAmmo -= availableBullets;
-                           player.m_150109_().f_35974_.set(i, ItemStack.f_41583_);
-                        } else {
-                           inventoryItem.m_41774_(neededAmmo);
-                           foundAmmoCount += neededAmmo;
-                           neededAmmo = 0;
-                        }
+               for(int i = 0; i < player.getInventory().items.size(); ++i) {
+                  ItemStack inventoryItem = player.getInventory().items.get(i);
+                  if (isCompatibleBullet(inventoryItem.getItem(), gunStack, fireModeInstance)) {
+                     int availableBullets = inventoryItem.getCount();
+                     if (availableBullets <= neededAmmo) {
+                        foundAmmoCount += availableBullets;
+                        neededAmmo -= availableBullets;
+                        player.getInventory().items.set(i, ItemStack.EMPTY);
+                     } else {
+                        inventoryItem.shrink(neededAmmo);
+                        foundAmmoCount += neededAmmo;
+                        neededAmmo = 0;
+                     }
 
-                        if (neededAmmo == 0) {
-                           break;
-                        }
+                     if (neededAmmo == 0) {
+                        break;
                      }
                   }
-
-                  i = currentAmmo + foundAmmoCount;
-                  setAmmo(gunStack, fireModeInstance, i);
-                  return i;
                }
+
+               int newAmmo = currentAmmo + foundAmmoCount;
+               setAmmo(gunStack, fireModeInstance, newAmmo);
+               return newAmmo;
             }
          }
       }
    }
 
    public void handleClientReloadRequest(ServerPlayer player, ItemStack itemStack, UUID clientStateId, int slotIndex, FireModeInstance fireModeInstance) {
-      boolean isOffhand = player.m_21206_() == itemStack;
+      boolean isOffhand = player.getOffhandItem() == itemStack;
       if (!isOffhand && itemStack != null) {
          int ammo = this.reloadGun(itemStack, player, fireModeInstance);
          UUID itemStackId = getItemStackId(itemStack);
-         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-            return player;
-         }), new ReloadResponsePacket(itemStackId, slotIndex, 0, ammo > 0, ammo, fireModeInstance));
+         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> player), new ReloadResponsePacket(itemStackId, slotIndex, 0, ammo > 0, ammo, fireModeInstance));
       }
 
    }
 
    public static UUID getItemStackId(ItemStack itemStack) {
-      CompoundTag idTag = itemStack.m_41783_();
+      CompoundTag idTag = itemStack.getTag();
       return idTag != null ? MiscUtil.getTagId(idTag) : null;
    }
 
-   public void m_6883_(ItemStack itemStack, Level level, Entity entity, int itemSlot, boolean isSelected) {
-      boolean isOffhand = entity instanceof Player && ((Player)entity).m_21206_() == itemStack;
-      if (!level.f_46443_) {
+   public void inventoryTick(ItemStack itemStack, Level level, Entity entity, int itemSlot, boolean isSelected) {
+      boolean isOffhand = entity instanceof Player && ((Player)entity).getOffhandItem() == itemStack;
+      if (!level.isClientSide) {
          this.ensureItemStack(itemStack, level, entity, isOffhand);
       } else {
-         GunClientState state = GunClientState.getState((Player)entity, itemStack, itemSlot, isOffhand);
-         if (state != null && entity instanceof Player) {
+          GunClientState state = null;
+          if (entity instanceof Player) {
+              state = GunClientState.getState((Player)entity, itemStack, itemSlot, isOffhand);
+          }
+          if (state != null && entity instanceof Player) {
             state.inventoryTick((Player)entity, itemStack, isSelected);
          }
       }
@@ -1067,29 +1027,25 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    public void ensureItemStack(ItemStack itemStack, Level level, Entity entity, boolean isOffhand) {
       GeoItem.getOrAssignId(itemStack, (ServerLevel)level);
       getOrAssignRandomSeed(itemStack);
-      CompoundTag stateTag = itemStack.m_41784_();
-      long mid = stateTag.m_128454_("mid");
-      long lid = stateTag.m_128454_("lid");
+      CompoundTag stateTag = itemStack.getOrCreateTag();
+      long mid = stateTag.getLong("mid");
+      long lid = stateTag.getLong("lid");
       if (mid == 0L && lid == 0L) {
          UUID newId = UUID.randomUUID();
-         stateTag.m_128356_("mid", newId.getMostSignificantBits());
-         stateTag.m_128356_("lid", newId.getLeastSignificantBits());
-         stateTag.m_128405_("ammo", this.maxAmmoCapacity == Integer.MAX_VALUE ? Integer.MAX_VALUE : 0);
-         stateTag.m_128365_("ammox", new CompoundTag());
+         stateTag.putLong("mid", newId.getMostSignificantBits());
+         stateTag.putLong("lid", newId.getLeastSignificantBits());
+         stateTag.putInt("ammo", this.maxAmmoCapacity == Integer.MAX_VALUE ? Integer.MAX_VALUE : 0);
+         stateTag.put("ammox", new CompoundTag());
          List<FireModeInstance> mainFireModes = this.getMainFireModes();
          if (mainFireModes != null && !mainFireModes.isEmpty()) {
-            stateTag.m_128362_("fmid", ((FireModeInstance)this.getMainFireModes().get(0)).getId());
+            stateTag.putUUID("fmid", this.getMainFireModes().get(0).getId());
          }
 
-         stateTag.m_128379_("aim", false);
-         Item var13 = itemStack.m_41720_();
-         if (var13 instanceof AttachmentHost) {
-            AttachmentHost attachmentHost = (AttachmentHost)var13;
-            Collection<Attachment> defaultAttachments = attachmentHost.getDefaultAttachments();
-            Iterator var14 = defaultAttachments.iterator();
+         stateTag.putBoolean("aim", false);
+         Item defaultAttachments = itemStack.getItem();
+         if (defaultAttachments instanceof AttachmentHost attachmentHost) {
 
-            while(var14.hasNext()) {
-               Attachment attachment = (Attachment)var14.next();
+             for(Attachment attachment : attachmentHost.getDefaultAttachments()) {
                Attachments.addAttachment(itemStack, new ItemStack(attachment), true);
             }
          }
@@ -1101,31 +1057,26 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public static void initStackForCrafting(ItemStack itemStack) {
-      Item var2 = itemStack.m_41720_();
-      if (var2 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var2;
-         CompoundTag stateTag = itemStack.m_41784_();
-         long mid = stateTag.m_128454_("mid");
-         long lid = stateTag.m_128454_("lid");
+      Item item = itemStack.getItem();
+      if (item instanceof GunItem gunItem) {
+         CompoundTag stateTag = itemStack.getOrCreateTag();
+         long mid = stateTag.getLong("mid");
+         long lid = stateTag.getLong("lid");
          if (mid == 0L && lid == 0L) {
             UUID newId = UUID.randomUUID();
-            stateTag.m_128356_("mid", newId.getMostSignificantBits());
-            stateTag.m_128356_("lid", newId.getLeastSignificantBits());
-            stateTag.m_128365_("ammox", new CompoundTag());
+            stateTag.putLong("mid", newId.getMostSignificantBits());
+            stateTag.putLong("lid", newId.getLeastSignificantBits());
+            stateTag.put("ammox", new CompoundTag());
             List<FireModeInstance> mainFireModes = gunItem.getMainFireModes();
             if (mainFireModes != null && !mainFireModes.isEmpty()) {
-               stateTag.m_128362_("fmid", ((FireModeInstance)gunItem.getMainFireModes().get(0)).getId());
+               stateTag.putUUID("fmid", gunItem.getMainFireModes().get(0).getId());
             }
 
-            stateTag.m_128379_("aim", false);
-            Item var10 = itemStack.m_41720_();
-            if (var10 instanceof AttachmentHost) {
-               AttachmentHost attachmentHost = (AttachmentHost)var10;
-               Collection<Attachment> defaultAttachments = attachmentHost.getDefaultAttachments();
-               Iterator var11 = defaultAttachments.iterator();
+            stateTag.putBoolean("aim", false);
+            Item defaultAttachments = itemStack.getItem();
+            if (defaultAttachments instanceof AttachmentHost attachmentHost) {
 
-               while(var11.hasNext()) {
-                  Attachment attachment = (Attachment)var11.next();
+                for(Attachment attachment : attachmentHost.getDefaultAttachments()) {
                   Attachments.addAttachment(itemStack, new ItemStack(attachment), true);
                }
             }
@@ -1135,69 +1086,63 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    private void ensureValidFireModeSelected(ItemStack itemStack) {
-      CompoundTag idTag = itemStack.m_41783_();
+      CompoundTag idTag = itemStack.getTag();
       if (idTag != null) {
-         UUID fireModeInstanceId = idTag.m_128403_("fmid") ? idTag.m_128342_("fmid") : null;
-         FireModeInstance selectedModeInstance = FireModeInstance.getOrElse(fireModeInstanceId, (FireModeInstance)null);
+         UUID fireModeInstanceId = idTag.hasUUID("fmid") ? idTag.getUUID("fmid") : null;
+         FireModeInstance selectedModeInstance = FireModeInstance.getOrElse(fireModeInstanceId, null);
          List<FireModeInstance> fireModes = getFireModes(itemStack);
          if (selectedModeInstance != null && !fireModes.contains(selectedModeInstance)) {
             selectedModeInstance = null;
          }
 
          if (selectedModeInstance == null && !fireModes.isEmpty()) {
-            selectedModeInstance = (FireModeInstance)fireModes.get(0);
+            selectedModeInstance = fireModes.get(0);
             setFireModeInstance(itemStack, selectedModeInstance);
          }
 
          if (selectedModeInstance == null) {
-            idTag.m_128473_("fmid");
+            idTag.remove("fmid");
          }
       }
 
    }
 
    private static long getOrAssignRandomSeed(ItemStack stack) {
-      CompoundTag tag = stack.m_41784_();
-      long seed = tag.m_128454_("seed");
-      if (tag.m_128425_("seed", 99)) {
-         return seed;
-      } else {
-         seed = random.nextLong();
-         tag.m_128356_("seed", seed);
-         return seed;
-      }
+      CompoundTag tag = stack.getOrCreateTag();
+      long seed = tag.getLong("seed");
+       if (!tag.contains("seed", 99)) {
+           seed = random.nextLong();
+           tag.putLong("seed", seed);
+       }
+       return seed;
    }
 
-   public void m_5551_(ItemStack stack, Level level, LivingEntity shooter, int ticksRemaining) {
+   public void releaseUsing(ItemStack stack, Level level, LivingEntity shooter, int ticksRemaining) {
    }
 
    private Predicate<Block> getDestroyBlockByHitScanPredicate() {
-      return (block) -> {
-         return Config.bulletsBreakGlassEnabled && (block instanceof AbstractGlassBlock || block instanceof StainedGlassPaneBlock || block == Blocks.f_50185_);
-      };
+      return (block) -> Config.bulletsBreakGlassEnabled && (block instanceof AbstractGlassBlock || block instanceof StainedGlassPaneBlock || block == Blocks.GLASS_PANE);
    }
 
    private Predicate<Block> getPassThroughBlocksByHitScanPredicate() {
-      return (block) -> {
-         return block instanceof BushBlock || block instanceof LeavesBlock;
-      };
+      return (block) -> block instanceof BushBlock || block instanceof LeavesBlock;
    }
 
    @OnlyIn(Dist.CLIENT)
    public void requestFireFromServer(GunClientState gunClientState, Player player, ItemStack itemStack, Entity targetEntity) {
-      int activeSlot = player.m_150109_().f_35977_;
+      int activeSlot = player.getInventory().selected;
       LOGGER.debug("{} requesting fire from server", System.currentTimeMillis() % 100000L);
       SoundFeature.playFireSound(player, itemStack);
       Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, gunClientState, itemStack);
-      int shotCount = (Integer)pcs.getFirst() > 0 ? (Integer)pcs.getFirst() : 1;
+      int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
       long requestSeed = random.nextLong();
       FireModeInstance fireModeInstance = getFireModeInstance(itemStack);
       AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
       if (projectileItem != null) {
          GunStatePoseProvider gunStatePoseProvider = GunStatePoseProvider.getInstance();
-         Vec3[] pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, GunStatePoseProvider.PoseContext.FIRST_PERSON_MUZZLE);
+         Vec3[] pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE);
          if (pd == null) {
-            pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, GunStatePoseProvider.PoseContext.FIRST_PERSON_MUZZLE_FLASH);
+            pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE_FLASH);
          }
 
          Vec3 startPos;
@@ -1206,12 +1151,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             startPos = pd[0];
             direction = pd[1];
          } else {
-            startPos = player.m_146892_();
-            direction = player.m_20252_(0.0F);
-            startPos = startPos.m_82549_(direction.m_82541_().m_82542_(2.0D, 2.0D, 2.0D));
+            startPos = player.getEyePosition();
+            direction = player.getViewVector(0.0F);
+            startPos = startPos.add(direction.normalize().multiply(2.0F, 2.0F, 2.0F));
          }
 
-         Network.networkChannel.sendToServer(new ProjectileFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), startPos.f_82479_, startPos.f_82480_, startPos.f_82481_, direction.f_82479_, direction.f_82480_, direction.f_82481_, targetEntity != null ? targetEntity.m_19879_() : -1, requestSeed));
+         Network.networkChannel.sendToServer(new ProjectileFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), startPos.x, startPos.y, startPos.z, direction.x, direction.y, direction.z, targetEntity != null ? targetEntity.getId() : -1, requestSeed));
       } else {
          double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, gunClientState.isAiming());
          long itemSeed = getOrAssignRandomSeed(itemStack);
@@ -1226,11 +1171,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    private void acquireHitScan(Player player, ItemStack itemStack, @NotNull GunClientState gunClientState, int shotCount, long seed, double adjustedInaccuracy) {
       if (shotCount <= 1) {
          double maxDistance = this.getMaxClientShootingDistance(itemStack, gunClientState);
-         List<HitResult> hitResults = HitScan.getObjectsInCrosshair(player, player.m_146892_(), player.m_20252_(0.0F), 1.0F, maxDistance, shotCount, adjustedInaccuracy, seed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), new ArrayList());
-         Iterator var12 = hitResults.iterator();
 
-         while(var12.hasNext()) {
-            HitResult hitResult = (HitResult)var12.next();
+         for(HitResult hitResult : HitScan.getObjectsInCrosshair(player, player.getEyePosition(), player.getViewVector(0.0F), 1.0F, maxDistance, shotCount, adjustedInaccuracy, seed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), new ArrayList<>())) {
             gunClientState.acquireHitScan(player, itemStack, hitResult);
          }
 
@@ -1239,10 +1181,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    @OnlyIn(Dist.CLIENT)
    private double getMaxClientShootingDistance(ItemStack itemStack, GunClientState gunClientState) {
-      Minecraft mc = Minecraft.m_91087_();
-      double maxDistance = (double)Math.min(mc.f_91066_.m_193772_() * 16, FireModeFeature.getMaxShootingDistance(itemStack));
+      Minecraft mc = Minecraft.getInstance();
+      double maxDistance = Math.min(mc.options.getEffectiveRenderDistance() * 16, FireModeFeature.getMaxShootingDistance(itemStack));
       if (!gunClientState.isAiming()) {
-         maxDistance = Math.min(maxDistance, 100.0D);
+         maxDistance = Math.min(maxDistance, 100.0F);
       }
 
       return maxDistance;
@@ -1252,15 +1194,15 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       double adjustedInaccuracy;
       if (isAiming) {
          adjustedInaccuracy = this.inaccuracyAiming;
-      } else if (player.m_20142_()) {
+      } else if (player.isSprinting()) {
          adjustedInaccuracy = this.inaccuracySprinting;
       } else {
          adjustedInaccuracy = this.inaccuracy;
       }
 
-      Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, (GunClientState)null, itemStack);
-      if ((Integer)pcs.getFirst() > 0) {
-         adjustedInaccuracy += (Double)pcs.getSecond();
+      Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, null, itemStack);
+      if (pcs.getFirst() > 0) {
+         adjustedInaccuracy += pcs.getSecond();
       }
 
       float accuracyModifier = AccuracyFeature.getAccuracyModifier(itemStack);
@@ -1269,9 +1211,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public static LazyOptional<Integer> getClientSideAmmo(Player player, ItemStack itemStack, int slotIndex) {
       GunClientState state = GunClientState.getState(player, itemStack, slotIndex, false);
-      return LazyOptional.of(state != null ? () -> {
-         return state.getAmmoCount(getFireModeInstance(itemStack));
-      } : null);
+      return LazyOptional.of(state != null ? () -> state.getAmmoCount(getFireModeInstance(itemStack)) : null);
    }
 
    public double getInacuracy() {
@@ -1283,36 +1223,34 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public static int getAmmo(ItemStack itemStack, FireModeInstance fireModeInstance) {
-      if (!(itemStack.m_41720_() instanceof GunItem)) {
-         return 0;
-      } else {
-         CompoundTag idTag = itemStack.m_41783_();
-         if (idTag != null) {
-            if (fireModeInstance.isUsingDefaultAmmoPool()) {
-               return idTag.m_128451_("ammo");
-            }
+       if (itemStack.getItem() instanceof GunItem) {
+           CompoundTag idTag = itemStack.getTag();
+           if (idTag != null) {
+               if (fireModeInstance.isUsingDefaultAmmoPool()) {
+                   return idTag.getInt("ammo");
+               }
 
-            CompoundTag auxAmmoTag = idTag.m_128469_("ammox");
-            if (auxAmmoTag != null) {
-               return auxAmmoTag.m_128451_(fireModeInstance.getAmmo().getName());
-            }
-         }
+               CompoundTag auxAmmoTag = idTag.getCompound("ammox");
+               if (auxAmmoTag != null) {
+                   return auxAmmoTag.getInt(fireModeInstance.getAmmo().getName());
+               }
+           }
 
-         return 0;
-      }
+       }
+       return 0;
    }
 
    public static void setAmmo(ItemStack itemStack, FireModeInstance fireModeInstance, int ammo) {
-      if (itemStack.m_41720_() instanceof GunItem) {
+      if (itemStack.getItem() instanceof GunItem) {
          LOGGER.debug("Setting ammo in stack {} to {}", System.identityHashCode(itemStack), ammo);
-         CompoundTag idTag = itemStack.m_41783_();
+         CompoundTag idTag = itemStack.getTag();
          if (idTag != null) {
             if (fireModeInstance.isUsingDefaultAmmoPool()) {
-               idTag.m_128405_("ammo", ammo);
+               idTag.putInt("ammo", ammo);
             } else {
-               CompoundTag auxAmmoTag = idTag.m_128469_("ammox");
-               auxAmmoTag.m_128405_(fireModeInstance.getAmmo().getName(), ammo);
-               idTag.m_128365_("ammox", auxAmmoTag);
+               CompoundTag auxAmmoTag = idTag.getCompound("ammox");
+               auxAmmoTag.putInt(fireModeInstance.getAmmo().getName(), ammo);
+               idTag.put("ammox", auxAmmoTag);
             }
          }
 
@@ -1320,17 +1258,17 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public static int decrementAmmo(ItemStack itemStack) {
-      if (!(itemStack.m_41720_() instanceof GunItem)) {
+      if (!(itemStack.getItem() instanceof GunItem)) {
          return 0;
       } else {
-         CompoundTag idTag = itemStack.m_41783_();
+         CompoundTag idTag = itemStack.getTag();
          if (idTag != null) {
-            int ammo = idTag.m_128451_("ammo");
+            int ammo = idTag.getInt("ammo");
             if (ammo <= 0) {
                return -1;
             } else {
                --ammo;
-               idTag.m_128405_("ammo", ammo);
+               idTag.putInt("ammo", ammo);
                return ammo;
             }
          } else {
@@ -1345,19 +1283,18 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public static FireModeInstance getFireModeInstance(ItemStack itemStack) {
-      Item var2 = itemStack.m_41720_();
-      if (var2 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var2;
-         CompoundTag idTag = itemStack.m_41783_();
+      Item item = itemStack.getItem();
+      if (item instanceof GunItem gunItem) {
+         CompoundTag idTag = itemStack.getTag();
          if (idTag != null) {
-            UUID fireModeInstanceId = idTag.m_128403_("fmid") ? idTag.m_128342_("fmid") : null;
+            UUID fireModeInstanceId = idTag.hasUUID("fmid") ? idTag.getUUID("fmid") : null;
             FireModeInstance fireModeInstance = null;
             if (fireModeInstanceId != null) {
-               fireModeInstance = FireModeInstance.getOrElse(fireModeInstanceId, (FireModeInstance)null);
+               fireModeInstance = FireModeInstance.getOrElse(fireModeInstanceId, null);
             }
 
             if (fireModeInstance == null) {
-               fireModeInstance = (FireModeInstance)gunItem.getMainFireModes().get(0);
+               fireModeInstance = gunItem.getMainFireModes().get(0);
             }
 
             return fireModeInstance;
@@ -1370,10 +1307,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    private static void setFireModeInstance(ItemStack itemStack, FireModeInstance fireModeInstance) {
-      if (itemStack.m_41720_() instanceof GunItem) {
-         CompoundTag idTag = itemStack.m_41783_();
+      if (itemStack.getItem() instanceof GunItem) {
+         CompoundTag idTag = itemStack.getTag();
          if (idTag != null) {
-            idTag.m_128362_("fmid", fireModeInstance.getId());
+            idTag.putUUID("fmid", fireModeInstance.getId());
             LOGGER.debug("Set fire mode instance to {}, tag: {}", fireModeInstance.getDisplayName(), idTag);
          }
 
@@ -1382,26 +1319,25 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public void handleClientProjectileFireRequest(ServerPlayer player, FireModeInstance fireModeInstance, UUID stateId, int slotIndex, int correlationId, boolean isAiming, double spawnPositionX, double spawnPositionY, double spawnPositionZ, double spawnDirectionX, double spawnDirectionY, double spawnDirectionZ, int targetEntityId, long requestSeed) {
       LOGGER.debug("Handling client projectile file request");
-      ItemStack itemStack = player.m_150109_().m_8020_(slotIndex);
+      ItemStack itemStack = player.getInventory().getItem(slotIndex);
       AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
       if (projectileItem == null) {
          LOGGER.error("Attempted to handle client projectile fire request with an item that does not support projectiles: " + this);
       } else if (this.isEnabled() && projectileItem.isEnabled()) {
-         boolean isOffhand = player.m_21206_() == itemStack;
-         if (itemStack != null && !isOffhand && itemStack.m_41720_() instanceof GunItem) {
-            int ammo = false;
-            int ammo;
+         boolean isOffhand = player.getOffhandItem() == itemStack;
+         if (itemStack != null && !isOffhand && itemStack.getItem() instanceof GunItem) {
+            int ammo = 0;
             if ((ammo = getAmmo(itemStack, fireModeInstance)) > 0) {
                LOGGER.debug("Received client projectile file request");
                Entity targetEntity = null;
                if (targetEntityId >= 0) {
-                  targetEntity = MiscUtil.getLevel(player).m_6815_(targetEntityId);
+                  targetEntity = MiscUtil.getLevel(player).getEntity(targetEntityId);
                }
 
                ProjectileLike projectile = null;
                if (targetEntity != null) {
-                  HitResult hitResult = HitScan.ensureEntityInCrosshair(player, targetEntity, 0.0F, 400.0D, 2.0F);
-                  if (hitResult != null && hitResult.m_6662_() == Type.ENTITY && ((EntityHitResult)hitResult).m_82443_() == targetEntity) {
+                  HitResult hitResult = HitScan.ensureEntityInCrosshair(player, targetEntity, 0.0F, 400.0F, 2.0F);
+                  if (hitResult != null && hitResult.getType() == Type.ENTITY && ((EntityHitResult)hitResult).getEntity() == targetEntity) {
                      projectile = projectileItem.createProjectile(player, spawnPositionX, spawnPositionY, spawnPositionZ);
                      projectile.launchAtTargetEntity(player, hitResult, targetEntity);
                   }
@@ -1418,7 +1354,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                   }
 
                   SoundFeature.playFireSound(player, itemStack);
-                  MiscUtil.getLevel(player).m_7967_((Entity)projectile);
+                  MiscUtil.getLevel(player).addFreshEntity((Entity)projectile);
                } else {
                   LOGGER.debug("Did not fire projectile");
                }
@@ -1433,20 +1369,16 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    private AmmoItem getFirstCompatibleProjectile(ItemStack gunStack, FireModeInstance fireModeInstance) {
-      Item var4 = gunStack.m_41720_();
-      if (var4 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var4;
-         List var9 = getFireModes(gunStack);
-         if (!var9.contains(fireModeInstance)) {
+      Item item = gunStack.getItem();
+      if (item instanceof GunItem gunItem) {
+         List<FireModeInstance> firModeInstances = getFireModes(gunStack);
+         if (!firModeInstances.contains(fireModeInstance)) {
             return null;
          } else {
             AmmoItem projectileItem = null;
             if (fireModeInstance.isUsingDefaultAmmoPool()) {
-               Iterator var6 = gunItem.compatibleBullets.iterator();
-
-               while(var6.hasNext()) {
-                  Supplier<AmmoItem> ammoSupplier = (Supplier)var6.next();
-                  AmmoItem ammoItem = (AmmoItem)ammoSupplier.get();
+               for(Supplier<AmmoItem> ammoSupplier : gunItem.compatibleBullets) {
+                  AmmoItem ammoItem = ammoSupplier.get();
                   if (ammoItem != null && ammoItem.isHasProjectile()) {
                      projectileItem = ammoItem;
                      break;
@@ -1469,7 +1401,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    public void handleClientHitScanFireRequest(ServerPlayer player, FireModeInstance fireModeInstance, UUID stateId, int slotIndex, int correlationId, boolean isAiming, long requestSeed) {
       try {
          LOGGER.debug("{} handling client fire request", System.currentTimeMillis() % 100000L);
-         ItemStack itemStack = player.m_150109_().m_8020_(slotIndex);
+         ItemStack itemStack = player.getInventory().getItem(slotIndex);
          AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
          if (projectileItem != null) {
             LOGGER.error("Attempted to handle client hit scan fire request with an item that fires projectiles: " + this);
@@ -1480,49 +1412,46 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             return;
          }
 
-         boolean isOffhand = player.m_21206_() == itemStack;
-         if (itemStack == null || isOffhand || !(itemStack.m_41720_() instanceof GunItem)) {
+         boolean isOffhand = player.getOffhandItem() == itemStack;
+         if (itemStack == null || isOffhand || !(itemStack.getItem() instanceof GunItem)) {
             return;
          }
 
-         List<HitResult> hitResults = new ArrayList();
-         int ammo = false;
-         int ammo;
+         List<HitResult> hitResults = new ArrayList<>();
+         int ammo = 0;
          if ((ammo = getAmmo(itemStack, fireModeInstance)) > 0) {
             if (this.getMaxAmmoCapacity(itemStack, fireModeInstance) < Integer.MAX_VALUE) {
                setAmmo(itemStack, fireModeInstance, ammo - 1);
             }
 
             SoundFeature.playFireSound(player, itemStack);
-            Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, (GunClientState)null, itemStack);
-            int shotCount = (Integer)pcs.getFirst() > 0 ? (Integer)pcs.getFirst() : 1;
+            Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, null, itemStack);
+            int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
             double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, isAiming);
             long xorSeed = getOrAssignRandomSeed(itemStack) ^ requestSeed;
-            Vec3 eyePos = player.m_146892_();
-            Vec3 lookVec = player.m_20252_(0.0F);
+            Vec3 eyePos = player.getEyePosition();
+            Vec3 lookVec = player.getViewVector(0.0F);
             ServerLevel level = (ServerLevel)MiscUtil.getLevel(player);
             double maxHitScanDistance = this.getMaxServerShootingDistance(itemStack, isAiming, level);
-            List<BlockPos> blockPosToDestroy = new ArrayList();
+            List<BlockPos> blockPosToDestroy = new ArrayList<>();
             hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
             LOGGER.debug("{} obtained hit results", System.currentTimeMillis() % 100000L);
-            Iterator var26 = hitResults.iterator();
 
-            while(var26.hasNext()) {
-               HitResult hitResult = (HitResult)var26.next();
+            for(HitResult hitResult : hitResults) {
                this.hitScanTarget(player, itemStack, slotIndex, correlationId, hitResult, maxHitScanDistance, blockPosToDestroy);
             }
          }
-      } catch (Exception var28) {
-         LOGGER.error("Failed to handle client hit scan fire request: {}", var28);
+      } catch (Exception e) {
+         LOGGER.error("Failed to handle client hit scan fire request: {}", e);
       }
 
    }
 
    private double getMaxServerShootingDistance(ItemStack itemStack, boolean isAiming, ServerLevel level) {
-      MinecraftServer server = level.m_7654_();
-      double maxHitScanDistance = (double)Math.min(server.m_6846_().m_11312_() * 16, FireModeFeature.getMaxShootingDistance(itemStack));
+      MinecraftServer server = level.getServer();
+      double maxHitScanDistance = Math.min(server.getPlayerList().getViewDistance() * 16, FireModeFeature.getMaxShootingDistance(itemStack));
       if (!isAiming) {
-         maxHitScanDistance = Math.min(maxHitScanDistance, 100.0D);
+         maxHitScanDistance = Math.min(maxHitScanDistance, 100.0F);
       }
 
       return maxHitScanDistance;
@@ -1531,56 +1460,38 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    private void hitScanTarget(Player player, ItemStack itemStack, int slotIndex, int correlationId, HitResult hitResult, double maxHitScanDistance, List<BlockPos> blockPosToDestroy) {
       float entityDamage = 0.0F;
       LOGGER.debug("Executing hit target task for hit result {}", hitResult);
-      if (hitResult.m_6662_() == Type.ENTITY) {
-         entityDamage = this.hurtEntity(player, (EntityHitResult)hitResult, (Entity)null, itemStack);
-      } else if (hitResult.m_6662_() == Type.BLOCK) {
-         this.handleBlockHit(player, (BlockHitResult)hitResult, (Entity)null);
+      if (hitResult.getType() == Type.ENTITY) {
+         entityDamage = this.hurtEntity(player, (EntityHitResult)hitResult, null, itemStack);
+      } else if (hitResult.getType() == Type.BLOCK) {
+         this.handleBlockHit(player, (BlockHitResult)hitResult, null);
       }
 
-      Iterator var10 = blockPosToDestroy.iterator();
-
-      while(var10.hasNext()) {
-         BlockPos bp = (BlockPos)var10.next();
-         MiscUtil.getLevel(player).m_46953_(bp, true, player);
+      for(BlockPos bp : blockPosToDestroy) {
+         MiscUtil.getLevel(player).destroyBlock(bp, true, player);
       }
 
       double maxHitScanDistanceSqr = maxHitScanDistance * maxHitScanDistance;
-      Iterator var12 = ((ServerLevel)MiscUtil.getLevel(player)).m_8795_((p) -> {
-         return true;
-      }).iterator();
 
-      while(true) {
-         ServerPlayer serverPlayer;
-         do {
-            if (!var12.hasNext()) {
-               return;
-            }
-
-            serverPlayer = (ServerPlayer)var12.next();
-         } while(serverPlayer != player && !(serverPlayer.m_20280_(player) < maxHitScanDistanceSqr));
-
-         LOGGER.debug("{} sends hit scan notification to {}", player, serverPlayer);
-         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-            return serverPlayer;
-         }), new HitScanFireResponsePacket(player.m_19879_(), getItemStackId(itemStack), slotIndex, correlationId, SimpleHitResult.fromHitResult(hitResult), entityDamage));
+      for(ServerPlayer serverPlayer : ((ServerLevel)MiscUtil.getLevel(player)).getPlayers((p) -> true)) {
+         if (serverPlayer == player || serverPlayer.distanceToSqr(player) < maxHitScanDistanceSqr) {
+            LOGGER.debug("{} sends hit scan notification to {}", player, serverPlayer);
+            Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new HitScanFireResponsePacket(player.getId(), getItemStackId(itemStack), slotIndex, correlationId, SimpleHitResult.fromHitResult(hitResult), entityDamage));
+         }
       }
+
    }
 
    public void handleClientFireModeRequest(ServerPlayer player, UUID stateId, int slotIndex, int correlationId, FireModeInstance fireModeInstance) {
-      ItemStack itemStack = player.m_150109_().m_8020_(slotIndex);
-      if (itemStack != null && itemStack.m_41720_() instanceof GunItem) {
+      ItemStack itemStack = player.getInventory().getItem(slotIndex);
+      if (itemStack != null && itemStack.getItem() instanceof GunItem) {
          boolean isSuccess = getFireModes(itemStack).contains(fireModeInstance);
          if (isSuccess) {
             setFireModeInstance(itemStack, fireModeInstance);
          }
 
-         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-            return player;
-         }), new FireModeResponsePacket(stateId, slotIndex, correlationId, isSuccess, fireModeInstance));
+         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> player), new FireModeResponsePacket(stateId, slotIndex, correlationId, isSuccess, fireModeInstance));
       } else {
-         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> {
-            return player;
-         }), new FireModeResponsePacket(stateId, slotIndex, correlationId, false, fireModeInstance));
+         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> player), new FireModeResponsePacket(stateId, slotIndex, correlationId, false, fireModeInstance));
       }
    }
 
@@ -1595,16 +1506,15 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       if (gunClientState != null) {
          Player mainPlayer = ClientUtils.getClientPlayer();
          if (player == mainPlayer) {
-            if (hitResult.m_6662_() != Type.MISS) {
+            if (hitResult.getType() != Type.MISS) {
                gunClientState.confirmHitScanTarget(mainPlayer, itemStack, hitResult, damage);
             }
          } else if (itemStack != null) {
-            Item var9 = itemStack.m_41720_();
-            if (var9 instanceof GunItem) {
-               GunItem gunItem = (GunItem)var9;
-               gunItem.effectLauncher.onStartFiring(mainPlayer, gunClientState, itemStack);
+            Item var9 = itemStack.getItem();
+            if (var9 instanceof GunItem gunItem) {
+                gunItem.effectLauncher.onStartFiring(mainPlayer, gunClientState, itemStack);
                gunItem.effectLauncher.onHitScanTargetAcquired(mainPlayer, gunClientState, itemStack, hitResult);
-               if (hitResult.m_6662_() != Type.MISS) {
+               if (hitResult.getType() != Type.MISS) {
                   gunItem.effectLauncher.onHitScanTargetConfirmed(mainPlayer, gunClientState, itemStack, hitResult, damage);
                }
             }
@@ -1631,8 +1541,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    @OnlyIn(Dist.CLIENT)
    public boolean tryReload(Player player, ItemStack itemStack) {
       boolean result = false;
-      int activeSlot = player.m_150109_().f_35977_;
-      boolean isMainHand = player.m_21205_() == itemStack;
+      int activeSlot = player.getInventory().selected;
+      boolean isMainHand = player.getMainHandItem() == itemStack;
       if (isMainHand) {
          GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
          if (gunClientState != null) {
@@ -1646,8 +1556,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    @OnlyIn(Dist.CLIENT)
    public boolean tryFire(LocalPlayer player, ItemStack itemStack, Entity targetEntity) {
       boolean result = false;
-      int activeSlot = player.m_150109_().f_35977_;
-      boolean isMainHand = player.m_21205_() == itemStack;
+      int activeSlot = player.getInventory().selected;
+      boolean isMainHand = player.getMainHandItem() == itemStack;
       if (isMainHand) {
          GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
          if (gunClientState != null) {
@@ -1663,8 +1573,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    public boolean requestReloadFromServer(Player player, ItemStack itemStack) {
       LOGGER.debug("{} Initiating client side reload", System.currentTimeMillis() % 100000L);
       boolean result = false;
-      int activeSlot = player.m_150109_().f_35977_;
-      boolean isMainHandItem = player.m_21205_() == itemStack;
+      int activeSlot = player.getInventory().selected;
+      boolean isMainHandItem = player.getMainHandItem() == itemStack;
       if (isMainHandItem) {
          FireModeInstance fireModeInstance = getFireModeInstance(itemStack);
          int ammoToReload = this.canReloadGun(itemStack, player, fireModeInstance);
@@ -1711,16 +1621,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       List<FireModeInstance> allFireModes = getFireModes(itemStack);
       int currentIndex = allFireModes.indexOf(currentMode);
       int nextIndex = (currentIndex + 1) % allFireModes.size();
-      return (FireModeInstance)allFireModes.get(nextIndex);
+      return allFireModes.get(nextIndex);
    }
 
    public static List<FireModeInstance> getFireModes(ItemStack itemStack) {
-      List<FireModeInstance> allFireModes = new ArrayList();
-      List<Features.EnabledFeature> enabledFireModeFeatures = Features.getEnabledFeatures(itemStack, FireModeFeature.class);
-      Iterator var3 = enabledFireModeFeatures.iterator();
+      List<FireModeInstance> allFireModes = new ArrayList<>();
 
-      while(var3.hasNext()) {
-         Features.EnabledFeature efmf = (Features.EnabledFeature)var3.next();
+      for(Features.EnabledFeature efmf : Features.getEnabledFeatures(itemStack, FireModeFeature.class)) {
          FireModeFeature fmf = (FireModeFeature)efmf.feature();
          allFireModes.addAll(fmf.getFireModes());
       }
@@ -1730,8 +1637,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    @OnlyIn(Dist.CLIENT)
    public void initiateClientSideFireMode(Player player, ItemStack itemStack) {
-      int activeSlot = player.m_150109_().f_35977_;
-      boolean isOffhand = player.m_21206_() == itemStack;
+      int activeSlot = player.getInventory().selected;
+      boolean isOffhand = player.getOffhandItem() == itemStack;
       if (!isOffhand) {
          GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
          if (gunClientState != null && !gunClientState.isReloading() && !gunClientState.isFiring() && !gunClientState.isInspecting()) {
@@ -1755,8 +1662,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    @OnlyIn(Dist.CLIENT)
    public void setTriggerOff(LocalPlayer player, ItemStack itemStack) {
-      int activeSlot = player.m_150109_().f_35977_;
-      boolean isOffhand = player.m_21206_() == itemStack;
+      int activeSlot = player.getInventory().selected;
+      boolean isOffhand = player.getOffhandItem() == itemStack;
       if (!isOffhand) {
          GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
          if (gunClientState != null) {
@@ -1769,7 +1676,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    public GunClientState createState(UUID stateId) {
       GunClientState state = new GunClientState(stateId, this);
       LOGGER.debug("Creating state {}", stateId);
-      state.setAnimationController("playerRecoil", new PlayerRecoilController(this.viewRecoilAmplitude, (double)this.viewRecoilMaxPitch, (double)this.viewRecoilDuration));
+      state.setAnimationController("playerRecoil", new PlayerRecoilController(this.viewRecoilAmplitude, this.viewRecoilMaxPitch, (double)this.viewRecoilDuration));
       state.setAnimationController("shake", new ViewShakeAnimationController(this.shakeRecoilAmplitude, this.shakeRecoilSpeed, this.shakeDecay, this.shakeRecoilDuration) {
          public void onStartFiring(LivingEntity player, GunClientState state, ItemStack itemStack) {
             FireModeInstance.ViewShakeDescriptor viewShakeDescriptor = FireModeFeature.getViewShakeDescriptor(itemStack);
@@ -1779,20 +1686,14 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       state.setAnimationController("recoil2", new GunRecoilAnimationController(this.gunRecoilInitialAmplitude, this.gunRecoilRateOfAmplitudeDecay, this.gunRecoilInitialAngularFrequency, this.gunRecoilRateOfFrequencyIncrease, this.gunRecoilPitchMultiplier, this.gunRecoilDuration, this.shotsPerRecoil));
       state.setAnimationController("randomizer", new GunRandomizingAnimationController(this.gunRandomizationAmplitude, this.idleRandomizationDuration, this.recoilRandomizationDuration));
       state.setAnimationController("reloadTimer", this.createReloadTimerController());
-      Iterator var3 = this.glowEffectBuilders.iterator();
 
-      String controllerId;
-      while(var3.hasNext()) {
-         GlowAnimationController.Builder builder = (GlowAnimationController.Builder)var3.next();
-         controllerId = "glowEffect" + builder.getEffectId();
+      for(GlowAnimationController.Builder builder : this.glowEffectBuilders) {
+         String controllerId = "glowEffect" + builder.getEffectId();
          state.setAnimationController(controllerId, builder.build());
       }
 
-      var3 = this.rotationEffectBuilders.iterator();
-
-      while(var3.hasNext()) {
-         RotationAnimationController.Builder builder = (RotationAnimationController.Builder)var3.next();
-         controllerId = "rotation" + builder.getModelPartName();
+      for(RotationAnimationController.Builder builder : this.rotationEffectBuilders) {
+         String controllerId = "rotation" + builder.getModelPartName();
          state.setAnimationController(controllerId, builder.build());
       }
 
@@ -1807,11 +1708,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    private List<GunStateAnimationController> createReloadAnimationControllers() {
-      List<GunStateAnimationController> reloadAnimationControllers = new ArrayList();
+      List<GunStateAnimationController> reloadAnimationControllers = new ArrayList<>();
       if (this.phasedReloads.isEmpty()) {
-         GunStateAnimationController reloadAnimationController = new GunStateAnimationController(this, "reload_controller", "animation.model.reload", (ctx) -> {
-            return ctx.gunClientState().isReloading();
-         }) {
+         GunStateAnimationController reloadAnimationController = new GunStateAnimationController(this, "reload_controller", "animation.model.reload", (ctx) -> ctx.gunClientState().isReloading()) {
             public void onStartReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
                if (ClientUtil.isFirstPerson(player)) {
                   this.scheduleReset(player, state, itemStack);
@@ -1822,10 +1721,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          reloadAnimationControllers.add(reloadAnimationController);
       } else {
          long maxReloadDuration = 0L;
-         Iterator var4 = this.phasedReloads.iterator();
 
-         while(var4.hasNext()) {
-            PhasedReload phasedReload = (PhasedReload)var4.next();
+         for(PhasedReload phasedReload : this.phasedReloads) {
             long conditionalReloadTimeMillis = phasedReload.timeUnit.toMillis(phasedReload.cooldownTime);
             if (conditionalReloadTimeMillis > maxReloadDuration) {
                maxReloadDuration = conditionalReloadTimeMillis;
@@ -1833,17 +1730,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          }
 
          int counter = 0;
-         Iterator var12 = this.phasedReloads.iterator();
 
-         while(var12.hasNext()) {
-            final PhasedReload phasedReload = (PhasedReload)var12.next();
+         for(final PhasedReload phasedReload : this.phasedReloads) {
             ReloadAnimation reloadAnimation = phasedReload.reloadAnimation;
-            final Predicate<ConditionContext> combinedPredicate = (ctx) -> {
-               return ctx.gunClientState().isReloading() && phasedReload.predicate.test(ctx);
-            };
+            final Predicate<ConditionContext> combinedPredicate = (ctx) -> ctx.gunClientState().isReloading() && phasedReload.predicate.test(ctx);
             GunStateAnimationController reloadAnimationController = new GunStateAnimationController(this, reloadAnimation.animationName + "_" + counter++, reloadAnimation.animationName, combinedPredicate) {
                public void onStartReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.RELOADING && combinedPredicate.test(new ConditionContext((Player)player, itemStack, state, (ItemDisplayContext)null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.RELOADING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on start reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1851,7 +1744,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                }
 
                public void onCompleteReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.COMPLETETING && combinedPredicate.test(new ConditionContext((Player)player, itemStack, state, (ItemDisplayContext)null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.COMPLETETING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on complete reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1859,7 +1752,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                }
 
                public void onPrepareReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.PREPARING && combinedPredicate.test(new ConditionContext(player, itemStack, state, (ItemDisplayContext)null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.PREPARING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on prepare reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1873,7 +1766,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                   String soundName = soundKeyframeData.getSound();
                   SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
                   if (soundEvent != null) {
-                     player.m_5496_(soundEvent, 1.0F, 1.0F);
+                     player.playSound(soundEvent, 1.0F, 1.0F);
                   }
                }
 
@@ -1893,19 +1786,14 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                this.reset();
             }
          };
-         Iterator var2 = this.reloadEffectControllers.iterator();
 
-         while(var2.hasNext()) {
-            Tuple<Long, AbstractProceduralAnimationController> t = (Tuple)var2.next();
-            reloadTimerController.schedule(ReloadPhase.RELOADING, (Long)t.m_14418_(), TimeUnit.MILLISECOND, (AbstractProceduralAnimationController)t.m_14419_(), (Predicate)null);
+         for(Tuple<Long, AbstractProceduralAnimationController> t : this.reloadEffectControllers) {
+            reloadTimerController.schedule(GunItem.ReloadPhase.RELOADING, t.getA(), TimeUnit.MILLISECOND, t.getB(), null);
          }
       } else {
          long maxReloadDuration = 0L;
-         Iterator var4 = this.phasedReloads.iterator();
 
-         PhasedReload phasedReload;
-         while(var4.hasNext()) {
-            phasedReload = (PhasedReload)var4.next();
+         for(PhasedReload phasedReload : this.phasedReloads) {
             long conditionalReloadTimeMillis = phasedReload.timeUnit.toMillis(phasedReload.cooldownTime);
             if (conditionalReloadTimeMillis > maxReloadDuration) {
                maxReloadDuration = conditionalReloadTimeMillis;
@@ -1934,18 +1822,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
             }
          };
-         var4 = this.phasedReloads.iterator();
 
-         while(var4.hasNext()) {
-            phasedReload = (PhasedReload)var4.next();
+         for(PhasedReload phasedReload : this.phasedReloads) {
             ReloadAnimation reloadAnimation = phasedReload.reloadAnimation;
-            Predicate<ConditionContext> combinedPredicate = (ctx) -> {
-               return ctx.gunClientState().isReloading() && phasedReload.predicate.test(ctx);
-            };
-            Iterator var8 = reloadAnimation.shakeEffects.iterator();
+            Predicate<ConditionContext> combinedPredicate = (ctx) -> ctx.gunClientState().isReloading() && phasedReload.predicate.test(ctx);
 
-            while(var8.hasNext()) {
-               ReloadShakeEffect effect = (ReloadShakeEffect)var8.next();
+            for(ReloadShakeEffect effect : reloadAnimation.shakeEffects) {
                ViewShakeAnimationController2 controller = new ViewShakeAnimationController2(effect.initialAmplitude, effect.rateOfAmplitudeDecay, effect.initialAngularFrequency, effect.rateOfFrequencyIncrease, effect.duration);
                reloadTimerController.schedule(phasedReload.phase, phasedReload.timeUnit.toMillis(effect.startTime), TimeUnit.MILLISECOND, controller, combinedPredicate);
             }
@@ -1963,7 +1845,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public AnimationController<GeoAnimatable> getGeoAnimationController(String controllerId, ItemStack itemStack) {
       Map<String, AnimationController<GeoAnimatable>> controllers = this.getGeoAnimationControllers(itemStack);
-      return (AnimationController)controllers.get(controllerId);
+      return controllers.get(controllerId);
    }
 
    public ResourceLocation getTargetLockOverlay() {
@@ -1979,7 +1861,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       LOGGER.debug("Locking target: {}", targetEntity);
       if (this.targetStartLockingSound != null) {
          Player player = ClientUtils.getClientPlayer();
-         MiscUtil.getLevel(player).m_6263_(player, player.m_20185_(), player.m_20186_(), player.m_20189_(), this.targetStartLockingSound, SoundSource.PLAYERS, 1.0F, 1.0F);
+         MiscUtil.getLevel(player).playSound(player, player.getX(), player.getY(), player.getZ(), this.targetStartLockingSound, SoundSource.PLAYERS, 1.0F, 1.0F);
       }
 
    }
@@ -1989,17 +1871,15 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       LOGGER.debug("Target locked: {}", targetEntity);
       Player player = ClientUtils.getClientPlayer();
       if (this.targetLockedSound != null) {
-         MiscUtil.getLevel(player).m_6263_(player, player.m_20185_(), player.m_20186_(), player.m_20189_(), this.targetLockedSound, SoundSource.PLAYERS, 1.0F, 1.0F);
+         MiscUtil.getLevel(player).playSound(player, player.getX(), player.getY(), player.getZ(), this.targetLockedSound, SoundSource.PLAYERS, 1.0F, 1.0F);
       }
 
       GunClientState state = GunClientState.getMainHeldState();
       if (state != null) {
-         MutableComponent var10001 = Component.m_237115_("message.pointblank.targetAcquired").m_130946_(": ").m_7220_(targetEntity.m_7755_()).m_130946_(". ");
-         MutableComponent var10002 = Component.m_237115_("message.pointblank.distance").m_130946_(": ");
-         float var10003 = targetEntity.m_20270_(player);
-         state.publishMessage(var10001.m_7220_(var10002.m_130946_(Math.round(var10003).makeConcatWithConstants<invokedynamic>(Math.round(var10003)))), 1000L, (s) -> {
-            return true;
-         });
+         MutableComponent var10001 = Component.translatable("message.pointblank.targetAcquired").append(": ").append(targetEntity.getName()).append(". ");
+         MutableComponent var10002 = Component.translatable("message.pointblank.distance").append(": ");
+         float var10003 = targetEntity.distanceTo(player);
+         state.publishMessage(var10001.append(var10002.append("" + Math.round(var10003))), 1000L, (s) -> true);
       }
 
    }
@@ -2042,28 +1922,27 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public void handleAimingChangeRequest(Player player, ItemStack itemStack, UUID stateId, int slotIndex, boolean isAiming) {
-      if (itemStack.m_41720_() instanceof GunItem) {
-         CompoundTag idTag = itemStack.m_41783_();
+      if (itemStack.getItem() instanceof GunItem) {
+         CompoundTag idTag = itemStack.getTag();
          if (idTag != null) {
-            idTag.m_128379_("aim", isAiming && this.isAimingEnabled);
+            idTag.putBoolean("aim", isAiming && this.isAimingEnabled);
          }
 
-         if (player.m_20142_() && isAiming && this.isAimingEnabled) {
-            player.m_6858_(false);
+         if (player.isSprinting() && isAiming && this.isAimingEnabled) {
+            player.setSprinting(false);
          }
 
       }
    }
 
    public static boolean isAiming(ItemStack itemStack) {
-      Item var2 = itemStack.m_41720_();
-      if (var2 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var2;
-         CompoundTag idTag = itemStack.m_41783_();
+      Item item = itemStack.getItem();
+      if (item instanceof GunItem gunItem) {
+         CompoundTag idTag = itemStack.getTag();
          if (idTag == null) {
             return false;
          } else {
-            return gunItem.isAimingEnabled && idTag.m_128471_("aim");
+            return gunItem.isAimingEnabled && idTag.getBoolean("aim");
          }
       } else {
          return false;
@@ -2080,12 +1959,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public Collection<Attachment> getCompatibleAttachments() {
       if (this.compatibleAttachments == null) {
-         Set<AttachmentCategory> attachmentCategories = new HashSet();
-         Set<Attachment> compatibleAttachments = new LinkedHashSet();
-         Iterator var3 = this.getDefaultAttachments().iterator();
+         Set<AttachmentCategory> attachmentCategories = new HashSet<>();
+         Set<Attachment> compatibleAttachments = new LinkedHashSet<>();
 
-         while(var3.hasNext()) {
-            Attachment attachment = (Attachment)var3.next();
+         for(Attachment attachment : this.getDefaultAttachments()) {
             if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
                LOGGER.warn("Cannot add compatible attachment {} with category {} to  item {} because the existing number of compatible categories for this item cannot exceed {}", attachment.getName(), attachment.getCategory(), this.getName(), this.getMaxAttachmentCategories());
                break;
@@ -2095,11 +1972,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             compatibleAttachments.add(attachment);
          }
 
-         var3 = this.compatibleAttachmentSuppliers.iterator();
-
-         while(var3.hasNext()) {
-            Supplier<Attachment> attachmentSupplier = (Supplier)var3.next();
-            Attachment attachment = (Attachment)attachmentSupplier.get();
+         for(Supplier<Attachment> attachmentSupplier : this.compatibleAttachmentSuppliers) {
+            Attachment attachment = attachmentSupplier.get();
             if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
                LOGGER.warn("Cannot add compatible attachment {} with category {} to  item {} because the existing number of compatible categories for this item cannot exceed {}", attachment.getName(), attachment.getCategory(), this.getName(), this.getMaxAttachmentCategories());
                break;
@@ -2109,39 +1983,28 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             compatibleAttachments.add(attachment);
          }
 
-         var3 = this.compatibleAttachmentGroups.iterator();
-
-         while(true) {
-            while(var3.hasNext()) {
-               String group = (String)var3.next();
-               List<Supplier<? extends Item>> groupAtttachments = ItemRegistry.ITEMS.getAttachmentsForGroup(group);
-               Iterator var6 = groupAtttachments.iterator();
-
-               while(var6.hasNext()) {
-                  Supplier<? extends Item> ga = (Supplier)var6.next();
-                  Item item = (Item)ga.get();
-                  if (item instanceof Attachment) {
-                     Attachment attachment = (Attachment)item;
-                     if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
-                        LOGGER.warn("Cannot add compatible attachment {} with category {} to  item {} because the existing number of compatible categories for this item cannot exceed {}", attachment.getName(), attachment.getCategory(), this.getName(), this.getMaxAttachmentCategories());
-                        break;
-                     }
-
-                     compatibleAttachments.add(attachment);
+         for(String group : this.compatibleAttachmentGroups) {
+            for(Supplier<? extends Item> ga : ItemRegistry.ITEMS.getAttachmentsForGroup(group)) {
+               Item item = ga.get();
+               if (item instanceof Attachment attachment) {
+                   if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
+                     LOGGER.warn("Cannot add compatible attachment {} with category {} to  item {} because the existing number of compatible categories for this item cannot exceed {}", attachment.getName(), attachment.getCategory(), this.getName(), this.getMaxAttachmentCategories());
+                     break;
                   }
+
+                  compatibleAttachments.add(attachment);
                }
             }
-
-            this.compatibleAttachments = compatibleAttachments;
-            break;
          }
+
+         this.compatibleAttachments = compatibleAttachments;
       }
 
       return this.compatibleAttachments;
    }
 
    public <T extends Feature> T getFeature(Class<T> featureClass) {
-      return (Feature)featureClass.cast(this.features.get(featureClass));
+      return featureClass.cast(this.features.get(featureClass));
    }
 
    public long getCraftingDuration() {
@@ -2157,8 +2020,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public static ItemStack getMainHeldGunItemStack(LivingEntity player) {
-      ItemStack itemStack = player.m_21205_();
-      return itemStack != null && itemStack.m_41720_() instanceof GunItem ? itemStack : null;
+      ItemStack itemStack = player.getMainHandItem();
+      return itemStack != null && itemStack.getItem() instanceof GunItem ? itemStack : null;
    }
 
    public boolean hasIdleAnimations() {
@@ -2171,6 +2034,165 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
    public String getThirdPersonFallbackAnimations() {
       return this.thirdPersonFallbackAnimations;
+   }
+
+   public enum AnimationType {
+      RIFLE("__DEFAULT_RIFLE_ANIMATIONS__", GunItem.FALLBACK_COMMON_ANIMATIONS),
+      PISTOL("__DEFAULT_PISTOL_ANIMATIONS__", GunItem.FALLBACK_PISTOL_ANIMATIONS);
+
+      private final String defaultThirdPersonAnimation;
+      private final List<ResourceLocation> fallbackFirstPersonAnimations;
+
+      AnimationType(String defaultThirdPersonAnimation, List<ResourceLocation> fallbackFirstPersonAnimations) {
+         this.defaultThirdPersonAnimation = defaultThirdPersonAnimation;
+         this.fallbackFirstPersonAnimations = fallbackFirstPersonAnimations;
+      }
+
+      public String getDefaultThirdPersonAnimation() {
+         return this.defaultThirdPersonAnimation;
+      }
+
+      private List<ResourceLocation> getFallbackFirstPersonAnimations() {
+         return this.fallbackFirstPersonAnimations;
+      }
+   }
+
+   public enum ReloadPhase {
+      PREPARING,
+      RELOADING,
+      COMPLETETING;
+
+      ReloadPhase() {
+      }
+   }
+
+   public enum FirePhase {
+      PREPARING,
+      FIRING,
+      COMPLETETING,
+      HIT_SCAN_ACQUIRED,
+      HIT_TARGET,
+      ANY,
+      FLYING;
+
+      FirePhase() {
+      }
+   }
+
+   public record ReloadShakeEffect(long startTime, long duration, TimeUnit timeUnit, double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease) {
+      private static final double DEFAULT_INITIAL_ANGULAR_FREQUENCY = 1.0F;
+      private static final double DEFAULT_RATE_OF_FREQUENCY_INCREASE = 0.01;
+
+      public ReloadShakeEffect(long startTime, long duration, TimeUnit timeUnit, double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease) {
+         this.startTime = startTime;
+         this.duration = duration;
+         this.timeUnit = timeUnit;
+         this.initialAmplitude = initialAmplitude;
+         this.rateOfAmplitudeDecay = rateOfAmplitudeDecay;
+         this.initialAngularFrequency = initialAngularFrequency;
+         this.rateOfFrequencyIncrease = rateOfFrequencyIncrease;
+      }
+
+      public ReloadShakeEffect(long startTime, long duration, double initialAmplitude, double rateOfAmplitudeDecay) {
+         this(startTime, duration, TimeUnit.MILLISECOND, initialAmplitude, rateOfAmplitudeDecay, DEFAULT_INITIAL_ANGULAR_FREQUENCY, DEFAULT_RATE_OF_FREQUENCY_INCREASE);
+      }
+
+      public long startTime() {
+         return this.startTime;
+      }
+
+      public long duration() {
+         return this.duration;
+      }
+
+      public TimeUnit timeUnit() {
+         return this.timeUnit;
+      }
+
+      public double initialAmplitude() {
+         return this.initialAmplitude;
+      }
+
+      public double rateOfAmplitudeDecay() {
+         return this.rateOfAmplitudeDecay;
+      }
+
+      public double initialAngularFrequency() {
+         return this.initialAngularFrequency;
+      }
+
+      public double rateOfFrequencyIncrease() {
+         return this.rateOfFrequencyIncrease;
+      }
+   }
+
+   public record ReloadAnimation(String animationName, List<ReloadShakeEffect> shakeEffects) {
+      public ReloadAnimation(String animationName, List<ReloadShakeEffect> shakeEffects) {
+         this.animationName = animationName;
+         this.shakeEffects = shakeEffects;
+      }
+
+      public ReloadAnimation(String animationName) {
+         this(animationName, Collections.emptyList());
+      }
+
+      public String animationName() {
+         return this.animationName;
+      }
+
+      public List<ReloadShakeEffect> shakeEffects() {
+         return this.shakeEffects;
+      }
+   }
+
+   public record PhasedReload(ReloadPhase phase, Predicate<ConditionContext> predicate, long cooldownTime, TimeUnit timeUnit, ReloadAnimation reloadAnimation) {
+      public PhasedReload(ReloadPhase phase, Predicate<ConditionContext> predicate, long cooldownTime, TimeUnit timeUnit, ReloadAnimation reloadAnimation) {
+         if (cooldownTime == 0L) {
+            throw new IllegalArgumentException("cooldownTime cannot be null");
+         } else if (timeUnit == null) {
+            throw new IllegalArgumentException("timeUnit cannot be null");
+         } else if (predicate == null) {
+            throw new IllegalArgumentException("predicate cannot be null");
+         } else {
+            this.phase = phase;
+            this.predicate = predicate;
+            this.cooldownTime = cooldownTime;
+            this.timeUnit = timeUnit;
+            this.reloadAnimation = reloadAnimation;
+         }
+      }
+
+      public PhasedReload(ReloadPhase phase, TriPredicate<LivingEntity, GunClientState, ItemStack> predicate, long cooldownTime, ReloadAnimation reloadAnimation) {
+         this(phase, (ctx) -> predicate.test(ctx.player(), ctx.gunClientState(), ctx.currentItemStack()), cooldownTime, TimeUnit.MILLISECOND, reloadAnimation);
+      }
+
+      public PhasedReload(ReloadPhase phase, long cooldownTime, ReloadAnimation reloadAnimation) {
+         this(phase, (ctx) -> true, cooldownTime, TimeUnit.MILLISECOND, reloadAnimation);
+      }
+
+      public PhasedReload(ReloadPhase phase, long cooldownTime, String animationName) {
+         this(phase, (ctx) -> true, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
+      }
+
+      public ReloadPhase phase() {
+         return this.phase;
+      }
+
+      public Predicate<ConditionContext> predicate() {
+         return this.predicate;
+      }
+
+      public long cooldownTime() {
+         return this.cooldownTime;
+      }
+
+      public TimeUnit timeUnit() {
+         return this.timeUnit;
+      }
+
+      public ReloadAnimation reloadAnimation() {
+         return this.reloadAnimation;
+      }
    }
 
    public static class Builder extends HurtingItem.Builder<Builder> implements Nameable {
@@ -2188,35 +2210,35 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       private static final int DEFAULT_CRAFTING_DURATION = 1000;
       private static final float DEFAULT_HIT_SCAN_SPEED = 800.0F;
       private static final float DEFAULT_HIT_SCAN_ACCELERATION = 0.0F;
-      private static final double DEFAULT_VIEW_RECOIL_AMPLITUDE = 1.0D;
-      private static final double DEFAULT_SHAKE_RECOIL_AMPLITUDE = 0.5D;
+      private static final double DEFAULT_VIEW_RECOIL_AMPLITUDE = 1.0F;
+      private static final double DEFAULT_SHAKE_RECOIL_AMPLITUDE = 0.5F;
       private static final int DEFAULT_VIEW_RECOIL_MAX_PITCH = 20;
-      private static final double DEFAULT_SHAKE_RECOIL_SPEED = 8.0D;
-      private static final double DEFAULT_SHAKE_DECAY = 0.98D;
-      private static final double DEFAULT_GUN_RECOIL_INITIAL_AMPLITUDE = 0.3D;
-      private static final double DEFAULT_GUN_RECOIL_RATE_OF_AMPLITUDE_DECAY = 0.8D;
-      private static final double DEFAULT_GUN_RECOIL_INITIAL_ANGULAR_FREQUENCY = 1.0D;
-      private static final double DEFAULT_GUN_RECOIL_RATE_OF_FREQUENCY_INCREASE = 0.05D;
-      private static final double DEFAULT_GUN_RANDOMIZATION_AMPLITUDE = 0.01D;
-      private static final double DEFAULT_GUN_RECOIL_PITCH_MULTIPLIER = 1.0D;
-      private static final double DEFAULT_JUMP_MULTIPLIER = 1.0D;
-      private static final double DEFAULT_RELOAD_SHAKE_INITIAL_AMPLITUDE = 0.15D;
-      private static final double DEFAULT_RELOAD_SHAKE_RATE_OF_AMPLITUDE_DECAY = 0.3D;
-      private static final double DEFAULT_RELOAD_SHAKE_INITIAL_ANGULAR_FREQUENCY = 1.0D;
-      private static final double DEFAULT_RELOAD_SHAKE_RATE_OF_FREQUENCY_INCREASE = 0.01D;
+      private static final double DEFAULT_SHAKE_RECOIL_SPEED = 8.0F;
+      private static final double DEFAULT_SHAKE_DECAY = 0.98;
+      private static final double DEFAULT_GUN_RECOIL_INITIAL_AMPLITUDE = 0.3;
+      private static final double DEFAULT_GUN_RECOIL_RATE_OF_AMPLITUDE_DECAY = 0.8;
+      private static final double DEFAULT_GUN_RECOIL_INITIAL_ANGULAR_FREQUENCY = 1.0F;
+      private static final double DEFAULT_GUN_RECOIL_RATE_OF_FREQUENCY_INCREASE = 0.05;
+      private static final double DEFAULT_GUN_RANDOMIZATION_AMPLITUDE = 0.01;
+      private static final double DEFAULT_GUN_RECOIL_PITCH_MULTIPLIER = 1.0F;
+      private static final double DEFAULT_JUMP_MULTIPLIER = 1.0F;
+      private static final double DEFAULT_RELOAD_SHAKE_INITIAL_AMPLITUDE = 0.15;
+      private static final double DEFAULT_RELOAD_SHAKE_RATE_OF_AMPLITUDE_DECAY = 0.3;
+      private static final double DEFAULT_RELOAD_SHAKE_INITIAL_ANGULAR_FREQUENCY = 1.0F;
+      private static final double DEFAULT_RELOAD_SHAKE_RATE_OF_FREQUENCY_INCREASE = 0.01;
       private static final int DEFAULT_BURST_SHOTS = 3;
       private static final int DEFAULT_RELOAD_COOLDOWN_TIME = 1000;
-      public static final double DEFAULT_AIMING_CURVE_X = 0.0D;
-      public static final double DEFAULT_AIMING_CURVE_Y = -0.07D;
-      public static final double DEFAULT_AIMING_CURVE_Z = 0.3D;
-      public static final double DEFAULT_AIMING_CURVE_PITCH = -0.01D;
-      public static final double DEFAULT_AIMING_CURVE_YAW = -0.01D;
-      public static final double DEFAULT_AIMING_CURVE_ROLL = -0.01D;
-      public static final double DEFAULT_AIMING_ZOOM = 0.05D;
-      public static final double DEFAULT_PELLET_SPREAD = 1.0D;
-      private static final double DEFAULT_INACCURACY = 0.03D;
-      private static final double DEFAULT_INACCURACY_AIMING = 0.0D;
-      private static final double DEFAULT_INACCURACY_SPRINTING = 0.1D;
+      public static final double DEFAULT_AIMING_CURVE_X = 0.0F;
+      public static final double DEFAULT_AIMING_CURVE_Y = -0.07;
+      public static final double DEFAULT_AIMING_CURVE_Z = 0.3;
+      public static final double DEFAULT_AIMING_CURVE_PITCH = -0.01;
+      public static final double DEFAULT_AIMING_CURVE_YAW = -0.01;
+      public static final double DEFAULT_AIMING_CURVE_ROLL = -0.01;
+      public static final double DEFAULT_AIMING_ZOOM = 0.05;
+      public static final double DEFAULT_PELLET_SPREAD = 1.0F;
+      private static final double DEFAULT_INACCURACY = 0.03;
+      private static final double DEFAULT_INACCURACY_AIMING = 0.0F;
+      private static final double DEFAULT_INACCURACY_SPRINTING = 0.1;
       private static final int DEFAULT_RPM = 600;
       private static final float DEFAULT_FIRE_SOUND_VOLUME = 5.0F;
       public static final int DEFAULT_MAX_AMMO_PER_RELOAD_ITERATION = Integer.MAX_VALUE;
@@ -2226,21 +2248,21 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       private static final float DEFAULT_BOBBING_ON_AIM = 0.3F;
       private static final float DEFAULT_BOBBING_ROLL_MULTIPLIER = 1.0F;
       private long targetLockTimeTicks;
-      private double viewRecoilAmplitude = 1.0D;
-      private double shakeRecoilAmplitude = 0.5D;
+      private double viewRecoilAmplitude = 1.0F;
+      private double shakeRecoilAmplitude = 0.5F;
       private int viewRecoilMaxPitch = 20;
       private long viewRecoilDuration = 100L;
-      private double shakeRecoilSpeed = 8.0D;
-      private double shakeDecay = 0.98D;
+      private double shakeRecoilSpeed = 8.0F;
+      private double shakeDecay = 0.98;
       private long shakeRecoilDuration = 400L;
-      private double gunRecoilInitialAmplitude = 0.3D;
-      private double gunRecoilRateOfAmplitudeDecay = 0.8D;
-      private double gunRecoilInitialAngularFrequency = 1.0D;
-      private double gunRecoilRateOfFrequencyIncrease = 0.05D;
-      private double gunRandomizationAmplitude = 0.01D;
-      private double gunRecoilPitchMultiplier = 1.0D;
+      private double gunRecoilInitialAmplitude = 0.3;
+      private double gunRecoilRateOfAmplitudeDecay = 0.8;
+      private double gunRecoilInitialAngularFrequency = 1.0F;
+      private double gunRecoilRateOfFrequencyIncrease = 0.05;
+      private double gunRandomizationAmplitude = 0.01;
+      private double gunRecoilPitchMultiplier = 1.0F;
       private long gunRecoilDuration = 500L;
-      private double jumpMultiplier = 1.0D;
+      private double jumpMultiplier = 1.0F;
       private int shotsPerRecoil = 1;
       private int shotsPerTrace = 1;
       private long idleRandomizationDuration = 2500L;
@@ -2261,37 +2283,37 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       private int maxAmmoCapacity;
       private int maxAmmoPerReloadIteration = Integer.MAX_VALUE;
       private FireMode[] fireModes;
-      private Set<Supplier<AmmoItem>> compatibleAmmo = new LinkedHashSet();
+      private final Set<Supplier<AmmoItem>> compatibleAmmo = new LinkedHashSet<>();
       private Supplier<SoundEvent> fireSound;
       private float fireSoundVolume = 5.0F;
       private Supplier<SoundEvent> targetLockedSound;
       private Supplier<SoundEvent> targetStartLockingSound;
       private boolean isAimingEnabled = true;
-      private double aimingCurveX = 0.0D;
-      private double aimingCurveY = -0.07D;
-      private double aimingCurveZ = 0.3D;
-      private double aimingCurvePitch = -0.01D;
-      private double aimingCurveYaw = -0.01D;
-      private double aimingCurveRoll = -0.01D;
-      private double aimingZoom = 0.05D;
-      private double pipScopeZoom = 0.0D;
-      private List<Tuple<Long, AbstractProceduralAnimationController>> reloadEffectControllers;
+      private double aimingCurveX = 0.0F;
+      private double aimingCurveY = -0.07;
+      private double aimingCurveZ = 0.3;
+      private double aimingCurvePitch = -0.01;
+      private double aimingCurveYaw = -0.01;
+      private double aimingCurveRoll = -0.01;
+      private double aimingZoom = 0.05;
+      private double pipScopeZoom = 0.0F;
+      private final List<Tuple<Long, AbstractProceduralAnimationController>> reloadEffectControllers;
       private String scopeOverlay;
       private String reticleOverlay;
       private String targetLockOverlay;
-      private List<PhasedReload> phasedReloads = new ArrayList();
-      private ConditionalAnimationProvider.Builder drawAnimationsBuilder = new ConditionalAnimationProvider.Builder();
-      private ConditionalAnimationProvider.Builder idleAnimationBuilder = new ConditionalAnimationProvider.Builder();
-      private ConditionalAnimationProvider.Builder inspectAnimationsBuilder = new ConditionalAnimationProvider.Builder();
-      private ConditionalAnimationProvider.Builder fireAnimationsBuilder = new ConditionalAnimationProvider.Builder();
+      private final List<PhasedReload> phasedReloads = new ArrayList<>();
+      private final ConditionalAnimationProvider.Builder drawAnimationsBuilder = new ConditionalAnimationProvider.Builder();
+      private final ConditionalAnimationProvider.Builder idleAnimationBuilder = new ConditionalAnimationProvider.Builder();
+      private final ConditionalAnimationProvider.Builder inspectAnimationsBuilder = new ConditionalAnimationProvider.Builder();
+      private final ConditionalAnimationProvider.Builder fireAnimationsBuilder = new ConditionalAnimationProvider.Builder();
       private int pelletCount = 0;
-      private double pelletSpread = 1.0D;
-      private double inaccuracy = 0.03D;
-      private double inaccuracyAiming = 0.0D;
-      private double inaccuracySprinting = 0.1D;
-      private List<GlowAnimationController.Builder> glowEffectBuilders = new ArrayList();
-      private List<RotationAnimationController.Builder> rotationEffectBuilders = new ArrayList();
-      private Map<FirePhase, List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>>> effectBuilders = new HashMap();
+      private double pelletSpread = 1.0F;
+      private double inaccuracy = 0.03;
+      private double inaccuracyAiming = 0.0F;
+      private double inaccuracySprinting = 0.1;
+      private final List<GlowAnimationController.Builder> glowEffectBuilders = new ArrayList<>();
+      private final List<RotationAnimationController.Builder> rotationEffectBuilders = new ArrayList<>();
+      private final Map<FirePhase, List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>>> effectBuilders = new HashMap<>();
       private float hitScanSpeed = 800.0F;
       private float hitScanAcceleration = 0.0F;
       private float bobbing = 1.0F;
@@ -2301,18 +2323,18 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       private AnimationType animationType;
       private String firstPersonFallbackAnimations;
       private String thirdPersonFallbackAnimations;
-      private List<Supplier<Attachment>> compatibleAttachments;
-      private List<String> compatibleAttachmentGroups;
-      private List<FeatureBuilder<?, ?>> featureBuilders;
-      private List<Supplier<Attachment>> defaultAttachments;
+      private final List<Supplier<Attachment>> compatibleAttachments;
+      private final List<String> compatibleAttachmentGroups;
+      private final List<FeatureBuilder<?, ?>> featureBuilders;
+      private final List<Supplier<Attachment>> defaultAttachments;
 
       public Builder() {
-         this.animationType = AnimationType.RIFLE;
-         this.compatibleAttachments = new ArrayList();
-         this.compatibleAttachmentGroups = new ArrayList();
-         this.featureBuilders = new ArrayList();
-         this.defaultAttachments = new ArrayList();
-         this.reloadEffectControllers = new ArrayList();
+         this.animationType = GunItem.AnimationType.RIFLE;
+         this.compatibleAttachments = new ArrayList<>();
+         this.compatibleAttachmentGroups = new ArrayList<>();
+         this.featureBuilders = new ArrayList<>();
+         this.defaultAttachments = new ArrayList<>();
+         this.reloadEffectControllers = new ArrayList<>();
       }
 
       public String getName() {
@@ -2341,14 +2363,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
       @SafeVarargs
       public final Builder withDefaultAttachment(Supplier<? extends Attachment>... attachmentSuppliers) {
-         Supplier[] var2 = attachmentSuppliers;
-         int var3 = attachmentSuppliers.length;
-
-         for(int var4 = 0; var4 < var3; ++var4) {
-            Supplier<? extends Attachment> s = var2[var4];
-            List var10000 = this.defaultAttachments;
-            Objects.requireNonNull(s);
-            var10000.add(s::get);
+         for(Supplier<? extends Attachment> s : attachmentSuppliers) {
+             Objects.requireNonNull(s);
+            this.defaultAttachments.add(s::get);
          }
 
          return this;
@@ -2356,14 +2373,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
       @SafeVarargs
       public final Builder withCompatibleAttachment(Supplier<? extends Attachment>... attachmentSuppliers) {
-         Supplier[] var2 = attachmentSuppliers;
-         int var3 = attachmentSuppliers.length;
-
-         for(int var4 = 0; var4 < var3; ++var4) {
-            Supplier<? extends Attachment> s = var2[var4];
-            List var10000 = this.compatibleAttachments;
-            Objects.requireNonNull(s);
-            var10000.add(s::get);
+         for(Supplier<? extends Attachment> s : attachmentSuppliers) {
+             Objects.requireNonNull(s);
+            this.compatibleAttachments.add(s::get);
          }
 
          return this;
@@ -2380,7 +2392,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withModelScale(double modelScale) {
-         this.modelScale = Mth.m_14036_((float)modelScale, 0.1F, 1.0F);
+         this.modelScale = Mth.clamp((float)modelScale, 0.1F, 1.0F);
          return this;
       }
 
@@ -2426,19 +2438,13 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withCraftingDuration(int duration, TimeUnit timeUnit) {
-         this.craftingDuration = timeUnit.toMillis((long)duration);
+         this.craftingDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       @SafeVarargs
       public final Builder withCompatibleAmmo(Supplier<AmmoItem>... ammo) {
-         Supplier[] var2 = ammo;
-         int var3 = ammo.length;
-
-         for(int var4 = 0; var4 < var3; ++var4) {
-            Supplier<AmmoItem> b = var2[var4];
-            this.compatibleAmmo.add(b);
-         }
+          Collections.addAll(this.compatibleAmmo, ammo);
 
          return this;
       }
@@ -2449,7 +2455,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public final Builder withTargetLock(int minTargetLockTime, TimeUnit timeUnit) {
-         this.targetLockTimeTicks = timeUnit.toTicks((long)minTargetLockTime);
+         this.targetLockTimeTicks = timeUnit.toTicks(minTargetLockTime);
          return this;
       }
 
@@ -2469,7 +2475,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withViewRecoilDuration(int duration, TimeUnit timeUnit) {
-         this.viewRecoilDuration = timeUnit.toMillis((long)duration);
+         this.viewRecoilDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -2484,7 +2490,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withShakeRecoilDuration(int duration, TimeUnit timeUnit) {
-         this.shakeRecoilDuration = timeUnit.toMillis((long)duration);
+         this.shakeRecoilDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -2514,7 +2520,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withGunRecoilDuration(int duration, TimeUnit timeUnit) {
-         this.gunRecoilDuration = timeUnit.toMillis((long)duration);
+         this.gunRecoilDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -2534,12 +2540,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withIdleRandomizationDuration(int duration, TimeUnit timeUnit) {
-         this.idleRandomizationDuration = timeUnit.toMillis((long)duration);
+         this.idleRandomizationDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       public Builder withRecoilRandomizationDuration(int duration, TimeUnit timeUnit) {
-         this.recoilRandomizationDuration = timeUnit.toMillis((long)duration);
+         this.recoilRandomizationDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -2555,16 +2561,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withFireSound(SoundEvent fireSound) {
-         this.fireSound = () -> {
-            return fireSound;
-         };
+         this.fireSound = () -> fireSound;
          return this;
       }
 
       public Builder withFireSound(SoundEvent fireSound, float fireSoundVolume) {
-         this.fireSound = () -> {
-            return fireSound;
-         };
+         this.fireSound = () -> fireSound;
          this.fireSoundVolume = fireSoundVolume;
          return this;
       }
@@ -2578,7 +2580,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withReloadShakeEffect(long startTime, long duration, TimeUnit timeUnit, double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease) {
-         this.reloadEffectControllers.add(new Tuple(timeUnit.toMillis(startTime), new ViewShakeAnimationController2(initialAmplitude, rateOfAmplitudeDecay, initialAngularFrequency, rateOfFrequencyIncrease, duration)));
+         this.reloadEffectControllers.add(new Tuple<>(timeUnit.toMillis(startTime), new ViewShakeAnimationController2(initialAmplitude, rateOfAmplitudeDecay, initialAngularFrequency, rateOfFrequencyIncrease, duration)));
          return this;
       }
 
@@ -2648,9 +2650,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withTargetLockedSound(SoundEvent targetLockedSound) {
-         this.targetLockedSound = () -> {
-            return targetLockedSound;
-         };
+         this.targetLockedSound = () -> targetLockedSound;
          return this;
       }
 
@@ -2660,9 +2660,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withTargetStartLockingSound(SoundEvent targetStartLockingSound) {
-         this.targetStartLockingSound = () -> {
-            return targetStartLockingSound;
-         };
+         this.targetStartLockingSound = () -> targetStartLockingSound;
          return this;
       }
 
@@ -2672,56 +2670,52 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withPrepareFireCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.prepareFireCooldownDuration = timeUnit.toMillis((long)duration);
+         this.prepareFireCooldownDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       public Builder withCompleteFireCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.completeFireCooldownDuration = timeUnit.toMillis((long)duration);
+         this.completeFireCooldownDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       public Builder withEnableFireModeCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.enableFireModeCooldownDuration = timeUnit.toMillis((long)duration);
+         this.enableFireModeCooldownDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       public Builder withPrepareIdleCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.prepareIdleCooldownDuration = timeUnit.toMillis((long)duration);
+         this.prepareIdleCooldownDuration = timeUnit.toMillis(duration);
          return this;
       }
 
       public Builder withDrawCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.withDrawAnimation("animation.model.draw", (ctx) -> {
-            return true;
-         }, duration, timeUnit);
+         this.withDrawAnimation("animation.model.draw", (ctx) -> true, duration, timeUnit);
          return this;
       }
 
       public Builder withDrawAnimation(String animationName, Predicate<ConditionContext> predicate, int duration, TimeUnit timeUnit) {
-         this.drawAnimationsBuilder.withAnimation(animationName, predicate, (long)duration, timeUnit);
+         this.drawAnimationsBuilder.withAnimation(animationName, predicate, duration, timeUnit);
          return this;
       }
 
       public Builder withInspectCooldownDuration(int duration, TimeUnit timeUnit) {
-         this.withInspectAnimation("animation.model.inspect", (ctx) -> {
-            return true;
-         }, duration, timeUnit);
+         this.withInspectAnimation("animation.model.inspect", (ctx) -> true, duration, timeUnit);
          return this;
       }
 
       public Builder withInspectAnimation(String animationName, Predicate<ConditionContext> predicate, int duration, TimeUnit timeUnit) {
-         this.inspectAnimationsBuilder.withAnimation(animationName, predicate, (long)duration, timeUnit);
+         this.inspectAnimationsBuilder.withAnimation(animationName, predicate, duration, timeUnit);
          return this;
       }
 
       public Builder withIdleAnimation(String animationName, Predicate<ConditionContext> predicate, int duration, TimeUnit timeUnit) {
-         this.idleAnimationBuilder.withAnimation(animationName, predicate, (long)duration, timeUnit);
+         this.idleAnimationBuilder.withAnimation(animationName, predicate, duration, timeUnit);
          return this;
       }
 
       public Builder withFireAnimation(String animationName, Predicate<ConditionContext> predicate, int duration, TimeUnit timeUnit) {
-         this.fireAnimationsBuilder.withAnimation(animationName, predicate, (long)duration, timeUnit);
+         this.fireAnimationsBuilder.withAnimation(animationName, predicate, duration, timeUnit);
          return this;
       }
 
@@ -2786,21 +2780,21 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withGlow(String glowingPartName) {
-         return this.withGlow((String)glowingPartName, (String)null);
+         return this.withGlow(glowingPartName, null);
       }
 
       public Builder withGlow(String glowingPartName, String textureName) {
-         return this.withGlow(Collections.singleton(FirePhase.ANY), Collections.singleton(glowingPartName), textureName);
+         return this.withGlow(Collections.singleton(GunItem.FirePhase.ANY), Collections.singleton(glowingPartName), textureName);
       }
 
       public Builder withGlow(Collection<FirePhase> firePhases, String glowingPartName) {
-         return this.withGlow(firePhases, Collections.singleton(glowingPartName), (String)null);
+         return this.withGlow(firePhases, Collections.singleton(glowingPartName), null);
       }
 
       public Builder withGlow(Collection<FirePhase> firePhases, Collection<String> glowingPartNames, String texture) {
          GlowAnimationController.Builder builder = (new GlowAnimationController.Builder()).withFirePhases(firePhases);
          if (texture != null) {
-            builder.withTexture(new ResourceLocation("pointblank", texture));
+            builder.withTexture(ResourceLocation.fromNamespaceAndPath("pointblank", texture));
          }
 
          builder.withGlowingPartNames(glowingPartNames);
@@ -2811,7 +2805,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       public Builder withGlow(Collection<FirePhase> firePhases, String glowingPartName, String texture, AbstractEffect.SpriteAnimationType spriteAnimationType, int spriteRows, int spriteColumns, int spritesPerSecond, Direction... directions) {
          GlowAnimationController.Builder builder = (new GlowAnimationController.Builder()).withFirePhases(firePhases);
          if (texture != null) {
-            builder.withTexture(new ResourceLocation("pointblank", texture));
+            builder.withTexture(ResourceLocation.fromNamespaceAndPath("pointblank", texture));
          }
 
          builder.withGlowingPartNames(Collections.singleton(glowingPartName));
@@ -2834,9 +2828,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withEffect(FirePhase firePhase, Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> effectBuilder) {
-         List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>> builders = (List)this.effectBuilders.computeIfAbsent(firePhase, (k) -> {
-            return new ArrayList();
-         });
+         List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>> builders = this.effectBuilders.computeIfAbsent(firePhase, (k) -> new ArrayList<>());
          builders.add(effectBuilder);
          return this;
       }
@@ -2852,17 +2844,17 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withBobbing(double bobbing) {
-         this.bobbing = Mth.m_14036_((float)bobbing, 0.0F, 2.0F);
+         this.bobbing = Mth.clamp((float)bobbing, 0.0F, 2.0F);
          return this;
       }
 
       public Builder withBobbingOnAim(double bobbingOnAim) {
-         this.bobbingOnAim = Mth.m_14036_((float)bobbingOnAim, 0.0F, 2.0F);
+         this.bobbingOnAim = Mth.clamp((float)bobbingOnAim, 0.0F, 2.0F);
          return this;
       }
 
       public Builder withBobbingRollMultiplier(double bobbingRollMultiplier) {
-         this.bobbingRollMultiplier = Mth.m_14036_((float)bobbingRollMultiplier, 0.0F, 10.0F);
+         this.bobbingRollMultiplier = Mth.clamp((float)bobbingRollMultiplier, 0.0F, 10.0F);
          return this;
       }
 
@@ -2878,10 +2870,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          super.withJsonObject(obj);
          Builder builder = this;
          this.withName(obj.getAsJsonPrimitive("name").getAsString());
-         this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, AnimationType.RIFLE, true));
-         this.withFirstPersonFallbackAnimations(JsonUtil.getJsonString(obj, "firstPersonFallbackAnimations", (String)null));
-         this.withThirdPersonFallbackAnimations(JsonUtil.getJsonString(obj, "thirdPersonFallbackAnimations", (String)null));
-         this.withModelScale((double)JsonUtil.getJsonFloat(obj, "modelScale", 1.0F));
+         this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, GunItem.AnimationType.RIFLE, true));
+         this.withFirstPersonFallbackAnimations(JsonUtil.getJsonString(obj, "firstPersonFallbackAnimations", null));
+         this.withThirdPersonFallbackAnimations(JsonUtil.getJsonString(obj, "thirdPersonFallbackAnimations", null));
+         this.withModelScale(JsonUtil.getJsonFloat(obj, "modelScale", 1.0F));
          this.withTradePrice(JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "traceBundleQuantity", 1), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
          JsonPrimitive jsonMaxAmmoCapacity = obj.getAsJsonPrimitive("maxAmmoCapacity");
          if (jsonMaxAmmoCapacity.isString() && "infinite".equalsIgnoreCase(jsonMaxAmmoCapacity.getAsString())) {
@@ -2903,87 +2895,69 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          this.withIdleRandomizationDuration(JsonUtil.getJsonInt(obj, "idleRandomizationDuration", 2500), TimeUnit.MILLISECOND);
          this.withRecoilRandomizationDuration(JsonUtil.getJsonInt(obj, "recoilRandomizationDuration", 250), TimeUnit.MILLISECOND);
          this.withBurstShots(JsonUtil.getJsonInt(obj, "burstShots", 3));
-         this.withReloadCooldownDuration((long)JsonUtil.getJsonInt(obj, "reloadCooldownTime", 1000), TimeUnit.MILLISECOND);
+         this.withReloadCooldownDuration(JsonUtil.getJsonInt(obj, "reloadCooldownTime", 1000), TimeUnit.MILLISECOND);
          this.withPelletCount(JsonUtil.getJsonInt(obj, "pelletCount", 0));
          this.withPrepareFireCooldownDuration(JsonUtil.getJsonInt(obj, "prepareFireCooldownDuration", 0), TimeUnit.MILLISECOND);
          this.withCompleteFireCooldownDuration(JsonUtil.getJsonInt(obj, "completeFireCooldownDuration", 0), TimeUnit.MILLISECOND);
          this.withEnableFireModeCooldownDuration(JsonUtil.getJsonInt(obj, "enableFireModeCooldownDuration", 0), TimeUnit.MILLISECOND);
-         this.withViewRecoilAmplitude(JsonUtil.getJsonDouble(obj, "viewRecoilAmplitude", 1.0D));
-         this.withShakeRecoilAmplitude(JsonUtil.getJsonDouble(obj, "shakeRecoilAmplitude", 0.5D));
-         this.withShakeRecoilSpeed(JsonUtil.getJsonDouble(obj, "shakeRecoilSpeed", 8.0D));
-         this.withShakeDecay(JsonUtil.getJsonDouble(obj, "shakeDecay", 0.98D));
-         this.withGunRecoilInitialAmplitude(JsonUtil.getJsonDouble(obj, "gunRecoilInitialAmplitude", 0.3D));
-         this.withGunRecoilRateOfAmplitudeDecay(JsonUtil.getJsonDouble(obj, "gunRecoilRateOfAmplitudeDecay", 0.8D));
-         this.withGunRecoilInitialAngularFrequency(JsonUtil.getJsonDouble(obj, "gunRecoilInitialAngularFrequency", 1.0D));
-         this.withGunRecoilRateOfFrequencyIncrease(JsonUtil.getJsonDouble(obj, "gunRecoilRateOfFrequencyIncrease", 0.05D));
-         this.withGunRecoilPitchMultiplier(JsonUtil.getJsonDouble(obj, "gunRecoilPitchMultiplier", 1.0D));
-         this.withGunRandomizationAmplitude(JsonUtil.getJsonDouble(obj, "gunRandomizationAmplitude", 0.01D));
-         this.withAimingCurveX(JsonUtil.getJsonDouble(obj, "aimingCurveX", 0.0D));
-         this.withAimingCurveY(JsonUtil.getJsonDouble(obj, "aimingCurveY", -0.07D));
-         this.withAimingCurveZ(JsonUtil.getJsonDouble(obj, "aimingCurveZ", 0.3D));
-         this.withAimingCurvePitch(JsonUtil.getJsonDouble(obj, "aimingCurvePitch", -0.01D));
-         this.withAimingCurveYaw(JsonUtil.getJsonDouble(obj, "aimingCurveYaw", -0.01D));
-         this.withAimingCurveRoll(JsonUtil.getJsonDouble(obj, "aimingCurveRoll", -0.01D));
-         this.withAimingZoom(JsonUtil.getJsonDouble(obj, "aimingZoom", 0.05D));
-         this.withPipScopeZoom(JsonUtil.getJsonDouble(obj, "pipScopeZoom", 0.0D));
+         this.withViewRecoilAmplitude(JsonUtil.getJsonDouble(obj, "viewRecoilAmplitude", 1.0F));
+         this.withShakeRecoilAmplitude(JsonUtil.getJsonDouble(obj, "shakeRecoilAmplitude", 0.5F));
+         this.withShakeRecoilSpeed(JsonUtil.getJsonDouble(obj, "shakeRecoilSpeed", 8.0F));
+         this.withShakeDecay(JsonUtil.getJsonDouble(obj, "shakeDecay", 0.98));
+         this.withGunRecoilInitialAmplitude(JsonUtil.getJsonDouble(obj, "gunRecoilInitialAmplitude", 0.3));
+         this.withGunRecoilRateOfAmplitudeDecay(JsonUtil.getJsonDouble(obj, "gunRecoilRateOfAmplitudeDecay", 0.8));
+         this.withGunRecoilInitialAngularFrequency(JsonUtil.getJsonDouble(obj, "gunRecoilInitialAngularFrequency", 1.0F));
+         this.withGunRecoilRateOfFrequencyIncrease(JsonUtil.getJsonDouble(obj, "gunRecoilRateOfFrequencyIncrease", 0.05));
+         this.withGunRecoilPitchMultiplier(JsonUtil.getJsonDouble(obj, "gunRecoilPitchMultiplier", 1.0F));
+         this.withGunRandomizationAmplitude(JsonUtil.getJsonDouble(obj, "gunRandomizationAmplitude", 0.01));
+         this.withAimingCurveX(JsonUtil.getJsonDouble(obj, "aimingCurveX", 0.0F));
+         this.withAimingCurveY(JsonUtil.getJsonDouble(obj, "aimingCurveY", -0.07));
+         this.withAimingCurveZ(JsonUtil.getJsonDouble(obj, "aimingCurveZ", 0.3));
+         this.withAimingCurvePitch(JsonUtil.getJsonDouble(obj, "aimingCurvePitch", -0.01));
+         this.withAimingCurveYaw(JsonUtil.getJsonDouble(obj, "aimingCurveYaw", -0.01));
+         this.withAimingCurveRoll(JsonUtil.getJsonDouble(obj, "aimingCurveRoll", -0.01));
+         this.withAimingZoom(JsonUtil.getJsonDouble(obj, "aimingZoom", 0.05));
+         this.withPipScopeZoom(JsonUtil.getJsonDouble(obj, "pipScopeZoom", 0.0F));
          this.withShotsPerRecoil(JsonUtil.getJsonInt(obj, "shotsPerRecoil", 1));
          this.withShotsPerTrace(JsonUtil.getJsonInt(obj, "shotsPerTrace", 1));
-         this.withPelletSpread(JsonUtil.getJsonDouble(obj, "pelletSpread", 1.0D));
-         this.withInaccuracy(JsonUtil.getJsonDouble(obj, "inaccuracy", 0.03D));
-         this.withInaccuracyAiming(JsonUtil.getJsonDouble(obj, "inaccuracyAiming", 0.0D));
-         this.withInaccuracySprinting(JsonUtil.getJsonDouble(obj, "inaccuracySprinting", 0.1D));
-         this.withJumpMultiplier(JsonUtil.getJsonDouble(obj, "jumpMultiplier", 1.0D));
+         this.withPelletSpread(JsonUtil.getJsonDouble(obj, "pelletSpread", 1.0F));
+         this.withInaccuracy(JsonUtil.getJsonDouble(obj, "inaccuracy", 0.03));
+         this.withInaccuracyAiming(JsonUtil.getJsonDouble(obj, "inaccuracyAiming", 0.0F));
+         this.withInaccuracySprinting(JsonUtil.getJsonDouble(obj, "inaccuracySprinting", 0.1));
+         this.withJumpMultiplier(JsonUtil.getJsonDouble(obj, "jumpMultiplier", 1.0F));
          this.withScopeOverlay(obj.has("scopeOverlay") ? obj.getAsJsonPrimitive("scopeOverlay").getAsString() : null);
          this.withReticleOverlay(obj.has("reticleOverlay") ? obj.getAsJsonPrimitive("reticleOverlay").getAsString() : null);
          this.withTargetLockOverlay(obj.has("targetLockOverlay") ? obj.getAsJsonPrimitive("targetLockOverlay").getAsString() : null);
          JsonElement targetLockedSoundElem = obj.get("targetLockedSound");
          if (targetLockedSoundElem != null && !targetLockedSoundElem.isJsonNull()) {
             String targetLockedSoundName = targetLockedSoundElem.getAsString();
-            this.withTargetLockedSound(() -> {
-               return SoundRegistry.getSoundEvent(targetLockedSoundName);
-            });
+            this.withTargetLockedSound((() -> SoundRegistry.getSoundEvent(targetLockedSoundName)));
          }
 
          JsonElement targetStartLockingSoundElem = obj.get("targetStartLockingSound");
          if (targetStartLockingSoundElem != null && !targetStartLockingSoundElem.isJsonNull()) {
             String targetStargetLockingdSoundName = targetStartLockingSoundElem.getAsString();
-            this.withTargetStartLockingSound(() -> {
-               return SoundRegistry.getSoundEvent(targetStargetLockingdSoundName);
-            });
+            this.withTargetStartLockingSound((() -> SoundRegistry.getSoundEvent(targetStargetLockingdSoundName)));
          }
 
          List<String> fireModeNames = JsonUtil.getStrings(obj, "fireModes");
-         this.withFireModes((FireMode[])fireModeNames.stream().map((n) -> {
-            return FireMode.valueOf(n.toUpperCase(Locale.ROOT));
-         }).toArray((x$0) -> {
-            return new FireMode[x$0];
-         }));
+         this.withFireModes(fireModeNames.stream().map((n) -> FireMode.valueOf(n.toUpperCase(Locale.ROOT))).toArray((x$0) -> new FireMode[x$0]));
          this.withHitScanSpeed(JsonUtil.getJsonFloat(obj, "hitScanSpeed", 800.0F));
          this.withHitScanAcceleration(JsonUtil.getJsonFloat(obj, "hitScanAcceleration", 0.0F));
-         Iterator var7 = JsonUtil.getJsonObjects(obj, "reloadShakeEffects").iterator();
 
-         while(var7.hasNext()) {
-            JsonObject jsReloadShakeEffect = (JsonObject)var7.next();
-            builder.withReloadShakeEffect((long)jsReloadShakeEffect.getAsJsonPrimitive("start").getAsInt(), (long)jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01D));
+         for(JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(obj, "reloadShakeEffects")) {
+            builder.withReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsInt(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01));
          }
 
-         List<JsonObject> jsPhasedReloads = JsonUtil.getJsonObjects(obj, "phasedReloads");
-         Iterator var30 = jsPhasedReloads.iterator();
+         for(JsonObject jsPhasedReload : JsonUtil.getJsonObjects(obj, "phasedReloads")) {
+            List<ReloadShakeEffect> shakeEffects = new ArrayList<>();
 
-         while(var30.hasNext()) {
-            JsonObject jsPhasedReload = (JsonObject)var30.next();
-            List<ReloadShakeEffect> shakeEffects = new ArrayList();
-            Iterator var11 = JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects").iterator();
-
-            while(var11.hasNext()) {
-               JsonObject jsReloadShakeEffect = (JsonObject)var11.next();
-               shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0D), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01D)));
+            for(JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects")) {
+               shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01)));
             }
 
-            Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> {
-               return true;
-            };
-            builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, (long)jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
+            Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
+            builder.withPhasedReload(new PhasedReload(GunItem.ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
          }
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
@@ -2993,145 +2967,99 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          JsonElement fireSoundElem = obj.get("fireSound");
          if (fireSoundElem != null && !fireSoundElem.isJsonNull()) {
             String fireSoundName = fireSoundElem.getAsString();
-            builder.withFireSound(() -> {
-               return SoundRegistry.getSoundEvent(fireSoundName);
-            }, fireSoundVolume);
+            builder.withFireSound((() -> SoundRegistry.getSoundEvent(fireSoundName)), fireSoundVolume);
          }
 
          JsonElement reloadSoundElem = obj.get("reloadSound");
          if (reloadSoundElem != null && !reloadSoundElem.isJsonNull()) {
             String reloadSoundName = reloadSoundElem.getAsString();
-            builder.withReloadSound(() -> {
-               return SoundRegistry.getSoundEvent(reloadSoundName);
-            });
+            builder.withReloadSound((() -> SoundRegistry.getSoundEvent(reloadSoundName)));
          }
 
          List<String> compatibleAmmoNames = JsonUtil.getStrings(obj, "compatibleAmmo");
-         List<Supplier<AmmoItem>> compatibleAmmo = new ArrayList();
-         Iterator var15 = compatibleAmmoNames.iterator();
+         List<Supplier<AmmoItem>> compatibleAmmo = new ArrayList<>();
 
-         while(var15.hasNext()) {
-            String compatibleAmmoName = (String)var15.next();
+         for(String compatibleAmmoName : compatibleAmmoNames) {
             Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(compatibleAmmoName);
             if (ri != null) {
-               compatibleAmmo.add((Supplier)ri);
+               compatibleAmmo.add((Supplier) ri);
             }
          }
 
-         builder.withCompatibleAmmo((List)compatibleAmmo);
-         var15 = JsonUtil.getJsonObjects(obj, "rotations").iterator();
+         builder.withCompatibleAmmo(compatibleAmmo);
 
-         JsonObject glowingPart;
-         while(var15.hasNext()) {
-            glowingPart = (JsonObject)var15.next();
-            builder.withRotation(JsonUtil.getJsonString(glowingPart, "phase", "fire"), JsonUtil.getJsonString(glowingPart, "modelPart", (String)null), JsonUtil.getJsonDouble(glowingPart, "rpm", 180.0D), JsonUtil.getJsonDouble(glowingPart, "acceleration", 1.0D), JsonUtil.getJsonDouble(glowingPart, "deceleration", 5.0D));
+         for(JsonObject rotationEffect : JsonUtil.getJsonObjects(obj, "rotations")) {
+            builder.withRotation(JsonUtil.getJsonString(rotationEffect, "phase", "fire"), JsonUtil.getJsonString(rotationEffect, "modelPart", null), JsonUtil.getJsonDouble(rotationEffect, "rpm", 180.0F), JsonUtil.getJsonDouble(rotationEffect, "acceleration", 1.0F), JsonUtil.getJsonDouble(rotationEffect, "deceleration", 5.0F));
          }
 
-         var15 = JsonUtil.getJsonObjects(obj, "effects").iterator();
-
-         while(var15.hasNext()) {
-            glowingPart = (JsonObject)var15.next();
-            FirePhase firePhase = (FirePhase)JsonUtil.getEnum(glowingPart, "phase", FirePhase.class, (Enum)null, true);
-            String effectName = JsonUtil.getJsonString(glowingPart, "name");
-            Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> supplier = () -> {
-               return (EffectBuilder)EffectRegistry.getEffectBuilderSupplier(effectName).get();
-            };
+         for(JsonObject effect : JsonUtil.getJsonObjects(obj, "effects")) {
+            FirePhase firePhase = (FirePhase)JsonUtil.getEnum(effect, "phase", FirePhase.class, null, true);
+            String effectName = JsonUtil.getJsonString(effect, "name");
+            Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> supplier = () -> EffectRegistry.getEffectBuilderSupplier(effectName).get();
             builder.withEffect(firePhase, supplier);
          }
 
-         builder.withBobbing(JsonUtil.getJsonDouble(obj, "bobbing", 1.0D));
-         builder.withBobbingOnAim((double)JsonUtil.getJsonFloat(obj, "bobbingOnAim", 0.3F));
-         builder.withBobbingRollMultiplier(JsonUtil.getJsonDouble(obj, "bobbingRollMultiplier", 1.0D));
-         var15 = JsonUtil.getJsonObjects(obj, "glowingParts").iterator();
+         builder.withBobbing(JsonUtil.getJsonDouble(obj, "bobbing", 1.0F));
+         builder.withBobbingOnAim(JsonUtil.getJsonFloat(obj, "bobbingOnAim", 0.3F));
+         builder.withBobbingRollMultiplier(JsonUtil.getJsonDouble(obj, "bobbingRollMultiplier", 1.0F));
 
-         JsonObject jsIdleAnimation;
-         String partName;
-         List jsIdleAnimations;
-         List jsInspects;
-         while(var15.hasNext()) {
-            glowingPart = (JsonObject)var15.next();
-            partName = JsonUtil.getJsonString(glowingPart, "name");
-            jsIdleAnimations = JsonUtil.getStrings(obj, "phases");
-            jsInspects = jsIdleAnimations.stream().map((n) -> {
-               return FirePhase.valueOf(n.toUpperCase(Locale.ROOT));
-            }).toList();
-            if (jsInspects.isEmpty()) {
-               jsInspects = Collections.singletonList(FirePhase.ANY);
+         for(JsonObject glowingPart : JsonUtil.getJsonObjects(obj, "glowingParts")) {
+            String partName = JsonUtil.getJsonString(glowingPart, "name");
+            List<String> firePhaseNames = JsonUtil.getStrings(obj, "phases");
+            List<FirePhase> firePhases = firePhaseNames.stream().map((n) -> GunItem.FirePhase.valueOf(n.toUpperCase(Locale.ROOT))).toList();
+            if (firePhases.isEmpty()) {
+               firePhases = Collections.singletonList(GunItem.FirePhase.ANY);
             }
 
-            String textureName = JsonUtil.getJsonString(glowingPart, "texture", (String)null);
-            Direction direction = (Direction)JsonUtil.getEnum(glowingPart, "direction", Direction.class, (Enum)null, true);
-            jsIdleAnimation = glowingPart.getAsJsonObject("sprites");
-            if (jsIdleAnimation != null) {
-               int rows = JsonUtil.getJsonInt(jsIdleAnimation, "rows", 1);
-               int columns = JsonUtil.getJsonInt(jsIdleAnimation, "columns", 1);
-               int fps = JsonUtil.getJsonInt(jsIdleAnimation, "fps", 60);
-               AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(jsIdleAnimation, "type", AbstractEffect.SpriteAnimationType.class, AbstractEffect.SpriteAnimationType.LOOP, true);
+            String textureName = JsonUtil.getJsonString(glowingPart, "texture", null);
+            Direction direction = (Direction)JsonUtil.getEnum(glowingPart, "direction", Direction.class, null, true);
+            JsonObject spritesObj = glowingPart.getAsJsonObject("sprites");
+            if (spritesObj != null) {
+               int rows = JsonUtil.getJsonInt(spritesObj, "rows", 1);
+               int columns = JsonUtil.getJsonInt(spritesObj, "columns", 1);
+               int fps = JsonUtil.getJsonInt(spritesObj, "fps", 60);
+               AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", AbstractEffect.SpriteAnimationType.class, SpriteAnimationType.LOOP, true);
                if (direction != null) {
-                  builder.withGlow(jsInspects, partName, textureName, spriteAnimationType, rows, columns, fps, direction);
+                  builder.withGlow(firePhases, partName, textureName, spriteAnimationType, rows, columns, fps, direction);
                } else {
-                  builder.withGlow(jsInspects, partName, textureName, spriteAnimationType, rows, columns, fps);
+                  builder.withGlow(firePhases, partName, textureName, spriteAnimationType, rows, columns, fps);
                }
             } else {
-               builder.withGlow(jsInspects, Collections.singletonList(partName), textureName);
+               builder.withGlow(firePhases, Collections.singletonList(partName), textureName);
             }
          }
 
-         List<String> compatibleAttachmentNames = JsonUtil.getStrings(obj, "compatibleAttachments");
-         Iterator var42 = compatibleAttachmentNames.iterator();
-
-         while(var42.hasNext()) {
-            partName = (String)var42.next();
-            Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(partName);
+         for(String compatibleAttachmentName : JsonUtil.getStrings(obj, "compatibleAttachments")) {
+            Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(compatibleAttachmentName);
             if (ri != null) {
-               this.withCompatibleAttachment(() -> {
-                  return (Attachment)ri.get();
-               });
+               this.withCompatibleAttachment(() -> (Attachment)ri.get());
             }
          }
 
          List<String> compatibleAttachmentGroups = JsonUtil.getStrings(obj, "compatibleAttachmentGroups");
          this.compatibleAttachmentGroups.addAll(compatibleAttachmentGroups);
-         Iterator var46 = JsonUtil.getJsonObjects(obj, "features").iterator();
 
-         while(var46.hasNext()) {
-            JsonObject featureObj = (JsonObject)var46.next();
+         for(JsonObject featureObj : JsonUtil.getJsonObjects(obj, "features")) {
             FeatureBuilder<?, ?> featureBuilder = Features.fromJson(featureObj);
             this.withFeature(featureBuilder);
          }
 
-         List<String> defaultAttachmentNames = JsonUtil.getStrings(obj, "defaultAttachments");
-         Iterator var51 = defaultAttachmentNames.iterator();
-
-         while(var51.hasNext()) {
-            String defaultAttachmentName = (String)var51.next();
+         for(String defaultAttachmentName : JsonUtil.getStrings(obj, "defaultAttachments")) {
             Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(defaultAttachmentName);
             if (ri != null) {
-               this.withDefaultAttachment(() -> {
-                  return (Attachment)ri.get();
-               });
+               this.withDefaultAttachment(() -> (Attachment)ri.get());
             }
          }
 
-         jsIdleAnimations = JsonUtil.getJsonObjects(obj, "idleAnimations");
-         Iterator var59 = jsIdleAnimations.iterator();
-
-         while(var59.hasNext()) {
-            JsonObject jsIdleAnimation = (JsonObject)var59.next();
-            Predicate<ConditionContext> condition = jsIdleAnimation.has("condition") ? Conditions.fromJson(jsIdleAnimation.get("condition")) : (ctx) -> {
-               return true;
-            };
+         for(JsonObject jsIdleAnimation : JsonUtil.getJsonObjects(obj, "idleAnimations")) {
+            Predicate<ConditionContext> condition = jsIdleAnimation.has("condition") ? Conditions.fromJson(jsIdleAnimation.get("condition")) : (ctx) -> true;
             builder.withIdleAnimation(JsonUtil.getJsonString(jsIdleAnimation, "name", "animation.model.idle"), condition, jsIdleAnimation.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND);
          }
 
-         jsInspects = JsonUtil.getJsonObjects(obj, "inspectAnimations");
-         Iterator var55 = jsInspects.iterator();
+         List<JsonObject> jsInspects = JsonUtil.getJsonObjects(obj, "inspectAnimations");
 
-         while(var55.hasNext()) {
-            JsonObject jsInspect = (JsonObject)var55.next();
-            Predicate<ConditionContext> condition = jsInspect.has("condition") ? Conditions.fromJson(jsInspect.get("condition")) : (ctx) -> {
-               return true;
-            };
+         for(JsonObject jsInspect : jsInspects) {
+            Predicate<ConditionContext> condition = jsInspect.has("condition") ? Conditions.fromJson(jsInspect.get("condition")) : (ctx) -> true;
             builder.withInspectAnimation(JsonUtil.getJsonString(jsInspect, "name", "animation.model.inspect"), condition, jsInspect.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND);
          }
 
@@ -3140,13 +3068,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          }
 
          List<JsonObject> jsDrawAnimations = JsonUtil.getJsonObjects(obj, "drawAnimations");
-         Iterator var61 = jsDrawAnimations.iterator();
 
-         while(var61.hasNext()) {
-            jsIdleAnimation = (JsonObject)var61.next();
-            Predicate<ConditionContext> condition = jsIdleAnimation.has("condition") ? Conditions.fromJson(jsIdleAnimation.get("condition")) : (ctx) -> {
-               return true;
-            };
+         for(JsonObject jsIdleAnimation : jsDrawAnimations) {
+            Predicate<ConditionContext> condition = jsIdleAnimation.has("condition") ? Conditions.fromJson(jsIdleAnimation.get("condition")) : (ctx) -> true;
             builder.withDrawAnimation(JsonUtil.getJsonString(jsIdleAnimation, "name", "animation.model.draw"), condition, jsIdleAnimation.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND);
          }
 
@@ -3154,192 +3078,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             builder.withDrawCooldownDuration(JsonUtil.getJsonInt(obj, "drawCooldownDuration", 500), TimeUnit.MILLISECOND);
          }
 
-         List<JsonObject> jsFireAnimations = JsonUtil.getJsonObjects(obj, "fireAnimations");
-         Iterator var64 = jsFireAnimations.iterator();
-
-         while(var64.hasNext()) {
-            JsonObject jsFireAnimation = (JsonObject)var64.next();
-            Predicate<ConditionContext> condition = jsFireAnimation.has("condition") ? Conditions.fromJson(jsFireAnimation.get("condition")) : (ctx) -> {
-               return true;
-            };
+         for(JsonObject jsFireAnimation : JsonUtil.getJsonObjects(obj, "fireAnimations")) {
+            Predicate<ConditionContext> condition = jsFireAnimation.has("condition") ? Conditions.fromJson(jsFireAnimation.get("condition")) : (ctx) -> true;
             builder.withFireAnimation(JsonUtil.getJsonString(jsFireAnimation, "name", "animation.model.inspect"), condition, 0, TimeUnit.MILLISECOND);
          }
 
          return this;
-      }
-   }
-
-   public static enum AnimationType {
-      RIFLE("__DEFAULT_RIFLE_ANIMATIONS__", GunItem.FALLBACK_COMMON_ANIMATIONS),
-      PISTOL("__DEFAULT_PISTOL_ANIMATIONS__", GunItem.FALLBACK_PISTOL_ANIMATIONS);
-
-      private final String defaultThirdPersonAnimation;
-      private final List<ResourceLocation> fallbackFirstPersonAnimations;
-
-      private AnimationType(String defaultThirdPersonAnimation, List<ResourceLocation> fallbackFirstPersonAnimations) {
-         this.defaultThirdPersonAnimation = defaultThirdPersonAnimation;
-         this.fallbackFirstPersonAnimations = fallbackFirstPersonAnimations;
-      }
-
-      public String getDefaultThirdPersonAnimation() {
-         return this.defaultThirdPersonAnimation;
-      }
-
-      private List<ResourceLocation> getFallbackFirstPersonAnimations() {
-         return this.fallbackFirstPersonAnimations;
-      }
-
-      // $FF: synthetic method
-      private static AnimationType[] $values() {
-         return new AnimationType[]{RIFLE, PISTOL};
-      }
-   }
-
-   public static record PhasedReload(ReloadPhase phase, Predicate<ConditionContext> predicate, long cooldownTime, TimeUnit timeUnit, ReloadAnimation reloadAnimation) {
-      public PhasedReload(ReloadPhase phase, Predicate<ConditionContext> predicate, long cooldownTime, TimeUnit timeUnit, ReloadAnimation reloadAnimation) {
-         if (cooldownTime == 0L) {
-            throw new IllegalArgumentException("cooldownTime cannot be null");
-         } else if (timeUnit == null) {
-            throw new IllegalArgumentException("timeUnit cannot be null");
-         } else if (predicate == null) {
-            throw new IllegalArgumentException("predicate cannot be null");
-         } else {
-            this.phase = phase;
-            this.predicate = predicate;
-            this.cooldownTime = cooldownTime;
-            this.timeUnit = timeUnit;
-            this.reloadAnimation = reloadAnimation;
-         }
-      }
-
-      public PhasedReload(ReloadPhase phase, TriPredicate<LivingEntity, GunClientState, ItemStack> predicate, long cooldownTime, ReloadAnimation reloadAnimation) {
-         this(phase, (ctx) -> {
-            return predicate.test(ctx.player(), ctx.gunClientState(), ctx.currentItemStack());
-         }, cooldownTime, TimeUnit.MILLISECOND, reloadAnimation);
-      }
-
-      public PhasedReload(ReloadPhase phase, long cooldownTime, ReloadAnimation reloadAnimation) {
-         this(phase, (ctx) -> {
-            return true;
-         }, cooldownTime, TimeUnit.MILLISECOND, reloadAnimation);
-      }
-
-      public PhasedReload(ReloadPhase phase, long cooldownTime, String animationName) {
-         this(phase, (ctx) -> {
-            return true;
-         }, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
-      }
-
-      public ReloadPhase phase() {
-         return this.phase;
-      }
-
-      public Predicate<ConditionContext> predicate() {
-         return this.predicate;
-      }
-
-      public long cooldownTime() {
-         return this.cooldownTime;
-      }
-
-      public TimeUnit timeUnit() {
-         return this.timeUnit;
-      }
-
-      public ReloadAnimation reloadAnimation() {
-         return this.reloadAnimation;
-      }
-   }
-
-   public static enum ReloadPhase {
-      PREPARING,
-      RELOADING,
-      COMPLETETING;
-
-      // $FF: synthetic method
-      private static ReloadPhase[] $values() {
-         return new ReloadPhase[]{PREPARING, RELOADING, COMPLETETING};
-      }
-   }
-
-   public static enum FirePhase {
-      PREPARING,
-      FIRING,
-      COMPLETETING,
-      HIT_SCAN_ACQUIRED,
-      HIT_TARGET,
-      ANY,
-      FLYING;
-
-      // $FF: synthetic method
-      private static FirePhase[] $values() {
-         return new FirePhase[]{PREPARING, FIRING, COMPLETETING, HIT_SCAN_ACQUIRED, HIT_TARGET, ANY, FLYING};
-      }
-   }
-
-   public static record ReloadAnimation(String animationName, List<ReloadShakeEffect> shakeEffects) {
-      public ReloadAnimation(String animationName, List<ReloadShakeEffect> shakeEffects) {
-         this.animationName = animationName;
-         this.shakeEffects = shakeEffects;
-      }
-
-      public ReloadAnimation(String animationName) {
-         this(animationName, Collections.emptyList());
-      }
-
-      public String animationName() {
-         return this.animationName;
-      }
-
-      public List<ReloadShakeEffect> shakeEffects() {
-         return this.shakeEffects;
-      }
-   }
-
-   public static record ReloadShakeEffect(long startTime, long duration, TimeUnit timeUnit, double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease) {
-      private static double DEFAULT_INITIAL_ANGULAR_FREQUENCY = 1.0D;
-      private static double DEFAULT_RATE_OF_FREQUENCY_INCREASE = 0.01D;
-
-      public ReloadShakeEffect(long startTime, long duration, TimeUnit timeUnit, double initialAmplitude, double rateOfAmplitudeDecay, double initialAngularFrequency, double rateOfFrequencyIncrease) {
-         this.startTime = startTime;
-         this.duration = duration;
-         this.timeUnit = timeUnit;
-         this.initialAmplitude = initialAmplitude;
-         this.rateOfAmplitudeDecay = rateOfAmplitudeDecay;
-         this.initialAngularFrequency = initialAngularFrequency;
-         this.rateOfFrequencyIncrease = rateOfFrequencyIncrease;
-      }
-
-      public ReloadShakeEffect(long startTime, long duration, double initialAmplitude, double rateOfAmplitudeDecay) {
-         this(startTime, duration, TimeUnit.MILLISECOND, initialAmplitude, rateOfAmplitudeDecay, DEFAULT_INITIAL_ANGULAR_FREQUENCY, DEFAULT_RATE_OF_FREQUENCY_INCREASE);
-      }
-
-      public long startTime() {
-         return this.startTime;
-      }
-
-      public long duration() {
-         return this.duration;
-      }
-
-      public TimeUnit timeUnit() {
-         return this.timeUnit;
-      }
-
-      public double initialAmplitude() {
-         return this.initialAmplitude;
-      }
-
-      public double rateOfAmplitudeDecay() {
-         return this.rateOfAmplitudeDecay;
-      }
-
-      public double initialAngularFrequency() {
-         return this.initialAngularFrequency;
-      }
-
-      public double rateOfFrequencyIncrease() {
-         return this.rateOfFrequencyIncrease;
       }
    }
 }

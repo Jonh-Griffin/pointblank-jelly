@@ -4,7 +4,7 @@ import net.minecraft.util.Mth;
 
 public final class RealtimeLinearEaser {
    private long startTime;
-   private long durationNano;
+   private final long durationNano;
    private float initialValue;
    private float currentValue = Float.NaN;
    private float targetValue = Float.NaN;
@@ -32,10 +32,10 @@ public final class RealtimeLinearEaser {
          this.reset();
       }
 
-      return this.currentValue = Mth.m_14179_(this.getProgress(), this.initialValue, targetValue);
+      return this.currentValue = Mth.lerp(this.getProgress(), this.initialValue, targetValue);
    }
 
    private float getProgress() {
-      return Mth.m_14036_((float)(System.nanoTime() - this.startTime) / (float)this.durationNano, 0.0F, 1.0F);
+      return Mth.clamp((float)(System.nanoTime() - this.startTime) / (float)this.durationNano, 0.0F, 1.0F);
    }
 }

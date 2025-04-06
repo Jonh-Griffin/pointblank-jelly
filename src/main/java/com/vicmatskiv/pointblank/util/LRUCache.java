@@ -11,8 +11,8 @@ public class LRUCache<K, V> {
    private final CacheImpl<K, V> serverCache;
 
    public LRUCache(int cacheSize) {
-      this.clientCache = new CacheImpl(cacheSize);
-      this.serverCache = new CacheImpl(cacheSize);
+      this.clientCache = new CacheImpl<>(cacheSize);
+      this.serverCache = new CacheImpl<>(cacheSize);
    }
 
    private CacheImpl<K, V> getCache() {

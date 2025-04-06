@@ -1,14 +1,28 @@
 {
-  "required": true,
-  "minVersion": "0.8",
-  "package": "com.corrinedev.pointblank.mixin",
-  "compatibilityLevel": "JAVA_8",
-  "refmap": "pointblank.refmap.json",
-  "mixins": [
-  ],
-  "client": [
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+    "required": true,
+    "package": "com.vicmatskiv.pointblank.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "minVersion": "0.8",
+    "refmap": "poinblank.refmap.json",
+    "mixins": [
+      "EntityMixin",
+      "LivingEntityMixin",
+      "SlotMixin",
+      "StructureTemplatePoolMixin"
+    ],
+    "client": [
+      "AbstractContainerScreenMixin",
+      "AnimatableManagerAccessor",
+      "AnimationControllerAccessor",
+      "BakedModelMixin",
+      "GameRendererAccessorMixin",
+      "GameRendererMixin",
+      "ItemInHandRendererMixin",
+      "MinecraftAccessorMixin",
+      "MouseHandlerMixin",
+      "PostPassMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
 }

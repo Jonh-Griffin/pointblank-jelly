@@ -34,13 +34,9 @@ public interface ProjectileLike {
       return null;
    }
 
-   public static record EffectInfo(Effect effect, Predicate<ProjectileLike> predicate) {
-      public EffectInfo(Effect effect, Predicate<ProjectileLike> predicate) {
-         this.effect = effect;
-         this.predicate = predicate;
-      }
+   record EffectInfo(Effect effect, Predicate<ProjectileLike> predicate) {
 
-      public Effect effect() {
+       public Effect effect() {
          return this.effect;
       }
 

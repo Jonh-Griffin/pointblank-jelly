@@ -21,8 +21,8 @@ import java.util.Map;
 
 public class FeatureTypeRegistry {
    private static int featureTypeId;
-   private static final Map<Class<? extends Feature>, Integer> typeToId = new HashMap();
-   private static final Map<Integer, Class<? extends Feature>> idToType = new HashMap();
+   private static final Map<Class<? extends Feature>, Integer> typeToId = new HashMap<>();
+   private static final Map<Integer, Class<? extends Feature>> idToType = new HashMap<>();
    public static final int AIMING_FEATURE = registerFeatureType(AimingFeature.class);
    public static final int PIP_FEATURE = registerFeatureType(PipFeature.class);
    public static final int RETICLE_FEATURE = registerFeatureType(ReticleFeature.class);
@@ -53,11 +53,11 @@ public class FeatureTypeRegistry {
    }
 
    public static Class<? extends Feature> getFeatureType(int featureTypeId) {
-      return (Class)idToType.get(featureTypeId);
+      return idToType.get(featureTypeId);
    }
 
    public static int getFeatureTypeId(Class<? extends Feature> featureType) {
-      Integer id = (Integer)typeToId.get(featureType);
+      Integer id = typeToId.get(featureType);
       if (id == null) {
          throw new IllegalArgumentException("Feature type not registered: " + featureType);
       } else {

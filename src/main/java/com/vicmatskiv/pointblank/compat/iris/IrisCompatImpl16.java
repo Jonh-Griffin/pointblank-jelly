@@ -2,11 +2,11 @@ package com.vicmatskiv.pointblank.compat.iris;
 
 import com.vicmatskiv.pointblank.Config;
 import com.vicmatskiv.pointblank.client.render.RenderTypeProvider;
-import net.coderbot.iris.Iris;
+import net.irisshaders.iris.Iris;
 
 class IrisCompatImpl16 extends IrisCompat {
    private boolean isRenderingShadows;
-   private RenderTypeProvider renderTypeProvider = new IrisRenderTypeProvider();
+   private final RenderTypeProvider renderTypeProvider = new IrisRenderTypeProvider();
 
    protected IrisCompatImpl16() {
    }
@@ -16,7 +16,7 @@ class IrisCompatImpl16 extends IrisCompat {
    }
 
    public boolean isShaderPackEnabled() {
-      return !Iris.getCurrentPack().isEmpty();
+      return Iris.getCurrentPack().isPresent();
    }
 
    public void onStartRenderShadows() {
@@ -36,7 +36,6 @@ class IrisCompatImpl16 extends IrisCompat {
    }
 
    public int getColorBalance() {
-      int colorBalance = Config.pipScopeColorBalanceRed << 24 | Config.pipScopeColorBalanceGreen << 16 | Config.pipScopeColorBalanceBlue << 8 | 255;
-      return colorBalance;
+       return Config.pipScopeColorBalanceRed << 24 | Config.pipScopeColorBalanceGreen << 16 | Config.pipScopeColorBalanceBlue << 8 | 255;
    }
 }

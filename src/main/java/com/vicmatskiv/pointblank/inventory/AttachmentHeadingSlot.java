@@ -15,23 +15,23 @@ final class AttachmentHeadingSlot extends Slot implements Activatable, Hierarchi
       this.attachmentContainer = attachmentContainer;
    }
 
-   public ItemStack m_7993_() {
-      return this.attachmentContainer.getVirtualInventory() != null ? this.attachmentContainer.getVirtualInventory().getItemStack() : ItemStack.f_41583_;
+   public ItemStack getItem() {
+      return this.attachmentContainer.getVirtualInventory() != null ? this.attachmentContainer.getVirtualInventory().getItemStack() : ItemStack.EMPTY;
    }
 
-   public boolean m_280329_() {
+   public boolean isHighlightable() {
       return false;
    }
 
-   public boolean m_8010_(Player player) {
+   public boolean mayPickup(Player player) {
       return false;
    }
 
-   public boolean m_5857_(ItemStack itemStack) {
+   public boolean mayPlace(ItemStack itemStack) {
       return false;
    }
 
-   public boolean m_6659_() {
+   public boolean isActive() {
       return this.isActive;
    }
 

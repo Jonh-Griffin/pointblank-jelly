@@ -15,7 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -24,9 +24,9 @@ import org.joml.Vector4f;
 
 @OnlyIn(Dist.CLIENT)
 public class SingleQuadEntityRenderer extends EntityRenderer<SlowProjectile> {
-   private ResourceLocation texture = new ResourceLocation("pointblank:textures/effect/laser3.png");
+   private final ResourceLocation texture = new ResourceLocation("pointblank:textures/effect/laser3.png");
 
-   public SingleQuadEntityRenderer(Context context) {
+   public SingleQuadEntityRenderer(EntityRendererProvider.Context context) {
       super(context);
    }
 
@@ -35,35 +35,35 @@ public class SingleQuadEntityRenderer extends EntityRenderer<SlowProjectile> {
    }
 
    public void renderOrig(SlowProjectile projectile, float p_114657_, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int lightColor) {
-      Minecraft mc = Minecraft.m_91087_();
-      Camera camera = mc.f_91063_.m_109153_();
-      poseStack.m_252781_(camera.m_253121_());
+      Minecraft mc = Minecraft.getInstance();
+      Camera camera = mc.gameRenderer.getMainCamera();
+      poseStack.mulPose(camera.rotation());
       float width = 0.5F;
       float length = 0.0F;
-      poseStack.m_85836_();
+      poseStack.pushPose();
       float u = 1.0F;
       float brightness = 1.0F;
-      BufferBuilder bufferbuilder = Tesselator.m_85913_().m_85915_();
+      BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
       RenderSystem.setShaderTexture(0, this.texture);
-      RenderSystem.setShader(GameRenderer::m_172820_);
+      RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
       RenderSystem.enableBlend();
       RenderSystem.blendFunc(SourceFactor.SRC_ALPHA, DestFactor.ONE);
       RenderSystem.disableCull();
       RenderSystem.disableDepthTest();
-      Matrix4f matrix4f = poseStack.m_85850_().m_252922_();
+      Matrix4f matrix4f = poseStack.last().pose();
       Vector4f t1 = new Vector4f(width, width, 0.0F, 1.0F);
       matrix4f.transform(t1);
-      bufferbuilder.m_166779_(Mode.QUADS, DefaultVertexFormat.f_85819_);
-      bufferbuilder.m_252986_(matrix4f, -width + length, width, 0.0F).m_7421_(0.0F, 0.0F).m_85950_(1.0F, 1.0F, 1.0F, brightness).m_5752_();
-      bufferbuilder.m_252986_(matrix4f, width, width, 0.0F).m_7421_(u, 0.0F).m_85950_(1.0F, 1.0F, 1.0F, brightness).m_5752_();
-      bufferbuilder.m_252986_(matrix4f, width, -width, 0.0F).m_7421_(u, 1.0F).m_85950_(1.0F, 1.0F, 1.0F, brightness).m_5752_();
-      bufferbuilder.m_252986_(matrix4f, -width + length, -width, 0.0F).m_7421_(0.0F, 1.0F).m_85950_(1.0F, 1.0F, 1.0F, brightness).m_5752_();
-      BufferUploader.m_231202_(bufferbuilder.m_231175_());
+      bufferbuilder.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+      bufferbuilder.vertex(matrix4f, -width + length, width, 0.0F).uv(0.0F, 0.0F).color(1.0F, 1.0F, 1.0F, brightness).endVertex();
+      bufferbuilder.vertex(matrix4f, width, width, 0.0F).uv(u, 0.0F).color(1.0F, 1.0F, 1.0F, brightness).endVertex();
+      bufferbuilder.vertex(matrix4f, width, -width, 0.0F).uv(u, 1.0F).color(1.0F, 1.0F, 1.0F, brightness).endVertex();
+      bufferbuilder.vertex(matrix4f, -width + length, -width, 0.0F).uv(0.0F, 1.0F).color(1.0F, 1.0F, 1.0F, brightness).endVertex();
+      BufferUploader.drawWithShader(bufferbuilder.end());
       RenderSystem.disableBlend();
       RenderSystem.defaultBlendFunc();
       RenderSystem.enableCull();
       RenderSystem.enableDepthTest();
-      poseStack.m_85849_();
+      poseStack.popPose();
    }
 
    public ResourceLocation getTextureLocation(SlowProjectile entity) {

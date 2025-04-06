@@ -3,7 +3,6 @@ package com.vicmatskiv.pointblank.feature;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -26,13 +25,11 @@ public interface FeatureProvider {
    }
 
    default List<Component> getFeatureTooltipLines() {
-      List<Component> tooltipLines = new ArrayList();
-      Iterator var2 = this.getFeatures().iterator();
+      List<Component> tooltipLines = new ArrayList<>();
 
-      while(var2.hasNext()) {
-         Feature feature = (Feature)var2.next();
-         MutableComponent featureDescription = feature.getDescription().m_6881_().m_130940_(ChatFormatting.RED).m_130940_(ChatFormatting.ITALIC);
-         if (featureDescription.m_214077_() != ComponentContents.f_237124_) {
+      for(Feature feature : this.getFeatures()) {
+         MutableComponent featureDescription = feature.getDescription().copy().withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC);
+         if (featureDescription.getContents() != ComponentContents.EMPTY) {
             tooltipLines.add(featureDescription);
          }
       }

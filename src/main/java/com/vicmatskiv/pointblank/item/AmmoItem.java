@@ -6,6 +6,8 @@ import com.vicmatskiv.pointblank.client.EntityRendererBuilder;
 import com.vicmatskiv.pointblank.client.effect.AbstractEffect;
 import com.vicmatskiv.pointblank.client.effect.Effect;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
+import com.vicmatskiv.pointblank.client.effect.AbstractEffect.SpriteAnimationType;
+import com.vicmatskiv.pointblank.client.effect.Effect.BlendMode;
 import com.vicmatskiv.pointblank.client.render.ProjectileItemEntityRenderer;
 import com.vicmatskiv.pointblank.client.render.ProjectileItemRenderer;
 import com.vicmatskiv.pointblank.client.render.SpriteEntityRenderer;
@@ -22,11 +24,9 @@ import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.TopDownAttackTrajectory;
 import com.vicmatskiv.pointblank.util.Tradeable;
 import com.vicmatskiv.pointblank.util.Trajectory;
-import com.vicmatskiv.pointblank.util.TrajectoryPhaseListener;
 import com.vicmatskiv.pointblank.util.TrajectoryProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,7 +39,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.item.Item.Properties;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -48,8 +48,8 @@ import net.minecraftforge.fml.loading.FMLLoader;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class AmmoItem extends HurtingItem implements ExplosionProvider, TrajectoryProvider, Craftable, Nameable, GeoItem, Tradeable {
@@ -57,7 +57,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
    private static final RawAnimation ANIMATION_THROW = RawAnimation.begin().thenPlay("animation.model.throw");
    private final AnimatableInstanceCache cache;
    private boolean hasProjectile;
-   private String name;
+   private final String name;
    private float tradePrice;
    private int tradeBundleQuantity;
    private int tradeLevel;
@@ -69,11 +69,11 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
    private long craftingDuration;
 
    public AmmoItem(String name) {
-      this(name, (Builder)null);
+      this(name, null);
    }
 
    public AmmoItem(String name, Builder builder) {
-      super(new Properties(), builder);
+      super(new Item.Properties(), builder);
       this.cache = GeckoLibUtil.createInstanceCache(this);
       this.name = name;
       if (name.equals("grenade")) {
@@ -99,13 +99,13 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
    }
 
    public ProjectileLike createProjectile(LivingEntity player, double posX, double posY, double posZ) {
-      ProjectileLike projectile = (ProjectileLike)this.entityBuilder.build(MiscUtil.getLevel(player));
-      ((Entity)projectile).m_6034_(posX, posY, posZ);
-      ((Projectile)projectile).m_5602_(player);
+      ProjectileLike projectile = this.entityBuilder.build(MiscUtil.getLevel(player));
+      ((Entity)projectile).setPos(posX, posY, posZ);
+      ((Projectile)projectile).setOwner(player);
       return projectile;
    }
 
-   public void registerControllers(ControllerRegistrar registry) {
+   public void registerControllers(AnimatableManager.ControllerRegistrar registry) {
    }
 
    public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -155,16 +155,14 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       if (this.isTopDownAttackEnabled) {
          TopDownAttackTrajectory topDownAttackTrajectory = TopDownAttackTrajectory.createTrajectory(startPosition, targetLocation, this.initialVelocity);
          if (topDownAttackTrajectory != null) {
-            topDownAttackTrajectory.addListener(new TrajectoryPhaseListener<TopDownAttackTrajectory.Phase>() {
-               public void onStartPhase(TopDownAttackTrajectory.Phase phase, Vec3 position) {
-                  if (AmmoItem.this.topDownProjectileSoundEvents != null) {
-                     SoundInfo soundInfo = (SoundInfo)AmmoItem.this.topDownProjectileSoundEvents.get(phase);
-                     if (soundInfo != null) {
-                        level.m_7785_(position.f_82479_, position.f_82480_, position.f_82481_, (SoundEvent)soundInfo.soundEvent().get(), SoundSource.BLOCKS, soundInfo.volume(), 1.0F, false);
-                     }
+            topDownAttackTrajectory.addListener((phase, position) -> {
+               if (AmmoItem.this.topDownProjectileSoundEvents != null) {
+                  SoundInfo soundInfo = AmmoItem.this.topDownProjectileSoundEvents.get(phase);
+                  if (soundInfo != null) {
+                     level.playLocalSound(position.x, position.y, position.z, soundInfo.soundEvent().get(), SoundSource.BLOCKS, soundInfo.volume(), 1.0F, false);
                   }
-
                }
+
             });
          }
 
@@ -175,7 +173,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
    }
 
    public static class Builder extends HurtingItem.Builder<Builder> implements Nameable {
-      private static final double DEFAULT_GRAVITY = 0.05D;
+      private static final double DEFAULT_GRAVITY = 0.05;
       private static final float DEFAULT_INITIAL_VELOCITY = 50.0F;
       private static final float DEFAULT_WIDTH = 0.25F;
       private static final float DEFAULT_HEIGHT = 0.25F;
@@ -183,7 +181,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       private static final int DEFAULT_TRADE_LEVEL = 0;
       private static final int DEFAULT_TRADE_BUNDLE_QUANTITY = 1;
       private static final int DEFAULT_CRAFTING_DURATION = 500;
-      private static Effect.BlendMode DEFAULT_BLEND_MODE;
+      private static final Effect.BlendMode DEFAULT_BLEND_MODE;
       private String name;
       private float tradePrice = Float.NaN;
       private int tradeBundleQuantity = 1;
@@ -191,16 +189,19 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       private Supplier<EntityBuilder<?, ?>> entityBuilderSupplier;
       private boolean hasProjectile;
       private boolean isTopDownAttackEnabled;
-      private List<EffectBuilderInfo> projectileEffectBuilderSuppliers = new ArrayList();
+      private final List<EffectBuilderInfo> projectileEffectBuilderSuppliers = new ArrayList<>();
       private Supplier<EntityRendererBuilder<?, Entity, EntityRenderer<Entity>>> rendererBuilder;
-      private double gravity = 0.05D;
-      private double initialVelocity = 50.0D;
+      private double gravity = 0.05;
+      private double initialVelocity = 50.0F;
       private float boundingBoxWidth = 0.25F;
       private float boundingBoxHeight = 0.25F;
       private EntityBuilder<?, ?> entityBuilder;
-      private Map<TopDownAttackTrajectory.Phase, SoundInfo> topDownProjectileSoundEvents = new HashMap();
+      private final Map<TopDownAttackTrajectory.Phase, SoundInfo> topDownProjectileSoundEvents = new HashMap<>();
       private long craftingDuration = 500L;
       private AmmoItem builtItem;
+
+      public Builder() {
+      }
 
       public Builder withName(String name) {
          this.name = name;
@@ -208,7 +209,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       }
 
       public Builder withCraftingDuration(int duration, TimeUnit timeUnit) {
-         this.craftingDuration = timeUnit.toMillis((long)duration);
+         this.craftingDuration = timeUnit.toMillis(duration);
          return this;
       }
 
@@ -243,9 +244,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
 
       public Builder withProjectileEffect(Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> effectSupplier) {
          this.hasProjectile = true;
-         this.projectileEffectBuilderSuppliers.add(new EffectBuilderInfo(effectSupplier, (p) -> {
-            return true;
-         }));
+         this.projectileEffectBuilderSuppliers.add(new EffectBuilderInfo(effectSupplier, (p) -> true));
          return this;
       }
 
@@ -280,7 +279,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       public Builder withJsonObject(JsonObject obj) {
          super.withJsonObject(obj);
          this.withName(JsonUtil.getJsonString(obj, "name"));
-         this.withTradePrice((double)JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "traceBundleQuantity", 1), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
+         this.withTradePrice(JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "traceBundleQuantity", 1), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
          this.withCraftingDuration(JsonUtil.getJsonInt(obj, "craftingDuration", 500), TimeUnit.MILLISECOND);
          JsonObject projectileObj = obj.getAsJsonObject("projectile");
          if (projectileObj != null) {
@@ -294,14 +293,14 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
                size = Math.max(width, height);
             }
 
-            this.withProjectileGravity(JsonUtil.getJsonDouble(projectileObj, "gravity", 0.05D));
-            this.withProjectileInitialVelocity(JsonUtil.getJsonDouble(projectileObj, "initialVelocity", 0.05D));
+            this.withProjectileGravity(JsonUtil.getJsonDouble(projectileObj, "gravity", 0.05));
+            this.withProjectileInitialVelocity(JsonUtil.getJsonDouble(projectileObj, "initialVelocity", 0.05));
             this.withProjectileTopDownAttackEnabled(JsonUtil.getJsonBoolean(projectileObj, "topDownAttackEnabled", false));
             JsonObject rendererObj = projectileObj.getAsJsonObject("renderer");
             Dist side = FMLLoader.getDist();
             if (rendererObj != null && side.isClient()) {
                String rendererType = JsonUtil.getJsonString(rendererObj, "type");
-               if (rendererType.toLowerCase().equals("sprite")) {
+               if (rendererType.equalsIgnoreCase("sprite")) {
                   SpriteEntityRenderer.Builder rendererBuilder = new SpriteEntityRenderer.Builder();
                   rendererBuilder.withTexture(JsonUtil.getJsonString(rendererObj, "texture"));
                   rendererBuilder.withSize(JsonUtil.getJsonFloat(rendererObj, "size", size));
@@ -313,29 +312,20 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
                   int rows = JsonUtil.getJsonInt(spritesObj, "rows", 1);
                   int columns = JsonUtil.getJsonInt(spritesObj, "columns", 1);
                   int fps = JsonUtil.getJsonInt(spritesObj, "fps", 60);
-                  AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", AbstractEffect.SpriteAnimationType.class, AbstractEffect.SpriteAnimationType.LOOP, true);
+                  AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", AbstractEffect.SpriteAnimationType.class, SpriteAnimationType.LOOP, true);
                   rendererBuilder.withSprites(rows, columns, fps, spriteAnimationType);
                   rendererBuilder.withBlendMode((Effect.BlendMode)JsonUtil.getEnum(rendererObj, "blendMode", Effect.BlendMode.class, DEFAULT_BLEND_MODE, true));
                   rendererBuilder.withDepthTest(JsonUtil.getJsonBoolean(rendererObj, "depthTest", true));
                   rendererBuilder.withGlow(JsonUtil.getJsonBoolean(rendererObj, "glow", false));
-                  rendererBuilder.withRotations((double)JsonUtil.getJsonFloat(rendererObj, "rotations", 0.0F));
-                  this.withProjectileRenderer(() -> {
-                     return rendererBuilder;
-                  });
-               } else if (rendererType.toLowerCase().equals("model")) {
-                  this.withProjectileRenderer(() -> {
-                     return new ProjectileItemEntityRenderer.Builder();
-                  });
+                  rendererBuilder.withRotations(JsonUtil.getJsonFloat(rendererObj, "rotations", 0.0F));
+                  this.withProjectileRenderer(() -> rendererBuilder);
+               } else if (rendererType.equalsIgnoreCase("model")) {
+                  this.withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder());
                }
             }
 
-            Iterator var15 = JsonUtil.getStrings(projectileObj, "effects").iterator();
-
-            while(var15.hasNext()) {
-               String effectName = (String)var15.next();
-               Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> supplier = () -> {
-                  return (EffectBuilder)EffectRegistry.getEffectBuilderSupplier(effectName).get();
-               };
+            for(String effectName : JsonUtil.getStrings(projectileObj, "effects")) {
+               Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> supplier = () -> EffectRegistry.getEffectBuilderSupplier(effectName).get();
                this.withProjectileEffect(supplier);
             }
          }
@@ -356,15 +346,13 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       }
 
       public EntityBuilderProvider getEntityBuilderProvider() {
-         return this.hasProjectile ? () -> {
-            return this.getOrCreateEntityBuilder();
-         } : null;
+         return this.hasProjectile ? () -> this.getOrCreateEntityBuilder() : null;
       }
 
       private EntityBuilder<?, ?> getOrCreateEntityBuilder() {
          if (this.entityBuilder == null) {
             if (this.entityBuilderSupplier != null) {
-               this.entityBuilder = (EntityBuilder)this.entityBuilderSupplier.get();
+               this.entityBuilder = this.entityBuilderSupplier.get();
             } else {
                this.entityBuilder = SlowProjectile.builder();
             }
@@ -377,10 +365,8 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
             this.entityBuilder.withName(this.name);
             this.entityBuilder.withInitialVelocity(this.initialVelocity);
             this.entityBuilder.withGravity(this.gravity);
-            Iterator var1 = this.projectileEffectBuilderSuppliers.iterator();
 
-            while(var1.hasNext()) {
-               EffectBuilderInfo ebi = (EffectBuilderInfo)var1.next();
+            for(EffectBuilderInfo ebi : this.projectileEffectBuilderSuppliers) {
                this.entityBuilder.withEffect(ebi);
             }
          }
@@ -389,7 +375,7 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       }
 
       static {
-         DEFAULT_BLEND_MODE = Effect.BlendMode.NORMAL;
+         DEFAULT_BLEND_MODE = BlendMode.NORMAL;
       }
    }
 }

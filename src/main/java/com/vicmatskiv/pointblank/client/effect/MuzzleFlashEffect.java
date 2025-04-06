@@ -1,3 +1,8 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
 package com.vicmatskiv.pointblank.client.effect;
 
 import com.google.gson.JsonObject;
@@ -6,6 +11,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.uv.SpriteUVProvider;
 import com.vicmatskiv.pointblank.item.GunItem;
+import com.vicmatskiv.pointblank.item.GunItem.FirePhase;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import java.util.Collection;
 import java.util.Set;
@@ -20,26 +26,29 @@ public class MuzzleFlashEffect extends AbstractEffect {
    private long nanoDuration;
    private SpriteUVProvider spriteUVProvider;
 
+   public MuzzleFlashEffect() {
+   }
+
    public boolean isExpired() {
       return System.nanoTime() - this.startTime > this.nanoDuration;
    }
 
    private float getProgress() {
       float progress = (float)((double)(System.nanoTime() - this.startTime) / (double)this.nanoDuration);
-      return Mth.m_14036_(progress, 0.0F, 1.0F);
+      return Mth.clamp(progress, 0.0F, 1.0F);
    }
 
    public void render(EffectRenderContext effectRenderContext) {
       PoseStack poseStack = effectRenderContext.getPoseStack();
       if (poseStack != null) {
-         poseStack.m_85836_();
+         poseStack.pushPose();
          this.renderQuad(poseStack, effectRenderContext.getPosition(), effectRenderContext.getVertexBuffer(), effectRenderContext.getLightColor(), 1.0F, 1.0F, 1.0F, 1.0F, this.getProgress());
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
    protected void renderQuad(PoseStack poseStack, Vec3 position, VertexConsumer buffer, int packedLight, float red, float green, float blue, float alpha, float progress) {
-      Matrix4f poseState = poseStack.m_85850_().m_252922_();
+      Matrix4f poseState = poseStack.last().pose();
       this.createVerticesOfQuad(position, poseState, buffer, packedLight, red, green, blue, progress);
    }
 
@@ -60,7 +69,7 @@ public class MuzzleFlashEffect extends AbstractEffect {
          }
 
          for(int i = 0; i < 4; ++i) {
-            buffer.m_252986_(poseState, (float)position.m_7096_() + positionOffsets[i][0], (float)position.m_7098_() + positionOffsets[i][1], (float)position.m_7094_() + positionOffsets[i][2]).m_85950_(red, green, blue, alpha).m_7421_(texUV[i][0], texUV[i][1]).m_86008_(0).m_85969_(packedLight).m_5601_(0.0F, 1.0F, 0.0F).m_5752_();
+            buffer.vertex(poseState, (float)position.x() + positionOffsets[i][0], (float)position.y() + positionOffsets[i][1], (float)position.z() + positionOffsets[i][2]).color(red, green, blue, alpha).uv(texUV[i][0], texUV[i][1]).overlayCoords(0).uv2(packedLight).normal(0.0F, 1.0F, 0.0F).endVertex();
          }
 
       }
@@ -74,8 +83,11 @@ public class MuzzleFlashEffect extends AbstractEffect {
       return false;
    }
 
-   public static class Builder extends AbstractEffectBuilder<Builder, MuzzleFlashEffect> {
+   public static class Builder extends AbstractEffect.AbstractEffectBuilder<Builder, MuzzleFlashEffect> {
       private static final Set<GunItem.FirePhase> COMPATIBLE_PHASES;
+
+      public Builder() {
+      }
 
       public Collection<GunItem.FirePhase> getCompatiblePhases() {
          return COMPATIBLE_PHASES;
@@ -86,10 +98,10 @@ public class MuzzleFlashEffect extends AbstractEffect {
       }
 
       public Builder withJsonObject(JsonObject obj) {
-         return (Builder)super.withJsonObject(obj);
+         return super.withJsonObject(obj);
       }
 
-      public MuzzleFlashEffect build(Context context) {
+      public MuzzleFlashEffect build(EffectBuilder.Context context) {
          MuzzleFlashEffect effect = new MuzzleFlashEffect();
          super.apply(effect, context);
          effect.gunState = context.getGunClientState();
@@ -100,7 +112,7 @@ public class MuzzleFlashEffect extends AbstractEffect {
       }
 
       static {
-         COMPATIBLE_PHASES = Set.of(GunItem.FirePhase.FIRING);
+         COMPATIBLE_PHASES = Set.of(FirePhase.FIRING);
       }
    }
 }

@@ -21,7 +21,7 @@ public class ReticleItemLayer extends FeaturePassLayer<GunItem> {
    public static final String HRC_ATTRIBUTE_MAX_ANGULAR_OFFSET_COS = "max_angular_offset_cos";
 
    public ReticleItemLayer(GunItemRenderer renderer) {
-      super(renderer, ReticleFeature.class, RenderPass.RETICLE, List.of("scope", "reticle"), true, (Object)null);
+      super(renderer, ReticleFeature.class, RenderPass.RETICLE, List.of("scope", "reticle"), true, null);
    }
 
    public void render(BakedGeoModel attachmentModel, PoseStack poseStack, MultiBufferSource bufferSource, GunItem animatable, RenderType origRenderType, VertexConsumer origBuffer, float partialTick, int packedLight, int overlay, float red, float green, float blue, float alpha) {
@@ -30,10 +30,9 @@ public class ReticleItemLayer extends FeaturePassLayer<GunItem> {
       RenderType renderType = null;
       HierarchicalRenderContext hrc = HierarchicalRenderContext.current();
       if (hrc != null) {
-         Item var19 = hrc.getItemStack().m_41720_();
-         if (var19 instanceof FeatureProvider) {
-            FeatureProvider fp = (FeatureProvider)var19;
-            ReticleFeature feature = (ReticleFeature)fp.getFeature(ReticleFeature.class);
+         Item var19 = hrc.getItemStack().getItem();
+         if (var19 instanceof FeatureProvider fp) {
+             ReticleFeature feature = fp.getFeature(ReticleFeature.class);
             if (feature != null && feature.isEnabled(hrc.getItemStack())) {
                isParallaxEnabled = feature.isParallaxEnabled();
                maxAngularOffsetCos = feature.getMaxAngularOffsetCos();
@@ -44,7 +43,7 @@ public class ReticleItemLayer extends FeaturePassLayer<GunItem> {
       }
 
       if (renderType != null) {
-         VertexConsumer buffer = bufferSource.m_6299_(renderType);
+         VertexConsumer buffer = bufferSource.getBuffer(renderType);
          RenderTypeProvider renderTypeProvider = RenderTypeProvider.getInstance();
          float reticleBrightness = renderTypeProvider.getReticleBrightness();
          HierarchicalRenderContext subHrc = HierarchicalRenderContext.push();

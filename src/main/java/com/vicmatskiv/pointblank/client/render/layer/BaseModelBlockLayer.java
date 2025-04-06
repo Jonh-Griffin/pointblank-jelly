@@ -24,7 +24,7 @@ public abstract class BaseModelBlockLayer<T extends BlockEntity & GeoAnimatable>
       this.isRendering = true;
 
       try {
-         this.renderer.reRender(bakedModel, poseStack, bufferSource, animatable, renderType, bufferSource.m_6299_(renderType), partialTick, packedLight, OverlayTexture.f_118083_, 1.0F, 1.0F, 1.0F, 1.0F);
+         this.renderer.reRender(bakedModel, poseStack, bufferSource, animatable, renderType, bufferSource.getBuffer(renderType), partialTick, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
       } finally {
          this.isRendering = false;
       }

@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 
 public class ProjectileFireRequestPacket extends GunStateRequestPacket {
    private FireModeInstance fireModeInstance;
@@ -66,12 +66,12 @@ public class ProjectileFireRequestPacket extends GunStateRequestPacket {
       buffer.writeLong(this.seed);
    }
 
-   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<Context> ctx) {
-      ServerPlayer player = ((Context)ctx.get()).getSender();
+   protected <T extends GunStateRequestPacket> void handleEnqueued(Supplier<NetworkEvent.Context> ctx) {
+      ServerPlayer player = ctx.get().getSender();
       if (player != null) {
-         ItemStack itemStack = player.m_150109_().m_8020_(this.slotIndex);
-         if (itemStack != null && itemStack.m_41720_() instanceof GunItem) {
-            ((GunItem)itemStack.m_41720_()).handleClientProjectileFireRequest(player, this.fireModeInstance, this.stateId, this.slotIndex, this.correlationId, this.isAiming, this.posX, this.posY, this.posZ, this.directionX, this.directionY, this.directionZ, this.targetEntityId, this.seed);
+         ItemStack itemStack = player.getInventory().getItem(this.slotIndex);
+         if (itemStack != null && itemStack.getItem() instanceof GunItem) {
+            ((GunItem)itemStack.getItem()).handleClientProjectileFireRequest(player, this.fireModeInstance, this.stateId, this.slotIndex, this.correlationId, this.isAiming, this.posX, this.posY, this.posZ, this.directionX, this.directionY, this.directionZ, this.targetEntityId, this.seed);
          } else {
             System.err.println("Mismatching item in slot " + this.slotIndex);
          }

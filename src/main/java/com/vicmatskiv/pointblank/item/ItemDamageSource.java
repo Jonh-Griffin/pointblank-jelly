@@ -7,7 +7,7 @@ public class ItemDamageSource extends DamageSource {
    private final Item item;
 
    public ItemDamageSource(DamageSource source, Item item) {
-      super(source.m_269150_(), source.m_7640_(), source.m_7639_(), source.m_269181_());
+      super(source.typeHolder(), source.getDirectEntity(), source.getEntity(), source.getSourcePosition());
       this.item = item;
    }
 

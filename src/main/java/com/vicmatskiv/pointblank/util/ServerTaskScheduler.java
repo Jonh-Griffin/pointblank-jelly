@@ -7,18 +7,14 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 
 public class ServerTaskScheduler implements Runnable {
-   private DelayQueue<DelayedTask> queue = new DelayQueue();
+   private DelayQueue<DelayedTask> queue = new DelayQueue<>();
 
    public void run() {
-      Collection<DelayedTask> tasks = new ArrayList();
+      Collection<DelayedTask> tasks = new ArrayList<>();
       this.queue.drainTo(tasks);
-      Iterator var2 = tasks.iterator();
-
-      while(var2.hasNext()) {
-         DelayedTask task = (DelayedTask)var2.next();
-         task.run();
-      }
-
+       for (DelayedTask task : tasks) {
+           task.run();
+       }
    }
 
    public void scheduleDelayedTask(Runnable task, long delayMillis) {
@@ -27,7 +23,7 @@ public class ServerTaskScheduler implements Runnable {
 
    private static class DelayedTask implements Delayed, Runnable {
       private final long startDelayTime;
-      private Runnable task;
+      private final Runnable task;
 
       DelayedTask(Runnable task, long delay, java.util.concurrent.TimeUnit timeUnit) {
          this.task = task;

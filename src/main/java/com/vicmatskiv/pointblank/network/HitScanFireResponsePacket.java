@@ -14,7 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraftforge.network.NetworkEvent;
 import software.bernie.geckolib.util.ClientUtils;
 
 public class HitScanFireResponsePacket extends GunStateResponsePacket {
@@ -41,33 +41,29 @@ public class HitScanFireResponsePacket extends GunStateResponsePacket {
    public static HitScanFireResponsePacket decode(FriendlyByteBuf buffer) {
       GunStateResponsePacket header = GunStateResponsePacket.decodeHeader(buffer);
       int ownerEntityId = buffer.readInt();
-      SimpleHitResult hitResult = (SimpleHitResult)SimpleHitResult.reader().apply(buffer);
+      SimpleHitResult hitResult = SimpleHitResult.reader().apply(buffer);
       float damage = buffer.readFloat();
       return new HitScanFireResponsePacket(ownerEntityId, header.stateId, header.slotIndex, header.correlationId, hitResult, damage);
    }
 
-   public static void handle(HitScanFireResponsePacket packet, Supplier<Context> ctx) {
-      ((Context)ctx.get()).enqueueWork(() -> {
-         ClientEventHandler.runSyncTick(() -> {
-            Level level = ClientUtils.getLevel();
-            Entity entity = level.m_6815_(packet.ownerEntityId);
-            if (entity instanceof Player) {
-               Player player = (Player)entity;
-               Tuple<ItemStack, GunClientState> targetTuple = packet.getItemStackAndState(packet, player);
-               if (targetTuple != null) {
-                  packet.handleEnqueued(player, (ItemStack)targetTuple.m_14418_(), (GunClientState)targetTuple.m_14419_());
-               }
+   public static void handle(HitScanFireResponsePacket packet, Supplier<NetworkEvent.Context> ctx) {
+      ctx.get().enqueueWork(() -> ClientEventHandler.runSyncTick(() -> {
+         Level level = ClientUtils.getLevel();
+         Entity entity = level.getEntity(packet.ownerEntityId);
+         if (entity instanceof Player player) {
+            Tuple<ItemStack, GunClientState> targetTuple = packet.getItemStackAndState(packet, player);
+            if (targetTuple != null) {
+               packet.handleEnqueued(player, targetTuple.getA(), targetTuple.getB());
             }
+         }
 
-         });
-      });
-      ((Context)ctx.get()).setPacketHandled(true);
+      }));
+      ctx.get().setPacketHandled(true);
    }
 
    protected <T extends GunStateResponsePacket> Tuple<ItemStack, GunClientState> getItemStackAndState(T packet, Entity entity) {
       Player clientPlayer = ClientUtils.getClientPlayer();
-      if (entity instanceof Player) {
-         Player player = (Player)entity;
+      if (entity instanceof Player player) {
          return InventoryUtils.getItemStackByStateId(player, packet.stateId, clientPlayer == player ? packet.slotIndex : 0);
       } else {
          return null;
@@ -75,9 +71,8 @@ public class HitScanFireResponsePacket extends GunStateResponsePacket {
    }
 
    protected <T extends GunStateResponsePacket> void handleEnqueued(Player player, ItemStack itemStack, GunClientState gunClientState) {
-      Item var5 = itemStack.m_41720_();
-      if (var5 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var5;
+      Item var5 = itemStack.getItem();
+      if (var5 instanceof GunItem gunItem) {
          gunItem.processServerHitScanFireResponse(player, this.stateId, itemStack, gunClientState, this.hitResult, this.damage);
       }
 

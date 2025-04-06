@@ -8,6 +8,8 @@ import com.mojang.math.Axis;
 import com.vicmatskiv.pointblank.Config;
 import com.vicmatskiv.pointblank.Enableable;
 import com.vicmatskiv.pointblank.Nameable;
+import com.vicmatskiv.pointblank.Config.AutoReload;
+import com.vicmatskiv.pointblank.Config.CrosshairType;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.attachment.AttachmentHost;
@@ -25,7 +27,6 @@ import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController2
 import com.vicmatskiv.pointblank.client.gui.AttachmentManagerScreen;
 import com.vicmatskiv.pointblank.client.gui.CraftingScreen;
 import com.vicmatskiv.pointblank.client.gui.GunItemOverlay;
-import com.vicmatskiv.pointblank.client.model.BaseBlockModel;
 import com.vicmatskiv.pointblank.client.particle.EffectParticles;
 import com.vicmatskiv.pointblank.client.render.BaseModelBlockRenderer;
 import com.vicmatskiv.pointblank.client.render.CrosshairRenderer;
@@ -52,9 +53,8 @@ import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.UpDownCounter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import net.minecraft.ChatFormatting;
@@ -71,7 +71,6 @@ import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.HumanoidModel.ArmPose;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.core.particles.ParticleType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
@@ -81,7 +80,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -92,25 +90,23 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers;
-import net.minecraftforge.client.event.InputEvent.InteractionKeyMappingTriggered;
-import net.minecraftforge.client.event.RenderLivingEvent.Post;
-import net.minecraftforge.client.event.RenderLivingEvent.Pre;
-import net.minecraftforge.client.event.RenderTooltipEvent.GatherComponents;
-import net.minecraftforge.client.event.ViewportEvent.ComputeCameraAngles;
-import net.minecraftforge.client.event.ViewportEvent.ComputeFov;
+import net.minecraftforge.client.event.RenderLivingEvent;
+import net.minecraftforge.client.event.RenderTooltipEvent;
+import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.common.util.Lazy;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-import net.minecraftforge.event.TickEvent.RenderTickEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent;
-import net.minecraftforge.event.level.LevelEvent.Load;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
@@ -131,27 +127,17 @@ import software.bernie.geckolib.util.ClientUtils;
 @OnlyIn(Dist.CLIENT)
 public class ClientEventHandler {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
-   public static final Lazy<KeyMapping> RELOAD_KEY = Lazy.of(() -> {
-      return new KeyMapping("key.pointblack.reload", Type.KEYSYM, 82, "key.categories.pointblank");
-   });
-   public static final Lazy<KeyMapping> FIRE_MODE_KEY = Lazy.of(() -> {
-      return new KeyMapping("key.pointblack.firemode", Type.KEYSYM, 66, "key.categories.pointblank");
-   });
-   public static final Lazy<KeyMapping> INSPECT_KEY = Lazy.of(() -> {
-      return new KeyMapping("key.pointblack.inspect", Type.KEYSYM, 73, "key.categories.pointblank");
-   });
-   public static final Lazy<KeyMapping> ATTACHMENT_KEY = Lazy.of(() -> {
-      return new KeyMapping("key.pointblack.attachments", Type.KEYSYM, 89, "key.categories.pointblank");
-   });
-   public static final Lazy<KeyMapping> SCOPE_SWITCH_KEY = Lazy.of(() -> {
-      return new KeyMapping("key.pointblack.scope_switch", Type.KEYSYM, 86, "key.categories.pointblank");
-   });
-   private static ReentrantLock mainLoopLock = new ReentrantLock();
-   private InertiaController scopeInertiaController = new InertiaController(0.06D, 0.2D, 0.1D);
-   private InertiaController inertiaController = new InertiaController(0.01D, 0.1D, 1.2217304706573486D);
-   public static InertiaController reticleInertiaController = new InertiaController(0.005D, 0.05D, 1.0D);
-   private GunJumpAnimationController jumpController = new GunJumpAnimationController(0.3D, 0.8D, 1.3D, 0.05D, 2000L);
-   private ViewShakeAnimationController2 sharedViewShakeController = new ViewShakeAnimationController2(0.15D, 0.3D, 1.0D, 0.01D, 500L);
+   public static final Lazy<KeyMapping> RELOAD_KEY = Lazy.of(() -> new KeyMapping("key.pointblack.reload", Type.KEYSYM, 82, "key.categories.pointblank"));
+   public static final Lazy<KeyMapping> FIRE_MODE_KEY = Lazy.of(() -> new KeyMapping("key.pointblack.firemode", Type.KEYSYM, 66, "key.categories.pointblank"));
+   public static final Lazy<KeyMapping> INSPECT_KEY = Lazy.of(() -> new KeyMapping("key.pointblack.inspect", Type.KEYSYM, 73, "key.categories.pointblank"));
+   public static final Lazy<KeyMapping> ATTACHMENT_KEY = Lazy.of(() -> new KeyMapping("key.pointblack.attachments", Type.KEYSYM, 89, "key.categories.pointblank"));
+   public static final Lazy<KeyMapping> SCOPE_SWITCH_KEY = Lazy.of(() -> new KeyMapping("key.pointblack.scope_switch", Type.KEYSYM, 86, "key.categories.pointblank"));
+   private static final ReentrantLock mainLoopLock = new ReentrantLock();
+   private final InertiaController scopeInertiaController = new InertiaController(0.06, 0.2, 0.1);
+   private final InertiaController inertiaController = new InertiaController(0.01, 0.1, 1.2217305F);
+   public static InertiaController reticleInertiaController = new InertiaController(0.005, 0.05, 1.0F);
+   private final GunJumpAnimationController jumpController = new GunJumpAnimationController(0.3, 0.8, 1.3, 0.05, 2000L);
+   private final ViewShakeAnimationController2 sharedViewShakeController = new ViewShakeAnimationController2(0.15, 0.3, 1.0F, 0.01, 500L);
    private int currentInventorySlot;
    private int previousInventorySlot;
    private boolean inventorySlotChanged;
@@ -170,12 +156,12 @@ public class ClientEventHandler {
    private double playerDeltaY;
    private double playerDeltaZ;
    private static LivingEntity currentEntityLiving;
-   private RealtimeLinearEaser bobbingValue = new RealtimeLinearEaser(200L);
-   private RealtimeLinearEaser bobbingYawValue = new RealtimeLinearEaser(200L);
-   private RealtimeLinearEaser zoomValue = new RealtimeLinearEaser(200L);
-   private RealtimeLinearEaser crossHairExp = new RealtimeLinearEaser(100L);
-   private LockableTarget lockableTarget = new LockableTarget();
-   private static PostPassEffectController postPassEffectController = new PostPassEffectController(2000L);
+   private final RealtimeLinearEaser bobbingValue = new RealtimeLinearEaser(200L);
+   private final RealtimeLinearEaser bobbingYawValue = new RealtimeLinearEaser(200L);
+   private final RealtimeLinearEaser zoomValue = new RealtimeLinearEaser(200L);
+   private final RealtimeLinearEaser crossHairExp = new RealtimeLinearEaser(100L);
+   private final LockableTarget lockableTarget = new LockableTarget();
+   private static final PostPassEffectController postPassEffectController = new PostPassEffectController(2000L);
    private static final ResourceLocation crossHairOverlay = new ResourceLocation("pointblank", "textures/gui/crosshair.png");
    private final FirstPersonWalkingAnimationHandler firstPersonWalkingAnimationHandler = new FirstPersonWalkingAnimationHandler();
 
@@ -185,15 +171,13 @@ public class ClientEventHandler {
 
    private void startTicker() {
       GunStateTicker gunStateTicker = new GunStateTicker(this);
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-         gunStateTicker.shutdown();
-      }));
+      Runtime.getRuntime().addShutdownHook(new Thread(gunStateTicker::shutdown));
       gunStateTicker.start();
    }
 
    @SubscribeEvent
-   public void onWorldLoad(Load event) {
-      if (event.getLevel().m_5776_()) {
+   public void onWorldLoad(LevelEvent.Load event) {
+      if (event.getLevel().isClientSide()) {
          this.currentInventorySlot = -1;
       }
 
@@ -201,16 +185,16 @@ public class ClientEventHandler {
 
    @SubscribeEvent
    public void onExplosion(ExplosionEvent event) {
-      double distanceToPlayer = event.getLocation().m_82554_(ClientUtils.getClientPlayer().m_20182_());
+      double distanceToPlayer = event.getLocation().distanceTo(ClientUtils.getClientPlayer().position());
       ExplosionDescriptor descriptor = event.getExplosionDescriptor();
-      distanceToPlayer = Mth.m_14008_(distanceToPlayer, 1.0D, Double.MAX_VALUE);
-      double lambda = 0.2D;
+      distanceToPlayer = Mth.clamp(distanceToPlayer, 1.0F, Double.MAX_VALUE);
+      double lambda = 0.2;
       double adjustedPower = (double)descriptor.power() * Math.exp(-lambda * distanceToPlayer);
-      this.sharedViewShakeController.reset(adjustedPower, 0.5D, 1.5D, 0.01D);
+      this.sharedViewShakeController.reset(adjustedPower, 0.5F, 1.5F, 0.01);
    }
 
    @SubscribeEvent
-   public void onRenderTick(RenderTickEvent event) {
+   public void onRenderTick(TickEvent.RenderTickEvent event) {
       Player player = ClientUtils.getClientPlayer();
       if (event.phase == Phase.START) {
          mainLoopLock.lock();
@@ -218,9 +202,9 @@ public class ClientEventHandler {
             GunClientState state = GunClientState.getMainHeldState();
             if (state != null) {
                ItemStack gunStack = GunItem.getMainHeldGunItemStack(player);
-               Minecraft mc = Minecraft.m_91087_();
+               Minecraft mc = Minecraft.getInstance();
                state.renderTick(player, gunStack, event.renderTickTime);
-               if (!mc.f_91066_.m_92176_().m_90612_()) {
+               if (!mc.options.getCameraType().isFirstPerson()) {
                   return;
                }
 
@@ -250,30 +234,30 @@ public class ClientEventHandler {
    }
 
    private boolean autoReloadEnabled(Player player) {
-      Config.AutoReload autoReload = (Config.AutoReload)Config.AUTO_RELOAD.get();
-      return autoReload == Config.AutoReload.ENABLED || autoReload == Config.AutoReload.CREATIVE && player.m_7500_() || autoReload == Config.AutoReload.SURVIVAL && !player.m_7500_();
+      Config.AutoReload autoReload = Config.AUTO_RELOAD.get();
+      return autoReload == AutoReload.ENABLED || autoReload == AutoReload.CREATIVE && player.isCreative() || autoReload == AutoReload.SURVIVAL && !player.isCreative();
    }
 
    @SubscribeEvent
-   public void onClientTick(ClientTickEvent event) {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
+   public void onClientTick(TickEvent.ClientTickEvent event) {
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
       if (event.phase == Phase.START) {
          mainLoopLock.lock();
       } else if (event.phase == Phase.END) {
          if (player != null) {
-            this.playerDeltaX = player.m_20185_() - this.previousPlayerPosX;
-            this.playerDeltaY = player.m_20186_() - this.previousPlayerPosY;
-            this.playerDeltaZ = player.m_20189_() - this.previousPlayerPosZ;
-            this.previousPlayerPosX = player.m_20185_();
-            this.previousPlayerPosY = player.m_20186_();
-            this.previousPlayerPosZ = player.m_20189_();
-            this.playerDeltaXRot = player.m_146909_() - this.previousPlayerXRot;
-            this.playerDeltaYRot = player.m_146908_() - this.previousPlayerYRot;
-            this.previousPlayerXRot = player.m_146909_();
-            this.previousPlayerYRot = player.m_146908_();
-            ItemStack heldItem = player.m_21205_();
-            int activeSlot = player.m_150109_().f_35977_;
+            this.playerDeltaX = player.getX() - this.previousPlayerPosX;
+            this.playerDeltaY = player.getY() - this.previousPlayerPosY;
+            this.playerDeltaZ = player.getZ() - this.previousPlayerPosZ;
+            this.previousPlayerPosX = player.getX();
+            this.previousPlayerPosY = player.getY();
+            this.previousPlayerPosZ = player.getZ();
+            this.playerDeltaXRot = player.getXRot() - this.previousPlayerXRot;
+            this.playerDeltaYRot = player.getYRot() - this.previousPlayerYRot;
+            this.previousPlayerXRot = player.getXRot();
+            this.previousPlayerYRot = player.getYRot();
+            ItemStack heldItem = player.getMainHandItem();
+            int activeSlot = player.getInventory().selected;
             if (activeSlot != this.currentInventorySlot) {
                this.inventorySlotChanged = true;
                this.previousInventorySlot = this.currentInventorySlot;
@@ -282,7 +266,7 @@ public class ClientEventHandler {
                this.inventorySlotChanged = false;
             }
 
-            boolean updatedSlotHasGun = heldItem != null && heldItem.m_41720_() instanceof GunItem;
+            boolean updatedSlotHasGun = heldItem != null && heldItem.getItem() instanceof GunItem;
             if (updatedSlotHasGun != this.currentSlotHasGun) {
                this.currentSlotHasGun = updatedSlotHasGun;
                this.currentSlotHasGunChanged = true;
@@ -292,10 +276,9 @@ public class ClientEventHandler {
 
             boolean var10000;
             label210: {
-               Item var9 = heldItem.m_41720_();
-               if (var9 instanceof Enableable) {
-                  Enableable e = (Enableable)var9;
-                  if (!e.isEnabled()) {
+               Item rightMouseButtonDown = heldItem.getItem();
+               if (rightMouseButtonDown instanceof Enableable e) {
+                   if (!e.isEnabled()) {
                      var10000 = false;
                      break label210;
                   }
@@ -305,44 +288,43 @@ public class ClientEventHandler {
             }
 
             boolean isEnabled = var10000;
-            if (isEnabled && this.autoReloadEnabled(player) && heldItem.m_41720_() instanceof GunItem && !this.inventorySlotChanged) {
+            if (isEnabled && this.autoReloadEnabled(player) && heldItem.getItem() instanceof GunItem && !this.inventorySlotChanged) {
                LazyOptional<Integer> optionalAmmo = GunItem.getClientSideAmmo(player, heldItem, this.currentInventorySlot);
                optionalAmmo.ifPresent((ammo) -> {
                   if (ammo <= 0) {
-                     ((GunItem)heldItem.m_41720_()).tryReload(player, heldItem);
+                     ((GunItem)heldItem.getItem()).tryReload(player, heldItem);
                   }
 
                });
             }
 
-            while(isEnabled && ((KeyMapping)RELOAD_KEY.get()).m_90859_() && !this.inventorySlotChanged) {
-               if (heldItem.m_41720_() instanceof GunItem) {
-                  ((GunItem)heldItem.m_41720_()).tryReload(player, heldItem);
+            while(isEnabled && RELOAD_KEY.get().consumeClick() && !this.inventorySlotChanged) {
+               if (heldItem.getItem() instanceof GunItem) {
+                  ((GunItem)heldItem.getItem()).tryReload(player, heldItem);
                }
             }
 
-            GunClientState state;
-            while(((KeyMapping)FIRE_MODE_KEY.get()).m_90859_()) {
-               state = GunClientState.getMainHeldState();
+            while(FIRE_MODE_KEY.get().consumeClick()) {
+               GunClientState state = GunClientState.getMainHeldState();
                if (state != null) {
-                  state.tryChangeFireMode(player, player.m_21205_());
+                  state.tryChangeFireMode(player, player.getMainHandItem());
                }
             }
 
-            while(((KeyMapping)INSPECT_KEY.get()).m_90859_() && !this.inventorySlotChanged) {
-               state = GunClientState.getMainHeldState();
+            while(INSPECT_KEY.get().consumeClick() && !this.inventorySlotChanged) {
+               GunClientState state = GunClientState.getMainHeldState();
                if (state != null) {
-                  state.tryInspect(player, player.m_21205_());
+                  state.tryInspect(player, player.getMainHandItem());
                }
             }
 
-            while(((KeyMapping)ATTACHMENT_KEY.get()).m_90859_()) {
-               if (heldItem != null && heldItem.m_41720_() instanceof AttachmentHost) {
+            while(ATTACHMENT_KEY.get().consumeClick()) {
+               if (heldItem != null && heldItem.getItem() instanceof AttachmentHost) {
                   Attachments.tryAttachmentMode(player, heldItem);
                }
             }
 
-            boolean leftMouseButtonDown = mc.f_91066_.f_92096_.m_90857_();
+            boolean leftMouseButtonDown = mc.options.keyAttack.isDown();
             if (leftMouseButtonDown && !this.leftMouseButtonDown) {
                this.leftMouseDown();
             } else if (!leftMouseButtonDown && this.leftMouseButtonDown) {
@@ -350,7 +332,7 @@ public class ClientEventHandler {
             }
 
             this.leftMouseButtonDown = leftMouseButtonDown;
-            boolean rightMouseButtonDown = mc.f_91066_.f_92095_.m_90857_();
+            boolean rightMouseButtonDown = mc.options.keyUse.isDown();
             if (rightMouseButtonDown && !this.rightMouseButtonDown) {
                this.rightMouseButtonDown();
             } else if (!rightMouseButtonDown && this.rightMouseButtonDown) {
@@ -359,55 +341,49 @@ public class ClientEventHandler {
 
             GunClientState state = GunClientState.getMainHeldState();
 
-            while(((KeyMapping)SCOPE_SWITCH_KEY.get()).m_90859_()) {
-               if (heldItem != null && heldItem.m_41720_() instanceof GunItem && state != null && state.isAiming()) {
+            while(SCOPE_SWITCH_KEY.get().consumeClick()) {
+               if (heldItem != null && heldItem.getItem() instanceof GunItem && state != null && state.isAiming()) {
                   Attachments.tryNextAttachment(player, heldItem, AttachmentCategory.SCOPE, AimingFeature.class);
                }
             }
 
-            if (heldItem.m_41720_() instanceof LockableTarget.TargetLocker) {
-               this.lockableTarget.setLocker((LockableTarget.TargetLocker)heldItem.m_41720_());
+            if (heldItem.getItem() instanceof LockableTarget.TargetLocker) {
+               this.lockableTarget.setLocker((LockableTarget.TargetLocker)heldItem.getItem());
             } else {
-               this.lockableTarget.setLocker((LockableTarget.TargetLocker)null);
+               this.lockableTarget.setLocker(null);
             }
 
             if (state != null && state.isAiming() && state.isIdle() && this.lockableTarget.getLockTimeTicks() > 0L) {
-               HitResult hitResult = HitScan.getNearestObjectInCrosshair(player, 0.0F, 400.0D, (b) -> {
-                  return false;
-               }, (b) -> {
-                  return false;
-               }, new ArrayList());
-               if (hitResult.m_6662_() == HitResult.Type.ENTITY) {
-                  Entity hitScanEntity = ((EntityHitResult)hitResult).m_82443_();
+               HitResult hitResult = HitScan.getNearestObjectInCrosshair(player, 0.0F, 400.0F, (b) -> false, (b) -> false, new ArrayList<>());
+               if (hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY) {
+                  Entity hitScanEntity = ((EntityHitResult)hitResult).getEntity();
                   if (MiscUtil.isProtected(hitScanEntity) || !this.lockableTarget.tryLock(hitScanEntity)) {
                      this.lockableTarget.unlock(hitScanEntity);
                   }
                } else {
-                  this.lockableTarget.unlock((Entity)null);
+                  this.lockableTarget.unlock(null);
                }
             } else {
-               this.lockableTarget.unlock((Entity)null);
+               this.lockableTarget.unlock(null);
             }
 
             if (this.inventorySlotChanged) {
-               this.lockableTarget.unlock((Entity)null);
+               this.lockableTarget.unlock(null);
                this.inertiaController.reset(player);
                this.scopeInertiaController.reset();
                reticleInertiaController.reset();
-               ItemStack mainHeldItem;
                if (this.previousInventorySlot >= 0) {
                   label228: {
-                     mainHeldItem = player.m_150109_().m_8020_(this.previousInventorySlot);
-                     if (mainHeldItem != null) {
-                        Item var13 = mainHeldItem.m_41720_();
-                        if (var13 instanceof GunItem) {
-                           GunItem previousGunItem = (GunItem)var13;
-                           GunClientState previousState = GunClientState.getState(player, mainHeldItem, this.previousInventorySlot, false);
+                     ItemStack previousStack = player.getInventory().getItem(this.previousInventorySlot);
+                     if (previousStack != null) {
+                        Item gun = previousStack.getItem();
+                        if (gun instanceof GunItem previousGunItem) {
+                            GunClientState previousState = GunClientState.getState(player, previousStack, this.previousInventorySlot, false);
                            if (previousState != null) {
-                              previousState.tryDeactivate(player, mainHeldItem);
+                              previousState.tryDeactivate(player, previousStack);
                            }
 
-                           AnimationController<GeoAnimatable> walkingController = previousGunItem.getGeoAnimationController("walking", mainHeldItem);
+                           AnimationController<GeoAnimatable> walkingController = previousGunItem.getGeoAnimationController("walking", previousStack);
                            if (walkingController != null) {
                               walkingController.tryTriggerAnimation("animation.model.standing");
                            }
@@ -415,22 +391,22 @@ public class ClientEventHandler {
                         }
                      }
 
-                     if (mainHeldItem != null && mainHeldItem.m_41720_() instanceof ThrowableItem) {
-                        ThrowableClientState previousState = ThrowableClientState.getState(player, mainHeldItem, this.previousInventorySlot, false);
+                     if (previousStack != null && previousStack.getItem() instanceof ThrowableItem) {
+                        ThrowableClientState previousState = ThrowableClientState.getState(player, previousStack, this.previousInventorySlot, false);
                         if (previousState != null) {
-                           previousState.tryDeactivate(player, mainHeldItem);
+                           previousState.tryDeactivate(player, previousStack);
                         }
                      }
                   }
                }
 
-               mainHeldItem = player.m_21205_();
+               ItemStack mainHeldItem = player.getMainHandItem();
                if (state != null) {
                   state.tryDraw(player, mainHeldItem);
-                  if (heldItem.m_41720_() instanceof GunItem) {
+                  if (heldItem.getItem() instanceof GunItem) {
                      this.firstPersonWalkingAnimationHandler.reset(player, heldItem);
                   }
-               } else if (mainHeldItem.m_41720_() instanceof ThrowableItem) {
+               } else if (mainHeldItem.getItem() instanceof ThrowableItem) {
                   ThrowableClientState throwableState = ThrowableClientState.getMainHeldState();
                   if (throwableState != null) {
                      throwableState.tryDraw(player, mainHeldItem);
@@ -452,25 +428,23 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onRenderLivingEvent(Pre<LivingEntity, EntityModel<LivingEntity>> e) {
+   public void onRenderLivingEvent(RenderLivingEvent.Pre<LivingEntity, EntityModel<LivingEntity>> e) {
       currentEntityLiving = e.getEntity();
-      if (e.getEntity() instanceof Player) {
-         Player player = (Player)e.getEntity();
-         ItemStack itemStack = player.m_21205_();
-         int activeSlot = player.m_150109_().f_35977_;
-         if (itemStack != null && itemStack.m_41720_() instanceof GunItem && !PlayerAnimatorCompat.getInstance().isEnabled()) {
+      if (e.getEntity() instanceof Player player) {
+          ItemStack itemStack = player.getMainHandItem();
+         int activeSlot = player.getInventory().selected;
+         if (itemStack != null && itemStack.getItem() instanceof GunItem && !PlayerAnimatorCompat.getInstance().isEnabled()) {
             GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
             if (Config.thirdPersonArmPoseAlwaysOn || gunClientState != null && (gunClientState.isAiming() || gunClientState.isFiring())) {
                LivingEntityRenderer<LivingEntity, EntityModel<LivingEntity>> r = e.getRenderer();
-               EntityModel<LivingEntity> model = r.m_7200_();
-               if (model instanceof PlayerModel) {
-                  PlayerModel<?> playerModel = (PlayerModel)model;
-                  playerModel.f_102816_ = ArmPose.BOW_AND_ARROW;
+               EntityModel<LivingEntity> model = r.getModel();
+               if (model instanceof PlayerModel<?> playerModel) {
+                  playerModel.rightArmPose = ArmPose.BOW_AND_ARROW;
                }
             }
          }
 
-         Minecraft mc = Minecraft.m_91087_();
+         Minecraft mc = Minecraft.getInstance();
          this.handlePlayerFirstPersonMovement(player, itemStack);
          if (Config.thirdPersonAnimationsEnabled) {
             PlayerAnimatorCompat.getInstance().handlePlayerThirdPersonMovement(player, mc.getPartialTick());
@@ -481,7 +455,7 @@ public class ClientEventHandler {
 
    }
 
-   public void onRenderLivingEvent(Post<LivingEntity, EntityModel<LivingEntity>> e) {
+   public void onRenderLivingEvent(RenderLivingEvent.Post<LivingEntity, EntityModel<LivingEntity>> e) {
       currentEntityLiving = null;
    }
 
@@ -490,15 +464,15 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent(
-      priority = EventPriority.NORMAL
+           priority = EventPriority.NORMAL
    )
-   public void onRenderGameOverlay(net.minecraftforge.client.event.RenderGuiEvent.Post event) {
-      Minecraft mc = Minecraft.m_91087_();
-      if (mc.f_91074_ != null) {
-         if (!(mc.f_91080_ instanceof AttachmentManagerScreen)) {
-            ItemStack stack = mc.f_91074_.m_21205_();
+   public void onRenderGameOverlay(RenderGuiEvent.Post event) {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.player != null) {
+         if (!(mc.screen instanceof AttachmentManagerScreen)) {
+            ItemStack stack = mc.player.getMainHandItem();
             GuiGraphics guiGraphics = event.getGuiGraphics();
-            if (stack != null && stack.m_41720_() instanceof GunItem) {
+            if (stack != null && stack.getItem() instanceof GunItem) {
                GunItemOverlay.renderGunOverlay2(guiGraphics, stack);
             }
 
@@ -507,13 +481,13 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onFovUpdate(ComputeFov event) {
-      Minecraft minecraft = Minecraft.m_91087_();
-      if (minecraft.f_91074_ != null && !minecraft.f_91074_.m_21205_().m_41619_() && minecraft.f_91066_.m_92176_() == CameraType.FIRST_PERSON) {
-         ItemStack itemStack = minecraft.f_91074_.m_21205_();
-         if (itemStack.m_41720_() instanceof GunItem) {
-            int activeSlot = minecraft.f_91074_.m_150109_().f_35977_;
-            GunClientState gunClientState = GunClientState.getState(minecraft.f_91074_, itemStack, activeSlot, false);
+   public void onFovUpdate(ViewportEvent.ComputeFov event) {
+      Minecraft minecraft = Minecraft.getInstance();
+      if (minecraft.player != null && !minecraft.player.getMainHandItem().isEmpty() && minecraft.options.getCameraType() == CameraType.FIRST_PERSON) {
+         ItemStack itemStack = minecraft.player.getMainHandItem();
+         if (itemStack.getItem() instanceof GunItem) {
+            int activeSlot = minecraft.player.getInventory().selected;
+            GunClientState gunClientState = GunClientState.getState(minecraft.player, itemStack, activeSlot, false);
             if (gunClientState != null) {
                float aimingZoom = this.zoomValue.update(AimingFeature.getZoom(itemStack));
                BiDirectionalInterpolator aimingController = (BiDirectionalInterpolator)gunClientState.getAnimationController("aiming");
@@ -529,29 +503,26 @@ public class ClientEventHandler {
    public void onRenderHandEvent(RenderHandEvent event) {
       ItemStack heldItem = event.getItemStack();
       if (event.getHand() == InteractionHand.MAIN_HAND) {
-         Item var4 = heldItem.m_41720_();
-         if (var4 instanceof GunItem) {
-            GunItem gunItem = (GunItem)var4;
-            int slot = ClientUtils.getClientPlayer().m_150109_().m_36030_(heldItem);
-            Minecraft minecraft = Minecraft.m_91087_();
-            GunClientState gunClientState = GunClientState.getState(minecraft.f_91074_, heldItem, slot, false);
+         Item gun = heldItem.getItem();
+         if (gun instanceof GunItem gunItem) {
+            int slot = ClientUtils.getClientPlayer().getInventory().findSlotMatchingItem(heldItem);
+            Minecraft minecraft = Minecraft.getInstance();
+            GunClientState gunClientState = GunClientState.getState(minecraft.player, heldItem, slot, false);
             if (gunClientState != null) {
-               Player player;
-               if ((Boolean)minecraft.f_91066_.m_231830_().m_231551_() && minecraft.m_91288_() instanceof Player) {
-                  player = (Player)minecraft.m_91288_();
-                  PoseStack poseStack = event.getPoseStack();
-                  float f = player.f_19787_ - player.f_19867_;
+               if (minecraft.options.bobView().get() && minecraft.getCameraEntity() instanceof Player player) {
+                   PoseStack poseStack = event.getPoseStack();
+                  float f = player.walkDist - player.walkDistO;
                   float partialTick = event.getPartialTick();
-                  float walkDistance = -(player.f_19787_ + f * partialTick);
-                  float bobbing = Mth.m_14179_(partialTick, player.f_36099_, player.f_36100_);
-                  poseStack.m_252781_(Axis.f_252529_.m_252977_(-Math.abs(Mth.m_14089_(walkDistance * 3.1415927F - 0.2F) * bobbing) * 5.0F));
-                  poseStack.m_252781_(Axis.f_252403_.m_252977_(-Mth.m_14031_(walkDistance * 3.1415927F) * bobbing * 3.0F));
-                  poseStack.m_252880_(-Mth.m_14031_(walkDistance * 3.1415927F) * bobbing * 0.5F, Math.abs(Mth.m_14089_(walkDistance * 3.1415927F) * bobbing), 0.0F);
+                  float walkDistance = -(player.walkDist + f * partialTick);
+                  float bobbing = Mth.lerp(partialTick, player.oBob, player.bob);
+                  poseStack.mulPose(Axis.XP.rotationDegrees(-Math.abs(Mth.cos(walkDistance * (float)Math.PI - 0.2F) * bobbing) * 5.0F));
+                  poseStack.mulPose(Axis.ZP.rotationDegrees(-Mth.sin(walkDistance * (float)Math.PI) * bobbing * 3.0F));
+                  poseStack.translate(-Mth.sin(walkDistance * (float)Math.PI) * bobbing * 0.5F, Math.abs(Mth.cos(walkDistance * (float)Math.PI) * bobbing), 0.0F);
                   float randomPitch = 0.0F;
                   float randomYaw = 0.0F;
                   float targetBobbing = 1.0F;
                   float targetYaw;
-                  if (player.m_20142_()) {
+                  if (player.isSprinting()) {
                      targetYaw = 10.0F;
                      targetBobbing = gunItem.getBobbing();
                   } else if (gunClientState.isAiming()) {
@@ -569,16 +540,16 @@ public class ClientEventHandler {
                      float bobbingRoll = bobbing * 10.0F * gunItem.getBobbingRollMultiplier();
                      float bobbingPitch = bobbing * 5.0F;
                      float bobbingYaw = bobbing * this.bobbingYawValue.update(targetYaw);
-                     poseStack.m_85837_((double)(-Mth.m_14031_(walkDistance * 3.1415927F) * bobbing * 0.5F), (double)Math.abs(Mth.m_14089_(walkDistance * 3.1415927F) * bobbing) * 0.35D + (double)(randomPitch * 0.01F), (double)(randomYaw * 0.0F));
-                     poseStack.m_252781_(Axis.f_252403_.m_252977_(Mth.m_14031_(walkDistance * 3.1415927F) * bobbingRoll));
-                     poseStack.m_252781_(Axis.f_252529_.m_252977_(Math.abs(Mth.m_14089_(walkDistance * 3.1415927F - 0.2F)) * bobbingPitch));
-                     poseStack.m_252781_(Axis.f_252436_.m_252977_(Mth.m_14031_(walkDistance * 3.1415927F) * bobbingYaw));
+                     poseStack.translate(-Mth.sin(walkDistance * (float)Math.PI) * bobbing * 0.5F, (double)Math.abs(Mth.cos(walkDistance * (float)Math.PI) * bobbing) * 0.35 + (double)(randomPitch * 0.01F), randomYaw * 0.0F);
+                     poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.sin(walkDistance * (float)Math.PI) * bobbingRoll));
+                     poseStack.mulPose(Axis.XP.rotationDegrees(Math.abs(Mth.cos(walkDistance * (float)Math.PI - 0.2F)) * bobbingPitch));
+                     poseStack.mulPose(Axis.YP.rotationDegrees(Mth.sin(walkDistance * (float)Math.PI) * bobbingYaw));
                   }
                }
 
                if (Config.firstPersonAnimationsEnabled) {
-                  player = ClientUtil.getClientPlayer();
-                  this.handlePlayerFirstPersonMovement(player, player.m_21205_());
+                  Player player = ClientUtil.getClientPlayer();
+                  this.handlePlayerFirstPersonMovement(player, player.getMainHandItem());
                }
 
                GunRandomizingAnimationController randomizerController = (GunRandomizingAnimationController)gunClientState.getAnimationController("randomizer");
@@ -594,53 +565,48 @@ public class ClientEventHandler {
                   double yaw = randomizerController.getYaw();
                   double pitch = randomizerController.getPitch();
                   PoseStack poseStack = event.getPoseStack();
-                  Quaternionf q = new Quaternionf(pitch, yaw, roll, 1.0D);
-                  poseStack.m_85837_(posX, posY, posZ);
-                  poseStack.m_252781_(q);
+                  Quaternionf q = new Quaternionf(pitch, yaw, roll, 1.0F);
+                  poseStack.translate(posX, posY, posZ);
+                  poseStack.mulPose(q);
                }
 
                GunRecoilAnimationController recoilController = (GunRecoilAnimationController)gunClientState.getAnimationController("recoil2");
-               double roll;
-               double yaw;
-               double posY;
-               double posZ;
-               double roll;
                if (recoilController != null) {
                   if (this.inventorySlotChanged || this.currentSlotHasGunChanged) {
                      recoilController.reset();
                   }
 
-                  roll = recoilController.getPosX();
-                  yaw = recoilController.getPosY();
-                  posY = recoilController.getPosZ();
-                  posZ = recoilController.getRoll();
-                  roll = recoilController.getPitch();
+                  double posX = recoilController.getPosX();
+                  double posY = recoilController.getPosY();
+                  double posZ = recoilController.getPosZ();
+                  double roll = recoilController.getRoll();
+                  double pitch = recoilController.getPitch();
                   PoseStack poseStack = event.getPoseStack();
-                  Quaternionf q = new Quaternionf(roll, 0.0D, posZ, 1.0D);
-                  poseStack.m_85837_(roll, yaw, posY);
-                  poseStack.m_252781_(q);
+                  Quaternionf q = new Quaternionf(pitch, 0.0F, roll, 1.0F);
+                  poseStack.translate(posX, posY, posZ);
+                  poseStack.mulPose(q);
                }
 
                if (this.jumpController != null) {
-                  roll = gunItem.getJumpMultiplier();
-                  yaw = this.jumpController.getPosX() * roll;
-                  posY = this.jumpController.getPosY() * roll;
-                  posZ = this.jumpController.getPosZ() * roll;
-                  roll = this.jumpController.getRoll() * roll;
-                  double pitch = this.jumpController.getPitch() * roll;
-                  double yaw = this.jumpController.getYaw() * roll;
+                  double jumpMultiplier = gunItem.getJumpMultiplier();
+                  double posX = this.jumpController.getPosX() * jumpMultiplier;
+                  double posY = this.jumpController.getPosY() * jumpMultiplier;
+                  double posZ = this.jumpController.getPosZ() * jumpMultiplier;
+                  double roll = this.jumpController.getRoll() * jumpMultiplier;
+                  double pitch = this.jumpController.getPitch() * jumpMultiplier;
+                  double yaw = this.jumpController.getYaw() * jumpMultiplier;
                   PoseStack poseStack = event.getPoseStack();
-                  Quaternionf q = new Quaternionf(pitch, yaw, roll, 1.0D);
-                  poseStack.m_85837_(yaw, posY, posZ);
-                  poseStack.m_252781_(q);
+                  Quaternionf q = new Quaternionf(pitch, yaw, roll, 1.0F);
+                  poseStack.translate(posX, posY, posZ);
+                  poseStack.mulPose(q);
                }
 
                if (this.inertiaController != null) {
-                  roll = this.inertiaController.getRoll();
-                  yaw = 0.0D;
+                  double roll = this.inertiaController.getRoll();
+                  double yaw = 0.0F;
                   PoseStack poseStack = event.getPoseStack();
-                  Quaternionf q = new Quaternionf(0.0D, yaw, roll, 1.0D);
-                  poseStack.m_252781_(q);
+                  Quaternionf q = new Quaternionf(0.0F, yaw, roll, 1.0F);
+                  poseStack.mulPose(q);
                }
             }
          }
@@ -653,11 +619,11 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onClickEvent(InteractionKeyMappingTriggered event) {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
-      ItemStack heldItem = player.m_21205_();
-      if (heldItem.m_41720_() instanceof GunItem || heldItem.m_41720_() instanceof ThrowableItem) {
+   public void onClickEvent(InputEvent.InteractionKeyMappingTriggered event) {
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
+      ItemStack heldItem = player.getMainHandItem();
+      if (heldItem.getItem() instanceof GunItem || heldItem.getItem() instanceof ThrowableItem) {
          event.setCanceled(true);
       }
 
@@ -667,24 +633,23 @@ public class ClientEventHandler {
    public void onPreRenderHandEvent(com.vicmatskiv.pointblank.event.RenderHandEvent.Pre event) {
       ItemStack itemStack = GunItem.getMainHeldGunItemStack(ClientUtils.getClientPlayer());
       if (itemStack != null) {
-         Item var4 = itemStack.m_41720_();
-         if (var4 instanceof Nameable) {
-            Nameable gunItem = (Nameable)var4;
+         Item item = itemStack.getItem();
+         if (item instanceof Nameable gunItem) {
             BakedGeoModel model = AttachmentModelInfo.getModel(gunItem.getName());
             if (model != null) {
-               GeoBone cameraBone = (GeoBone)model.getBone("_camera_").orElse((Object)null);
+               GeoBone cameraBone = model.getBone("_camera_").orElse(null);
                if (cameraBone != null) {
                   PoseStack poseStack = event.getPoseStack();
                   if (cameraBone.getRotY() != 0.0F) {
-                     poseStack.m_252781_(Axis.f_252436_.m_252961_(-cameraBone.getRotY()));
+                     poseStack.mulPose(Axis.YP.rotation(-cameraBone.getRotY()));
                   }
 
                   if (cameraBone.getRotX() != 0.0F) {
-                     poseStack.m_252781_(Axis.f_252529_.m_252961_(-cameraBone.getRotX()));
+                     poseStack.mulPose(Axis.XP.rotation(-cameraBone.getRotX()));
                   }
 
                   if (cameraBone.getRotZ() != 0.0F) {
-                     poseStack.m_252781_(Axis.f_252403_.m_252961_(-cameraBone.getRotZ()));
+                     poseStack.mulPose(Axis.ZP.rotation(-cameraBone.getRotZ()));
                   }
                }
             }
@@ -694,9 +659,9 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onComputeCameraAngles(ComputeCameraAngles event) {
-      Minecraft mc = Minecraft.m_91087_();
-      if (mc.f_91066_.m_92176_().m_90612_()) {
+   public void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.options.getCameraType().isFirstPerson()) {
          GunClientState state = GunClientState.getMainHeldState();
          if (state != null) {
             PryAnimationController shakeAnimationController = (PryAnimationController)state.getAnimationController("shake");
@@ -709,10 +674,7 @@ public class ClientEventHandler {
 
             TimerController reloadTimer = (TimerController)state.getAnimationController("reloadTimer");
             if (reloadTimer != null && !reloadTimer.isDone()) {
-               Iterator var13 = reloadTimer.getActiveHandlers(ClientUtils.getClientPlayer(), state, ClientUtils.getClientPlayer().m_21205_()).iterator();
-
-               while(var13.hasNext()) {
-                  AbstractProceduralAnimationController activeHandler = (AbstractProceduralAnimationController)var13.next();
+               for(AbstractProceduralAnimationController activeHandler : reloadTimer.getActiveHandlers(ClientUtils.getClientPlayer(), state, ClientUtils.getClientPlayer().getMainHandItem())) {
                   event.setRoll(event.getRoll() + (float)activeHandler.getRoll());
                   event.setPitch(event.getPitch() + (float)activeHandler.getPitch());
                }
@@ -730,17 +692,16 @@ public class ClientEventHandler {
             }
          }
 
-         ItemStack itemStack = ClientUtil.getClientPlayer().m_21205_();
-         Item var15 = itemStack.m_41720_();
-         if (var15 instanceof Nameable) {
-            Nameable gunItem = (Nameable)var15;
-            BakedGeoModel model = AttachmentModelInfo.getModel(gunItem.getName());
+         ItemStack itemStack = ClientUtil.getClientPlayer().getMainHandItem();
+         Item var15 = itemStack.getItem();
+         if (var15 instanceof Nameable gunItem) {
+             BakedGeoModel model = AttachmentModelInfo.getModel(gunItem.getName());
             if (model != null) {
-               GeoBone cameraBone = (GeoBone)model.getBone("_camera_").orElse((Object)null);
+               GeoBone cameraBone = model.getBone("_camera_").orElse(null);
                if (cameraBone != null) {
-                  event.setPitch(event.getPitch() - cameraBone.getRotX() * 57.295776F);
-                  event.setYaw(event.getYaw() - cameraBone.getRotY() * 57.295776F);
-                  event.setRoll(event.getRoll() - cameraBone.getRotZ() * 57.295776F);
+                  event.setPitch(event.getPitch() - cameraBone.getRotX() * (180F / (float)Math.PI));
+                  event.setYaw(event.getYaw() - cameraBone.getRotY() * (180F / (float)Math.PI));
+                  event.setRoll(event.getRoll() - cameraBone.getRotZ() * (180F / (float)Math.PI));
                }
             }
          }
@@ -749,26 +710,26 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onRenderOverlay(net.minecraftforge.client.event.RenderGuiOverlayEvent.Pre event) {
-      Minecraft minecraft = Minecraft.m_91087_();
-      if (minecraft.f_91074_ != null) {
-         ItemStack itemStack = minecraft.f_91074_.m_21205_();
-         if (itemStack.m_41720_() instanceof GunItem) {
-            if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type() && minecraft.f_91080_ instanceof AttachmentManagerScreen) {
+   public void onRenderOverlay(RenderGuiOverlayEvent.Pre event) {
+      Minecraft minecraft = Minecraft.getInstance();
+      if (minecraft.player != null) {
+         ItemStack itemStack = minecraft.player.getMainHandItem();
+         if (itemStack.getItem() instanceof GunItem) {
+            if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type() && minecraft.screen instanceof AttachmentManagerScreen) {
                event.setCanceled(true);
-            } else if (minecraft.f_91066_.m_92176_().m_90612_()) {
-               int activeSlot = minecraft.f_91074_.m_150109_().f_35977_;
-               GunClientState gunClientState = GunClientState.getState(minecraft.f_91074_, itemStack, activeSlot, false);
+            } else if (minecraft.options.getCameraType().isFirstPerson()) {
+               int activeSlot = minecraft.player.getInventory().selected;
+               GunClientState gunClientState = GunClientState.getState(minecraft.player, itemStack, activeSlot, false);
                if (gunClientState != null) {
-                  GunItem item = (GunItem)itemStack.m_41720_();
+                  GunItem item = (GunItem)itemStack.getItem();
                   ResourceLocation scopeOverlay = item.getScopeOverlay();
                   if (event.getOverlay() == VanillaGuiOverlay.CROSSHAIR.type()) {
-                     if (Config.crosshairType == Config.CrosshairType.DEFAULT && !gunClientState.isAiming() && (gunClientState.isFiring() || gunClientState.isIdle())) {
-                        float crossHairExpansionRate = this.getCrosshairExpansionRatio(minecraft.f_91074_, gunClientState);
-                        double originalAspectRatio = 1.0D;
-                        int width = event.getWindow().m_85445_();
-                        int height = event.getWindow().m_85446_();
-                        double scaleFactor = 3.3D;
+                     if (Config.crosshairType == CrosshairType.DEFAULT && !gunClientState.isAiming() && (gunClientState.isFiring() || gunClientState.isIdle())) {
+                        float crossHairExpansionRate = this.getCrosshairExpansionRatio(minecraft.player, gunClientState);
+                        double originalAspectRatio = 1.0F;
+                        int width = event.getWindow().getGuiScaledWidth();
+                        int height = event.getWindow().getGuiScaledHeight();
+                        double scaleFactor = 3.3;
                         int renderWidth = (int)((double)width * scaleFactor);
                         int renderHeight = (int)((double)renderWidth / originalAspectRatio);
                         if (renderHeight > height) {
@@ -776,14 +737,14 @@ public class ClientEventHandler {
                            int var10000 = (int)((double)renderHeight * originalAspectRatio);
                         }
 
-                        int renderWidth = 80;
-                        int renderHeight = 80;
+                        renderWidth = 80;
+                        renderHeight = 80;
                         float posX = (float)(width - renderWidth) / 2.0F;
                         float posY = (float)(height - renderHeight) / 2.0F;
                         CrosshairRenderer.renderCrosshairOverlay3(event.getGuiGraphics(), event.getPartialTick(), crossHairOverlay, crossHairExpansionRate - 1.0F, posX, posY, renderWidth, renderHeight);
                      }
 
-                     if (Config.crosshairType == Config.CrosshairType.DEFAULT || Config.crosshairType == Config.CrosshairType.DISABLED) {
+                     if (Config.crosshairType == CrosshairType.DEFAULT || Config.crosshairType == CrosshairType.DISABLED) {
                         event.setCanceled(true);
                      }
                   }
@@ -798,7 +759,7 @@ public class ClientEventHandler {
                         BiDirectionalInterpolator aimingController = (BiDirectionalInterpolator)gunClientState.getAnimationController("aiming");
                         double aimingProgress = aimingController.getValue();
                         if (aimingController != null && scopeOverlay != null && !gunClientState.isReloading()) {
-                           this.renderTextureOverlay(item, gunClientState, event.getGuiGraphics(), event.getPartialTick(), item.getScopeOverlay(), event.getWindow().m_85445_(), event.getWindow().m_85446_(), (float)aimingProgress);
+                           this.renderTextureOverlay(item, gunClientState, event.getGuiGraphics(), event.getPartialTick(), item.getScopeOverlay(), event.getWindow().getGuiScaledWidth(), event.getWindow().getGuiScaledHeight(), (float)aimingProgress);
                         }
                      }
                   }
@@ -810,8 +771,8 @@ public class ClientEventHandler {
    }
 
    protected void renderTextureOverlay(GunItem gunItem, GunClientState gunClientState, GuiGraphics guiGraphics, float partialTick, ResourceLocation textureLocation, int width, int height, float alpha) {
-      double originalAspectRatio = 1.0D;
-      double scaleFactor = 3.3D;
+      double originalAspectRatio = 1.0F;
+      double scaleFactor = 3.3;
       int renderWidth = (int)((double)width * scaleFactor);
       int renderHeight = (int)((double)renderWidth / originalAspectRatio);
       if (renderHeight > height) {
@@ -824,8 +785,8 @@ public class ClientEventHandler {
       if (this.scopeInertiaController != null) {
          double yaw = this.scopeInertiaController.getYaw();
          double pitch = this.scopeInertiaController.getPitch();
-         posX = (float)((double)posX - yaw * 5000.0D);
-         posY = (float)((double)posY - pitch * 5000.0D);
+         posX = (float)((double)posX - yaw * (double)5000.0F);
+         posY = (float)((double)posY - pitch * (double)5000.0F);
       }
 
       GunRecoilAnimationController recoilController = (GunRecoilAnimationController)gunClientState.getAnimationController("recoil2");
@@ -835,14 +796,14 @@ public class ClientEventHandler {
          }
 
          double posZ1 = recoilController.getPosZ();
-         posY = (float)((double)posY + posZ1 * 50.0D);
+         posY = (float)((double)posY + posZ1 * (double)50.0F);
       }
 
       RenderSystem.enableBlend();
       RenderSystem.defaultBlendFunc();
       RenderSystem.disableDepthTest();
       RenderSystem.depthMask(false);
-      guiGraphics.m_280246_(1.0F, 1.0F, 1.0F, alpha);
+      guiGraphics.setColor(1.0F, 1.0F, 1.0F, alpha);
       RenderUtil.blit(guiGraphics, textureLocation, posX, posY, -90, 0.0F, 0.0F, renderWidth, renderHeight, renderWidth, renderHeight);
       ResourceLocation targetLockOverlay = gunItem.getTargetLockOverlay();
       if (targetLockOverlay != null) {
@@ -851,12 +812,12 @@ public class ClientEventHandler {
 
       RenderSystem.depthMask(true);
       RenderSystem.enableDepthTest();
-      guiGraphics.m_280246_(1.0F, 1.0F, 1.0F, 1.0F);
+      guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
    }
 
    private void renderTargetLockOverlay(GuiGraphics guiGraphics, float partialTick, ResourceLocation targetLockonOverlay, float posX, float posY, int renderWidth, int renderHeight) {
       UpDownCounter lockCounter = this.lockableTarget.getLockCounter();
-      float targetLockCount = Mth.m_14179_(partialTick, (float)lockCounter.getPreviousValue(), (float)lockCounter.getCurrentValue()) / (float)lockCounter.getMaxValue();
+      float targetLockCount = Mth.lerp(partialTick, (float)lockCounter.getPreviousValue(), (float)lockCounter.getCurrentValue()) / (float)lockCounter.getMaxValue();
       float lockProgress2 = 1.0F - targetLockCount;
       float lockRatio = 0.2F;
       int halfLockWidth = (int)((float)renderWidth * lockRatio * 0.5F);
@@ -865,58 +826,56 @@ public class ClientEventHandler {
       float centerY = posY + (float)renderHeight * 0.5F;
       float xOffset = (float)halfLockWidth * 0.4F * lockProgress2;
       float yOffset = (float)halfLockHeight * 0.4F * lockProgress2;
-      float posXStart = 0.0F;
-      float posXEnd = 0.0F;
-      float posYStart = 0.5F;
-      float posYEnd = 0.5F;
-      float minU = centerX - (float)halfLockWidth - xOffset;
-      float minV = centerX - xOffset;
-      float maxU = centerY - (float)halfLockHeight - yOffset;
-      float maxV = centerY - yOffset;
+      float minU = 0.0F;
+      float minV = 0.0F;
+      float maxU = 0.5F;
+      float maxV = 0.5F;
+      float posXStart = centerX - (float)halfLockWidth - xOffset;
+      float posXEnd = centerX - xOffset;
+      float posYStart = centerY - (float)halfLockHeight - yOffset;
+      float posYEnd = centerY - yOffset;
+      RenderUtil.blit(guiGraphics, targetLockonOverlay, posXStart, posXEnd, posYStart, posYEnd, -90.0F, minU, maxU, minV, maxV);
+      minU = centerX + xOffset;
+      minV = centerX + (float)halfLockWidth + xOffset;
+      maxU = centerY - (float)halfLockHeight - yOffset;
+      maxV = centerY - yOffset;
+      posXStart = 0.5F;
+      posXEnd = 0.0F;
+      posYStart = 1.0F;
+      posYEnd = 0.5F;
       RenderUtil.blit(guiGraphics, targetLockonOverlay, minU, minV, maxU, maxV, -90.0F, posXStart, posYStart, posXEnd, posYEnd);
-      posXStart = centerX + xOffset;
-      posXEnd = centerX + (float)halfLockWidth + xOffset;
-      posYStart = centerY - (float)halfLockHeight - yOffset;
-      posYEnd = centerY - yOffset;
-      minU = 0.5F;
-      minV = 0.0F;
-      maxU = 1.0F;
-      maxV = 0.5F;
-      RenderUtil.blit(guiGraphics, targetLockonOverlay, posXStart, posXEnd, posYStart, posYEnd, -90.0F, minU, maxU, minV, maxV);
-      posXStart = centerX + xOffset;
-      posXEnd = centerX + (float)halfLockWidth + xOffset;
-      posYStart = centerY + yOffset;
-      posYEnd = centerY + (float)halfLockHeight + yOffset;
-      minU = 0.5F;
-      minV = 0.5F;
-      maxU = 1.0F;
-      maxV = 1.0F;
-      RenderUtil.blit(guiGraphics, targetLockonOverlay, posXStart, posXEnd, posYStart, posYEnd, -90.0F, minU, maxU, minV, maxV);
-      posXStart = centerX - (float)halfLockWidth - xOffset;
-      posXEnd = centerX - xOffset;
-      posYStart = centerY + yOffset;
-      posYEnd = centerY + (float)halfLockHeight + yOffset;
-      minU = 0.0F;
-      minV = 0.5F;
-      maxU = 0.5F;
-      maxV = 1.0F;
-      RenderUtil.blit(guiGraphics, targetLockonOverlay, posXStart, posXEnd, posYStart, posYEnd, -90.0F, minU, maxU, minV, maxV);
+      minU = centerX + xOffset;
+      minV = centerX + (float)halfLockWidth + xOffset;
+      maxU = centerY + yOffset;
+      maxV = centerY + (float)halfLockHeight + yOffset;
+      posXStart = 0.5F;
+      posXEnd = 0.5F;
+      posYStart = 1.0F;
+      posYEnd = 1.0F;
+      RenderUtil.blit(guiGraphics, targetLockonOverlay, minU, minV, maxU, maxV, -90.0F, posXStart, posYStart, posXEnd, posYEnd);
+      minU = centerX - (float)halfLockWidth - xOffset;
+      minV = centerX - xOffset;
+      maxU = centerY + yOffset;
+      maxV = centerY + (float)halfLockHeight + yOffset;
+      posXStart = 0.0F;
+      posXEnd = 0.5F;
+      posYStart = 0.5F;
+      posYEnd = 1.0F;
+      RenderUtil.blit(guiGraphics, targetLockonOverlay, minU, minV, maxU, maxV, -90.0F, posXStart, posYStart, posXEnd, posYEnd);
    }
 
    private void setTriggerOff(LocalPlayer player) {
-      ItemStack heldItem = player.m_21205_();
-      Item var5 = heldItem.m_41720_();
-      if (var5 instanceof GunItem) {
-         GunItem gunItem = (GunItem)var5;
-         if (player.m_20142_()) {
-            player.m_6858_(false);
+      ItemStack heldItem = player.getMainHandItem();
+      Item var5 = heldItem.getItem();
+      if (var5 instanceof GunItem gunItem) {
+         if (player.isSprinting()) {
+            player.setSprinting(false);
          } else {
             gunItem.setTriggerOff(player, heldItem);
          }
       } else {
-         var5 = heldItem.m_41720_();
-         if (var5 instanceof ThrowableItem) {
-            ThrowableItem throwableItem = (ThrowableItem)var5;
+         var5 = heldItem.getItem();
+         if (var5 instanceof ThrowableItem throwableItem) {
             throwableItem.setTriggerOff(player, heldItem);
          }
       }
@@ -924,19 +883,19 @@ public class ClientEventHandler {
    }
 
    private void leftMouseDown() {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
       if (player != null) {
          this.tryFire(player);
       }
    }
 
    private void rightMouseButtonDown() {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
       if (player != null) {
-         if (player.m_20142_()) {
-            player.m_6858_(false);
+         if (player.isSprinting()) {
+            player.setSprinting(false);
          }
 
          MiscUtil.getMainHeldGun(player).ifPresent((item) -> {
@@ -949,14 +908,14 @@ public class ClientEventHandler {
    }
 
    private void rightMouseButtonRelease() {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
       this.toggleAiming(player, false);
    }
 
    private void leftMouseButtonRelease() {
-      Minecraft mc = Minecraft.m_91087_();
-      LocalPlayer player = mc.f_91074_;
+      Minecraft mc = Minecraft.getInstance();
+      LocalPlayer player = mc.player;
       this.setTriggerOff(player);
    }
 
@@ -965,7 +924,7 @@ public class ClientEventHandler {
       if (player != null) {
          GunClientState state = GunClientState.getMainHeldState();
          if (state != null) {
-            state.stateTick(player, player.m_21205_(), true);
+            state.stateTick(player, player.getMainHandItem(), true);
             this.scopeInertiaController.onUpdateState(player, state);
             reticleInertiaController.onUpdateState(player, state);
             this.inertiaController.onUpdateState(player, state);
@@ -979,8 +938,8 @@ public class ClientEventHandler {
 
       try {
          runnable.run();
-      } catch (Exception var5) {
-         LOGGER.error("Client sync tick failed: {}", var5);
+      } catch (Exception e) {
+         LOGGER.error("Client sync tick failed: {}", e);
       } finally {
          mainLoopLock.unlock();
       }
@@ -990,12 +949,12 @@ public class ClientEventHandler {
    public static <T> T runSyncCompute(Supplier<T> resultSupplier) {
       mainLoopLock.lock();
 
-      Object result;
+      T result;
       try {
          result = resultSupplier.get();
-      } catch (Exception var6) {
-         LOGGER.error("Run sync compute failed: {}", var6);
-         throw var6;
+      } catch (Exception e) {
+         LOGGER.error("Run sync compute failed: {}", e);
+         throw e;
       } finally {
          mainLoopLock.unlock();
       }
@@ -1005,9 +964,9 @@ public class ClientEventHandler {
 
    private boolean toggleAiming(LocalPlayer player, boolean isAiming) {
       boolean toggled = false;
-      ItemStack itemStack = player.m_21205_();
-      if (itemStack != null && itemStack.m_41720_() instanceof GunItem) {
-         int activeSlot = player.m_150109_().f_35977_;
+      ItemStack itemStack = player.getMainHandItem();
+      if (itemStack != null && itemStack.getItem() instanceof GunItem) {
+         int activeSlot = player.getInventory().selected;
          GunClientState gunClientState = GunClientState.getState(player, itemStack, activeSlot, false);
          if (gunClientState != null) {
             toggled = gunClientState.isAiming() != isAiming;
@@ -1023,13 +982,11 @@ public class ClientEventHandler {
 
    private boolean tryFire(LocalPlayer player) {
       boolean result = false;
-      ItemStack heldItemStack = player.m_21205_();
-      Item var6;
+      ItemStack heldItemStack = player.getMainHandItem();
       if (heldItemStack != null) {
-         var6 = heldItemStack.m_41720_();
-         if (var6 instanceof GunItem) {
-            GunItem gunItem = (GunItem)var6;
-            if (player.m_21206_() != heldItemStack && gunItem.isEnabled()) {
+         Item item = heldItemStack.getItem();
+         if (item instanceof GunItem gunItem) {
+             if (player.getOffhandItem() != heldItemStack && gunItem.isEnabled()) {
                long minTargetLockTime = gunItem.getTargetLockTimeTicks();
                if (minTargetLockTime == 0L || this.lockableTarget.getLockCounter().isAtMax()) {
                   result = gunItem.tryFire(player, heldItemStack, this.lockableTarget.getTargetEntity());
@@ -1041,10 +998,9 @@ public class ClientEventHandler {
       }
 
       if (heldItemStack != null) {
-         var6 = heldItemStack.m_41720_();
-         if (var6 instanceof ThrowableItem) {
-            ThrowableItem throwableItem = (ThrowableItem)var6;
-            if (player.m_21206_() != heldItemStack && throwableItem.isEnabled()) {
+         Item var8 = heldItemStack.getItem();
+         if (var8 instanceof ThrowableItem throwableItem) {
+             if (player.getOffhandItem() != heldItemStack && throwableItem.isEnabled()) {
                result = throwableItem.tryThrow(player, heldItemStack, this.lockableTarget.getTargetEntity());
             }
          }
@@ -1054,12 +1010,11 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onJump(LivingJumpEvent event) {
+   public void onJump(LivingEvent.LivingJumpEvent event) {
       Level level = MiscUtil.getLevel(event.getEntity());
-      if (level.f_46443_ && event.getEntity() instanceof Player) {
-         Player player = (Player)event.getEntity();
-         ItemStack heldItem = player.m_21205_();
-         if (player == ClientUtils.getClientPlayer() && heldItem.m_41720_() instanceof GunItem) {
+      if (level.isClientSide && event.getEntity() instanceof Player player) {
+          ItemStack heldItem = player.getMainHandItem();
+         if (player == ClientUtils.getClientPlayer() && heldItem.getItem() instanceof GunItem) {
             GunClientState state = GunClientState.getState(player, heldItem, this.currentInventorySlot, false);
             if (state != null) {
                state.jump(player, heldItem);
@@ -1074,11 +1029,11 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onPlayerTick(PlayerTickEvent event) {
+   public void onPlayerTick(TickEvent.PlayerTickEvent event) {
       if (event.side == LogicalSide.CLIENT) {
          Player mainPlayer = ClientUtils.getClientPlayer();
          if (event.player != mainPlayer) {
-            ItemStack itemStack = event.player.m_21205_();
+            ItemStack itemStack = event.player.getMainHandItem();
             GunClientState state = GunClientState.getMainHeldState(event.player);
             if (state != null) {
                state.stateTick(event.player, itemStack, false);
@@ -1086,16 +1041,16 @@ public class ClientEventHandler {
          }
       }
 
-      ItemStack itemStack = event.player.m_21205_();
-      if (itemStack != null && itemStack.m_41720_() instanceof GunItem) {
+      ItemStack itemStack = event.player.getMainHandItem();
+      if (itemStack != null && itemStack.getItem() instanceof GunItem) {
          if (GunItem.isAiming(itemStack)) {
-            event.player.m_6858_(false);
+            event.player.setSprinting(false);
          }
 
          if (MiscUtil.isClientSide(event.player)) {
             GunClientState state = GunClientState.getMainHeldState(event.player);
             if (state != null && !state.isIdle() && !state.isDrawing()) {
-               event.player.m_6858_(false);
+               event.player.setSprinting(false);
             }
          }
       }
@@ -1103,90 +1058,85 @@ public class ClientEventHandler {
    }
 
    @SubscribeEvent
-   public void onRenderTooltip(net.minecraftforge.client.event.RenderTooltipEvent.Pre event) {
+   public void onRenderTooltip(RenderTooltipEvent.Pre event) {
       ItemStack itemStack = event.getItemStack();
-      if (itemStack.m_41720_() instanceof AttachmentHost) {
+      if (itemStack.getItem() instanceof AttachmentHost) {
          event.setCanceled(true);
-         Minecraft mc = Minecraft.m_91087_();
+         Minecraft mc = Minecraft.getInstance();
          GuiGraphics guiGraphics = event.getGraphics();
          List<ClientTooltipComponent> tooltipComponents = event.getComponents();
          int i = 0;
          int j = tooltipComponents.size() == 1 ? -2 : 0;
 
-         ClientTooltipComponent clienttooltipcomponent;
-         for(Iterator var8 = tooltipComponents.iterator(); var8.hasNext(); j += clienttooltipcomponent.m_142103_()) {
-            clienttooltipcomponent = (ClientTooltipComponent)var8.next();
-            int k = clienttooltipcomponent.m_142069_(event.getFont());
+         for(ClientTooltipComponent clienttooltipcomponent : tooltipComponents) {
+            int k = clienttooltipcomponent.getWidth(event.getFont());
             if (k > i) {
                i = k;
             }
+
+            j += clienttooltipcomponent.getHeight();
          }
 
-         Vector2ic vector2ic = event.getTooltipPositioner().m_262814_(guiGraphics.m_280182_(), guiGraphics.m_280206_(), event.getX(), event.getY(), i, j);
+         Vector2ic vector2ic = event.getTooltipPositioner().positionTooltip(guiGraphics.guiWidth(), guiGraphics.guiHeight(), event.getX(), event.getY(), i, j);
          int l = vector2ic.x();
          int i1 = vector2ic.y();
-         PoseStack poseStack = guiGraphics.m_280168_();
-         poseStack.m_85836_();
-         guiGraphics.m_286007_(() -> {
+         PoseStack poseStack = guiGraphics.pose();
+         poseStack.pushPose();
+         final int finalI = i;
+         final int finalJ = j;
+         guiGraphics.drawManaged(() -> {
             int background = 1343229968;
             int borderStart = 1342218495;
             int borderEnd = 1342197879;
-            if (!(mc.f_91080_ instanceof AttachmentManagerScreen)) {
+            if (!(mc.screen instanceof AttachmentManagerScreen)) {
                background = -267382768;
             }
 
-            TooltipRenderUtil.renderTooltipBackground(guiGraphics, l, i1, i, j, 400, background, background, borderStart, borderEnd);
+            TooltipRenderUtil.renderTooltipBackground(guiGraphics, l, i1, finalI, finalJ, 400, background, background, borderStart, borderEnd);
          });
-         poseStack.m_252880_(0.0F, 0.0F, 400.0F);
+         poseStack.translate(0.0F, 0.0F, 400.0F);
          int k1 = i1;
 
-         int k2;
-         ClientTooltipComponent component;
-         for(k2 = 0; k2 < tooltipComponents.size(); ++k2) {
-            component = (ClientTooltipComponent)tooltipComponents.get(k2);
-            component.m_142440_(event.getFont(), l, k1, poseStack.m_85850_().m_252922_(), guiGraphics.m_280091_());
-            k1 += component.m_142103_() + (k2 == 0 ? 2 : 0);
+         for(int l1 = 0; l1 < tooltipComponents.size(); ++l1) {
+            ClientTooltipComponent component = tooltipComponents.get(l1);
+            component.renderText(event.getFont(), l, k1, poseStack.last().pose(), guiGraphics.bufferSource());
+            k1 += component.getHeight() + (l1 == 0 ? 2 : 0);
          }
 
          k1 = i1;
 
-         for(k2 = 0; k2 < tooltipComponents.size(); ++k2) {
-            component = (ClientTooltipComponent)tooltipComponents.get(k2);
-            component.m_183452_(event.getFont(), l, k1, guiGraphics);
-            k1 += component.m_142103_() + (k2 == 0 ? 2 : 0);
+         for(int k2 = 0; k2 < tooltipComponents.size(); ++k2) {
+            ClientTooltipComponent component = tooltipComponents.get(k2);
+            component.renderImage(event.getFont(), l, k1, guiGraphics);
+            k1 += component.getHeight() + (k2 == 0 ? 2 : 0);
          }
 
-         poseStack.m_85849_();
+         poseStack.popPose();
       }
    }
 
    @SubscribeEvent
-   public void onGatherTooltipComponents(GatherComponents event) {
+   public void onGatherTooltipComponents(RenderTooltipEvent.GatherComponents event) {
       ItemStack itemStack = event.getItemStack();
-      Item item = itemStack.m_41720_();
-      if (item instanceof FeatureProvider) {
-         FeatureProvider featureProvider = (FeatureProvider)item;
+      Item item = itemStack.getItem();
+      if (item instanceof FeatureProvider featureProvider) {
          List<Either<FormattedText, TooltipComponent>> elements = event.getTooltipElements();
-         List<Component> components = new ArrayList();
+         List<Component> components = new ArrayList<>();
          components.addAll(featureProvider.getDescriptionTooltipLines());
          components.addAll(featureProvider.getFeatureTooltipLines());
-         if (item instanceof AttachmentHost) {
-            AttachmentHost attachmentHost = (AttachmentHost)item;
+         if (item instanceof AttachmentHost attachmentHost) {
             Collection<Attachment> compatibleAttachments = attachmentHost.getCompatibleAttachments();
             if (!compatibleAttachments.isEmpty()) {
-               if (Screen.m_96638_()) {
+               if (Screen.hasShiftDown()) {
                   components.addAll(attachmentHost.getCompatibleAttachmentTooltipLines(itemStack));
                } else {
-                  components.add(Component.m_237119_());
-                  components.add(Component.m_237115_("message.pointblank.holdShiftForCompatibleAttachments").m_130940_(ChatFormatting.ITALIC).m_130940_(ChatFormatting.DARK_AQUA));
+                  components.add(Component.empty());
+                  components.add(Component.translatable("message.pointblank.holdShiftForCompatibleAttachments").withStyle(ChatFormatting.ITALIC).withStyle(ChatFormatting.DARK_AQUA));
                }
             }
          }
 
-         Iterator var9 = components.iterator();
-
-         while(var9.hasNext()) {
-            Component c = (Component)var9.next();
+         for(Component c : components) {
             elements.add(Either.left(c));
          }
       }
@@ -1203,21 +1153,21 @@ public class ClientEventHandler {
       float sneakMultiplier = 0.8F;
       float crouchMultiplier = 0.7F;
       float fireMultiplier = 2.0F * inaccuracy;
-      double horizontalSpeed = (double)Mth.m_14116_((float)(this.playerDeltaX * this.playerDeltaX + this.playerDeltaY * this.playerDeltaY + this.playerDeltaZ * this.playerDeltaZ));
+      double horizontalSpeed = Mth.sqrt((float)(this.playerDeltaX * this.playerDeltaX + this.playerDeltaY * this.playerDeltaY + this.playerDeltaZ * this.playerDeltaZ));
       float expansionRatio = baseExpansion + (float)horizontalSpeed * speedMultiplier;
-      if (player.m_20142_()) {
+      if (player.isSprinting()) {
          expansionRatio *= sprintMultiplier;
       }
 
-      if (!player.m_20096_()) {
+      if (!player.onGround()) {
          expansionRatio *= jumpMultiplier;
       }
 
-      if (player.m_20143_()) {
+      if (player.isVisuallyCrawling()) {
          expansionRatio *= sneakMultiplier;
       }
 
-      if (player.m_6047_()) {
+      if (player.isCrouching()) {
          expansionRatio *= crouchMultiplier;
       }
 
@@ -1229,43 +1179,38 @@ public class ClientEventHandler {
          expansionRatio *= fireMultiplier;
       }
 
-      return Mth.m_14036_(this.crossHairExp.update(expansionRatio), 1.0F, 7.0F);
+      return Mth.clamp(this.crossHairExp.update(expansionRatio), 1.0F, 7.0F);
    }
 
    @EventBusSubscriber(
-      modid = "pointblank",
-      value = {Dist.CLIENT},
-      bus = Bus.MOD
+           modid = "pointblank",
+           value = {Dist.CLIENT},
+           bus = Bus.MOD
    )
    public static class ModBusRegistration {
-      @SubscribeEvent
-      public static void registerKeybindings(RegisterKeyMappingsEvent event) {
-         event.register((KeyMapping)ClientEventHandler.RELOAD_KEY.get());
-         event.register((KeyMapping)ClientEventHandler.FIRE_MODE_KEY.get());
-         event.register((KeyMapping)ClientEventHandler.INSPECT_KEY.get());
-         event.register((KeyMapping)ClientEventHandler.ATTACHMENT_KEY.get());
-         event.register((KeyMapping)ClientEventHandler.SCOPE_SWITCH_KEY.get());
+      public ModBusRegistration() {
       }
 
       @SubscribeEvent
-      public static void registerRenderers(RegisterRenderers event) {
-         event.registerBlockEntityRenderer((BlockEntityType)BlockEntityRegistry.WORKSTATION_BLOCK_ENTITY.get(), (context) -> {
-            return new BaseModelBlockRenderer((BaseBlockModel)BlockModelRegistry.WORKSTATION_BLOCK_MODEL.get());
-         });
-         event.registerBlockEntityRenderer((BlockEntityType)BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), (context) -> {
-            return new BaseModelBlockRenderer((BaseBlockModel)BlockModelRegistry.PRINTER_BLOCK_MODEL.get());
-         });
-         Iterator var1 = EntityRegistry.getItemEntityBuilders().entrySet().iterator();
+      public static void registerKeybindings(RegisterKeyMappingsEvent event) {
+         event.register(ClientEventHandler.RELOAD_KEY.get());
+         event.register(ClientEventHandler.FIRE_MODE_KEY.get());
+         event.register(ClientEventHandler.INSPECT_KEY.get());
+         event.register(ClientEventHandler.ATTACHMENT_KEY.get());
+         event.register(ClientEventHandler.SCOPE_SWITCH_KEY.get());
+      }
 
-         while(var1.hasNext()) {
-            Entry<RegistryObject<EntityType<?>>, Supplier<EntityBuilder<?, ?>>> e = (Entry)var1.next();
-            Supplier<EntityBuilder<?, ?>> supplier = (Supplier)e.getValue();
-            EntityBuilder<?, ?> builder = (EntityBuilder)supplier.get();
+      @SubscribeEvent
+      public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+         event.registerBlockEntityRenderer(BlockEntityRegistry.WORKSTATION_BLOCK_ENTITY.get(), (context) -> new BaseModelBlockRenderer<>(BlockModelRegistry.WORKSTATION_BLOCK_MODEL.get()));
+         event.registerBlockEntityRenderer(BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), (context) -> new BaseModelBlockRenderer<>(BlockModelRegistry.PRINTER_BLOCK_MODEL.get()));
+
+         for(Map.Entry<RegistryObject<EntityType<?>>, Supplier<EntityBuilder<?, ?>>> e : EntityRegistry.getItemEntityBuilders().entrySet()) {
+            Supplier<EntityBuilder<?, ?>> supplier = e.getValue();
+            EntityBuilder<?, ?> builder = supplier.get();
             if (builder.hasRenderer()) {
-               EntityType entityType = (EntityType)((RegistryObject)e.getKey()).get();
-               event.registerEntityRenderer(entityType, (context) -> {
-                  return builder.createEntityRenderer(context);
-               });
+               EntityType entityType = (e.getKey()).get();
+               event.registerEntityRenderer(entityType, builder::createEntityRenderer);
             }
          }
 
@@ -1273,13 +1218,13 @@ public class ClientEventHandler {
 
       @SubscribeEvent
       public static void registerParticleProviders(RegisterParticleProvidersEvent event) {
-         event.registerSpriteSet((ParticleType)ParticleRegistry.IMPACT_PARTICLE.get(), EffectParticles.EffectParticleProvider::new);
+         event.registerSpriteSet(ParticleRegistry.IMPACT_PARTICLE.get(), EffectParticles.EffectParticleProvider::new);
       }
 
       @SubscribeEvent
       public static void setupClient(FMLClientSetupEvent evt) {
-         MenuScreens.m_96206_((MenuType)MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
-         MenuScreens.m_96206_((MenuType)MenuRegistry.CRAFTING.get(), CraftingScreen::new);
+         MenuScreens.register(MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
+         MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
          PlayerAnimatorCompat.getInstance().registerAnimationTypes();
          ThirdPersonAnimationRegistry.init();
       }
