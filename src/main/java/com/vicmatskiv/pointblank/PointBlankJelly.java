@@ -91,7 +91,7 @@ import software.bernie.geckolib.GeckoLib;
 
 @Mod("pointblank")
 public class PointBlankJelly {
-   private static final Logger LOGGER = LogManager.getLogger("pointblank");
+   public static final Logger LOGGER = LogManager.getLogger("pointblank");
    private ExtensionRegistry extensionRegistry;
    private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
@@ -100,6 +100,7 @@ public class PointBlankJelly {
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();
+
       FeatureTypeRegistry.init();
       this.extensionRegistry = new ExtensionRegistry();
       Dist side = FMLLoader.getDist();

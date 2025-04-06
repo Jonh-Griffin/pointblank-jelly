@@ -1,5 +1,7 @@
 package com.vicmatskiv.pointblank.registry;
 
+import com.vicmatskiv.pointblank.Config;
+import com.vicmatskiv.pointblank.PointBlankJelly;
 import com.vicmatskiv.pointblank.feature.AccuracyFeature;
 import com.vicmatskiv.pointblank.feature.ActiveMuzzleFeature;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
@@ -15,6 +17,11 @@ import com.vicmatskiv.pointblank.feature.RecoilFeature;
 import com.vicmatskiv.pointblank.feature.ReticleFeature;
 import com.vicmatskiv.pointblank.feature.SkinFeature;
 import com.vicmatskiv.pointblank.feature.SoundFeature;
+import com.vicmatskiv.pointblank.util.InternalFiles;
+import net.minecraftforge.fml.loading.FMLPaths;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,5 +73,13 @@ public class FeatureTypeRegistry {
    }
 
    public static void init() {
+      if(!Config.overwriteDisabled) {
+          try {
+              InternalFiles.copyFolder(PointBlankJelly.class.getResource("/base_pack").toURI(), FMLPaths.GAMEDIR.get().resolve("pointblank").resolve("base_pack"));
+              PointBlankJelly.LOGGER.info("Writing base_pack...");
+          } catch (IOException | URISyntaxException e) {
+              throw new RuntimeException(e);
+          }
+      }
    }
 }

@@ -2066,7 +2066,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
    }
 
-   public enum FirePhase {
+   public enum FirePhase implements Nameable {
       PREPARING,
       FIRING,
       COMPLETETING,
@@ -2076,6 +2076,11 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       FLYING;
 
       FirePhase() {
+      }
+
+      @Override
+      public String getName() {
+         return this.name();
       }
    }
 

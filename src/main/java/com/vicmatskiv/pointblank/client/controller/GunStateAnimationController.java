@@ -99,7 +99,8 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
 
       private PlayState setPlayState(PlayState playState, GunStateAnimationController controller) {
          if (playState != this.currentPlayState) {
-            GunStateAnimationController.LOGGER.debug("{} {} updated play state from {} to {}", System.currentTimeMillis() % 100000L, controller.getName(), this.currentPlayState, playState);
+            //Spams logs on idle animation, reenable if neccessary for debugging
+            //GunStateAnimationController.LOGGER.debug("{} {} updated play state from {} to {}", System.currentTimeMillis() % 100000L, controller.getName(), this.currentPlayState, playState);
          }
 
          this.currentPlayState = playState;
@@ -123,7 +124,8 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
          if (model != null) {
             Animation a = model.getAnimation(GunStateAnimationController.this.animatable, this.animationName);
             if (a != null) {
-               GunStateAnimationController.LOGGER.debug("{} {} resetting animation {}", System.currentTimeMillis() % 100000L, GunStateAnimationController.this.getName(), this.animationName);
+               //Causes logs to spam, reenable if neccessary for debugging
+               //GunStateAnimationController.LOGGER.debug("{} {} resetting animation {}", System.currentTimeMillis() % 100000L, GunStateAnimationController.this.getName(), this.animationName);
                ((StateHandler)GunStateAnimationController.this.stateHandler).currentPlayState = null;
                state.resetCurrentAnimation();
                GunStateAnimationController.this.setAnimation(GunStateAnimationController.this.getAnimation(this.animationName));

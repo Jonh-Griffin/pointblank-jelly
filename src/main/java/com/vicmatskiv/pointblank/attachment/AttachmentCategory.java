@@ -1,5 +1,6 @@
 package com.vicmatskiv.pointblank.attachment;
 
+import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.feature.ActiveMuzzleFeature;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.Feature;
@@ -16,7 +17,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
-public class AttachmentCategory implements Comparable<AttachmentCategory> {
+public class AttachmentCategory implements Comparable<AttachmentCategory>, Nameable {
    private static final SortedMap<String, AttachmentCategory> categories = new TreeMap<>();
    public static final AttachmentCategory SCOPE = fromString("scope", (c) -> {
       return c == AimingFeature.class || c == ReticleFeature.class || c == PipFeature.class;

@@ -23,7 +23,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ItemLike;
 
 public final class GunRegistry {
-   public static final Supplier<GunItem> M1911A1;
+   //public static final Supplier<GunItem> M1911A1;
    public static final Supplier<GunItem> TTI_VIPER;
    public static final Supplier<GunItem> P30L;
    public static final Supplier<GunItem> MK23;
@@ -85,75 +85,49 @@ public final class GunRegistry {
    public static final Supplier<GunItem> AT4;
    public static final Supplier<GunItem> M134MINIGUN;
 
+   @Deprecated
    public static void registerTabItems(Consumer<ItemLike> entries) {
-      entries.accept(GLOCK17.get());
-      entries.accept(GLOCK18.get());
-      entries.accept(M9.get());
-      entries.accept(M1911A1.get());
-      entries.accept(TTI_VIPER.get());
-      entries.accept(P30L.get());
-      entries.accept(MK23.get());
-      entries.accept(DESERTEAGLE.get());
-      entries.accept(RHINO.get());
-      entries.accept(M4A1.get());
-      entries.accept(M4A1MOD1.get());
-      entries.accept(STAR15.get());
-      entries.accept(M4SOPMODII.get());
-      entries.accept(M16A1.get());
-      entries.accept(HK416.get());
-      entries.accept(SCARL.get());
-      entries.accept(XM7.get());
-      entries.accept(G36C.get());
-      entries.accept(G36K.get());
-      entries.accept(AUG.get());
-      entries.accept(G41.get());
-      entries.accept(AK47.get());
-      entries.accept(AK74.get());
-      entries.accept(AK12.get());
-      entries.accept(AN94.get());
-      entries.accept(AR57.get());
-      entries.accept(XM29.get());
-      entries.accept(MP5.get());
-      entries.accept(MP7.get());
-      entries.accept(RO635.get());
-      entries.accept(UMP45.get());
-      entries.accept(VECTOR.get());
-      entries.accept(P90.get());
-      entries.accept(M950.get());
-      entries.accept(TMP.get());
-      entries.accept(SL8.get());
-      entries.accept(MK14EBR.get());
-      entries.accept(UAR10.get());
-      entries.accept(G3.get());
-      entries.accept(WA2000.get());
-      entries.accept(XM3.get());
-      entries.accept(C14.get());
-      entries.accept(L96A1.get());
-      entries.accept(BALLISTA.get());
-      entries.accept(GM6LYNX.get());
-      entries.accept(M590.get());
-      entries.accept(M870.get());
-      entries.accept(SPAS12.get());
-      entries.accept(M1014.get());
-      entries.accept(AA12.get());
-      entries.accept(CITORICXS.get());
-      entries.accept(HS12.get());
-      entries.accept(AUGHBAR.get());
-      entries.accept(LAMG.get());
-      entries.accept(MK48.get());
-      entries.accept(M249.get());
-      entries.accept(M32MGL.get());
-      entries.accept(SMAW.get());
-      entries.accept(AT4.get());
-      entries.accept(JAVELIN.get());
-      entries.accept(M134MINIGUN.get());
+
    }
 
    public static void init() {
    }
 
    static {
-      M1911A1 = ItemRegistry.ITEMS.register((new GunItem.Builder()).withName("m1911a1").withTradePrice(1000.0F, 1).withAnimationType(GunItem.AnimationType.PISTOL).withMaxAmmoCapacity(7).withCompatibleAmmo(AmmoRegistry.AMMOCREATIVE).withCompatibleAmmo(AmmoRegistry.AMMO45ACP).withDamage(5.0F).withRpm(800).withFireModes(FireMode.SINGLE).withFireSound(SoundRegistry.M1911A1).withReloadSound(SoundRegistry.RELOAD).withDrawCooldownDuration(550, TimeUnit.MILLISECOND).withInspectCooldownDuration(3580, TimeUnit.MILLISECOND).withGunRecoilInitialAmplitude(0.8D).withShakeRecoilAmplitude(0.35D).withShakeRecoilSpeed(3.0D).withViewRecoilAmplitude(3.0D).withEffect(GunItem.FirePhase.HIT_SCAN_ACQUIRED, EffectRegistry.TRACER).withFeature((new MuzzleFlashFeature.Builder()).withEffect(GunItem.FirePhase.FIRING, EffectRegistry.MUZZLE_FLASH).withCondition(Conditions.doesNotHaveAttachmentGroup("smg_suppressors"))).withFeature((new AimingFeature.Builder()).withCondition(Conditions.doesNotHaveAttachmentGroup("hg_sights")).withZoom(0.25D)).withFeature((new PartVisibilityFeature.Builder()).withShownPart("sightmount", Conditions.hasAttachmentGroup("hg_sights"))).withFeature((new SoundFeature.Builder()).withCondition(Conditions.hasAttachmentGroup("smg_suppressors")).withFireSound(SoundRegistry.M1911_SILENCED, 1.0D)).withCompatibleAttachmentGroup("hg_sights").withCompatibleAttachmentGroup("smg_muzzle").withCompatibleAttachmentGroup("m1911a1_skins").withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onEmptyReload(), 1850L, new GunItem.ReloadAnimation("animation.model.reloadempty", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onNonEmptyReload(), 1380L, new GunItem.ReloadAnimation("animation.model.reload", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))));
+      //M1911A1 = ItemRegistry.ITEMS.register((new GunItem.Builder())
+      // .withName("m1911a1")
+      // .withTradePrice(1000.0F, 1)
+      // .withAnimationType(GunItem.AnimationType.PISTOL)
+      // .withMaxAmmoCapacity(7)
+      // .withCompatibleAmmo(AmmoRegistry.AMMOCREATIVE)
+      // .withCompatibleAmmo(AmmoRegistry.AMMO45ACP)
+      // .withDamage(5.0F)
+      // .withRpm(800)
+      // .withFireModes(FireMode.SINGLE)
+      // .withFireSound(SoundRegistry.M1911A1)
+      // .withReloadSound(SoundRegistry.RELOAD)
+      // .withDrawCooldownDuration(550, TimeUnit.MILLISECOND)
+      // .withInspectCooldownDuration(3580, TimeUnit.MILLISECOND)
+      // .withGunRecoilInitialAmplitude(0.8D)
+      // .withShakeRecoilAmplitude(0.35D)
+      // .withShakeRecoilSpeed(3.0D)
+      // .withViewRecoilAmplitude(3.0D)
+      // .withEffect(GunItem.FirePhase.HIT_SCAN_ACQUIRED, EffectRegistry.TRACER)
+      // .withFeature((new MuzzleFlashFeature.Builder())
+      // .withEffect(GunItem.FirePhase.FIRING, EffectRegistry.MUZZLE_FLASH)
+      // .withCondition(Conditions.doesNotHaveAttachmentGroup("smg_suppressors")))
+      // .withFeature((new AimingFeature.Builder())
+      // .withCondition(Conditions.doesNotHaveAttachmentGroup("hg_sights"))
+      // .withZoom(0.25D)).
+      // withFeature((new PartVisibilityFeature.Builder())
+      // .withShownPart("sightmount", Conditions.hasAttachmentGroup("hg_sights")))
+      // .withFeature((new SoundFeature.Builder())
+      // .withCondition(Conditions.hasAttachmentGroup("smg_suppressors"))
+      // .withFireSound(SoundRegistry.M1911_SILENCED, 1.0D))
+      // .withCompatibleAttachmentGroup("hg_sights")
+      // .withCompatibleAttachmentGroup("smg_muzzle")
+      // .withCompatibleAttachmentGroup("m1911a1_skins")
+      // .withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onEmptyReload(), 1850L, new GunItem.ReloadAnimation("animation.model.reloadempty", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onNonEmptyReload(), 1380L, new GunItem.ReloadAnimation("animation.model.reload", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))));
       TTI_VIPER = ItemRegistry.ITEMS.register((new GunItem.Builder()).withName("tti_viper").withTradePrice(1000.0F, 1).withAnimationType(GunItem.AnimationType.PISTOL).withMaxAmmoCapacity(21).withCompatibleAmmo(AmmoRegistry.AMMOCREATIVE).withCompatibleAmmo(AmmoRegistry.AMMO45ACP).withDamage(5.0F).withRpm(800).withFireModes(FireMode.SINGLE).withFireSound(SoundRegistry.M1911A1).withDrawCooldownDuration(550, TimeUnit.MILLISECOND).withInspectCooldownDuration(3580, TimeUnit.MILLISECOND).withGunRecoilInitialAmplitude(0.8D).withShakeRecoilAmplitude(0.35D).withShakeRecoilSpeed(3.0D).withViewRecoilAmplitude(3.0D).withGlow("glowy").withEffect(GunItem.FirePhase.HIT_SCAN_ACQUIRED, EffectRegistry.TRACER).withFeature((new MuzzleFlashFeature.Builder()).withEffect(GunItem.FirePhase.FIRING, EffectRegistry.MUZZLE_FLASH).withCondition(Conditions.doesNotHaveAttachmentGroup("smg_suppressors"))).withFeature((new AimingFeature.Builder()).withCondition(Conditions.doesNotHaveAttachmentGroup("hg_sights")).withZoom(0.25D)).withFeature((new SoundFeature.Builder()).withCondition(Conditions.hasAttachmentGroup("smg_suppressors")).withFireSound(SoundRegistry.M1911_SILENCED, 1.0D)).withCompatibleAttachmentGroup("hg_sights").withCompatibleAttachmentGroup("smg_muzzle").withCompatibleAttachmentGroup("tti_viper_skins").withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onEmptyReload(), 1430L, new GunItem.ReloadAnimation("animation.model.reloadempty", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.2D, 0.5D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D), new GunItem.ReloadShakeEffect(970L, 500L, 0.2D, 0.6D)))).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onNonEmptyReload(), 1170L, new GunItem.ReloadAnimation("animation.model.reload", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.2D, 0.5D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))));
       P30L = ItemRegistry.ITEMS.register((new GunItem.Builder()).withName("p30l").withTradePrice(1000.0F, 1).withAnimationType(GunItem.AnimationType.PISTOL).withMaxAmmoCapacity(15).withCompatibleAmmo(AmmoRegistry.AMMOCREATIVE).withCompatibleAmmo(AmmoRegistry.AMMO9MM).withDamage(3.5F).withRpm(800).withFireModes(FireMode.SINGLE).withFireSound(SoundRegistry.P30L).withDrawCooldownDuration(550, TimeUnit.MILLISECOND).withInspectCooldownDuration(3580, TimeUnit.MILLISECOND).withGunRecoilInitialAmplitude(0.8D).withShakeRecoilAmplitude(0.35D).withShakeRecoilSpeed(3.0D).withViewRecoilAmplitude(3.0D).withGlow("glowy").withEffect(GunItem.FirePhase.HIT_SCAN_ACQUIRED, EffectRegistry.TRACER).withFeature((new MuzzleFlashFeature.Builder()).withEffect(GunItem.FirePhase.FIRING, EffectRegistry.MUZZLE_FLASH).withCondition(Conditions.doesNotHaveAttachmentGroup("smg_suppressors"))).withFeature((new AimingFeature.Builder()).withCondition(Conditions.doesNotHaveAttachmentGroup("hg_sights")).withZoom(0.25D)).withFeature((new PartVisibilityFeature.Builder()).withShownPart("sightmount", Conditions.hasAttachmentGroup("hg_sights"))).withFeature((new SoundFeature.Builder()).withCondition(Conditions.hasAttachmentGroup("smg_suppressors")).withFireSound(SoundRegistry.P30L_SILENCED, 1.0D)).withCompatibleAttachmentGroup("hg_sights").withCompatibleAttachmentGroup("smg_muzzle").withCompatibleAttachment(AttachmentRegistry.P30L_COMPENSATOR).withCompatibleAttachmentGroup("p30l_skins").withDefaultAttachment(AttachmentRegistry.P30L_COMPENSATOR).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onEmptyReload(), 1170L, new GunItem.ReloadAnimation("animation.model.reloadempty", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.3D, 0.3D)))).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onNonEmptyReload(), 1170L, new GunItem.ReloadAnimation("animation.model.reload", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))));
       MK23 = ItemRegistry.ITEMS.register((new GunItem.Builder()).withName("mk23").withTradePrice(1000.0F, 1).withAnimationType(GunItem.AnimationType.PISTOL).withMaxAmmoCapacity(12).withCompatibleAmmo(AmmoRegistry.AMMOCREATIVE).withCompatibleAmmo(AmmoRegistry.AMMO45ACP).withRpm(800).withFireModes(FireMode.SINGLE).withFireSound(SoundRegistry.P30L).withDrawCooldownDuration(550, TimeUnit.MILLISECOND).withInspectCooldownDuration(3580, TimeUnit.MILLISECOND).withGunRecoilInitialAmplitude(0.8D).withShakeRecoilAmplitude(0.35D).withShakeRecoilSpeed(3.0D).withViewRecoilAmplitude(3.0D).withGlow("glowy").withEffect(GunItem.FirePhase.HIT_SCAN_ACQUIRED, EffectRegistry.TRACER).withFeature((new MuzzleFlashFeature.Builder()).withEffect(GunItem.FirePhase.FIRING, EffectRegistry.MUZZLE_FLASH).withCondition(Conditions.doesNotHaveAttachmentGroup("smg_suppressors"))).withFeature((new AimingFeature.Builder()).withCondition(Conditions.doesNotHaveAttachmentGroup("hg_sights")).withZoom(0.25D)).withFeature((new PartVisibilityFeature.Builder()).withShownPart("sightmount", Conditions.hasAttachmentGroup("hg_sights"))).withFeature((new SoundFeature.Builder()).withCondition(Conditions.hasAttachmentGroup("smg_suppressors")).withFireSound(SoundRegistry.P30L_SILENCED, 1.0D)).withFeature((new FireModeFeature.Builder()).withFireMode("single", FireMode.SINGLE, Component.translatable("label.pointblank.fireMode.single"), 800, 5.0D, true, "animation.model.fire", new FireModeInstance.ViewShakeDescriptor(350L, 0.35D, 3.0D)).withFireMode("stealth", FireMode.SINGLE, Component.translatable("label.pointblank.fireMode.stealth"), 66, 20.0D, true, "animation.model.firestealth", new FireModeInstance.ViewShakeDescriptor(350L, 1.4D, 2.0D))).withCompatibleAttachmentGroup("hg_sights").withCompatibleAttachmentGroup("smg_muzzle").withCompatibleAttachmentGroup("mk23_skins").withDefaultAttachment(AttachmentRegistry.SMG_SUPPRESSOR).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onEmptyReload(), 1350L, new GunItem.ReloadAnimation("animation.model.reloadempty", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.3D, 0.3D), new GunItem.ReloadShakeEffect(920L, 400L, 0.2D, 0.4D)))).withPhasedReload(GunItem.ReloadPhase.RELOADING, Conditions.onNonEmptyReload(), 1170L, new GunItem.ReloadAnimation("animation.model.reload", List.of(new GunItem.ReloadShakeEffect(0L, 1500L, 0.2D, 0.8D), new GunItem.ReloadShakeEffect(170L, 1000L, 0.35D, 0.4D), new GunItem.ReloadShakeEffect(530L, 800L, 0.13D, 0.5D), new GunItem.ReloadShakeEffect(730L, 400L, 0.2D, 0.3D)))));

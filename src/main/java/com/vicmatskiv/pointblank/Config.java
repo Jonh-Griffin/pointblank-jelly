@@ -1,5 +1,6 @@
 package com.vicmatskiv.pointblank;
 
+import com.google.gson.JsonObject;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
 import net.minecraftforge.common.ForgeConfigSpec.Builder;
@@ -22,6 +23,7 @@ public class Config {
    private static final BooleanValue RESET_AUTO_FIRE_PITCH_ENABLED;
    private static final DoubleValue KNOCKBACK;
    private static final BooleanValue PARTICLE_EFFECTS_ENABLED;
+   private static final BooleanValue OVERWRITE_DISABLED;
    private static final IntValue ARMS_DEALER_HOUSE_WEIGHT;
    private static final DoubleValue EMERALD_EXCHANGE_RATE;
    private static final BooleanValue THIRD_PERSON_ARM_POSE_ALWAYS_ON;
@@ -65,6 +67,7 @@ public class Config {
    public static double headshotDamageModifier;
    public static CrosshairType crosshairType;
    public static boolean goreEnabled;
+   public static boolean overwriteDisabled;
    public static boolean advancedIrisIntegrationEnabled;
    public static boolean firstPersonAnimationsEnabled;
    public static boolean thirdPersonAnimationsEnabled;
@@ -76,6 +79,7 @@ public class Config {
       resetAutoFirePitchEnabled = RESET_AUTO_FIRE_PITCH_ENABLED.get();
       knockback = KNOCKBACK.get();
       particleEffectsEnabled = PARTICLE_EFFECTS_ENABLED.get();
+      overwriteDisabled = OVERWRITE_DISABLED.get();
       armsDealerHouseWeight = ARMS_DEALER_HOUSE_WEIGHT.get();
       emeraldExchangeRate = EMERALD_EXCHANGE_RATE.get();
       thirdPersonArmPoseAlwaysOn = THIRD_PERSON_ARM_POSE_ALWAYS_ON.get();
@@ -104,6 +108,7 @@ public class Config {
       RESET_AUTO_FIRE_PITCH_ENABLED = BUILDER.comment("Toggle to reset player pitch to original after auto fire").define("resetAutoFirePitchEnabled", true);
       KNOCKBACK = BUILDER.comment("Adjusts the knockback force applied to entities hit by gunfire, with higher values causing greater knockback distance.").defineInRange("knockback", 1.0D, 0.1D, 2.0D);
       PARTICLE_EFFECTS_ENABLED = BUILDER.comment("Enables particle effects").define("particleEffectsEnabled", true);
+      OVERWRITE_DISABLED = BUILDER.comment("Disables overwriting of the base content pack").define("allowBasePackOverwrite", false);
       ARMS_DEALER_HOUSE_WEIGHT = BUILDER.comment("Sets the likelihood of an 'Arms Dealer' house appearing in new villages, with higher values increasing frequency and lower values making it rarer.").defineInRange("armsDealerHouse", 10, 0, 20);
       EMERALD_EXCHANGE_RATE = BUILDER.comment("Set the exchange rate to determine how many in-game price units are equivalent to one emerald.").defineInRange("emeraldExchangeRate", 100.0D, 1.0D, 1000.0D);
       THIRD_PERSON_ARM_POSE_ALWAYS_ON = BUILDER.comment("Controls whether the player's arm pose is permanently set to the aiming/firing position in third-person view, regardless of their current action with a gun.").define("thirdPersonArmPoseAlwaysOn", true);
