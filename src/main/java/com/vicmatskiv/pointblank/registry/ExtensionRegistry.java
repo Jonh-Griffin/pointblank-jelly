@@ -152,7 +152,7 @@ public class ExtensionRegistry {
                if (firstGunItem.isPresent()) {
                   item = (Item)((Supplier<?>)firstGunItem.get()).get();
                } else {
-                  item = GunRegistry.M4A1.get();
+                  item = Items.BARRIER;
                }
 
                if (item == null) {

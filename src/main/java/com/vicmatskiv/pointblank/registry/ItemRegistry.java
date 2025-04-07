@@ -118,7 +118,7 @@ public final class ItemRegistry {
       AmmoRegistry.init();
       AttachmentRegistry.init();
       GunRegistry.init();
-      POINTBLANK_TAB = TABS.register("pointblank", () -> CreativeModeTab.builder().title(Component.translatable("itemGroup.pointblank.items")).icon(() -> new ItemStack(GunRegistry.M4A1.get() != null ? GunRegistry.M4A1.get() : Items.AIR)).displayItems((enabledFeatures, entries) -> {
+      POINTBLANK_TAB = TABS.register("pointblank", () -> CreativeModeTab.builder().title(Component.translatable("itemGroup.pointblank.items")).icon(() -> new ItemStack(BlockRegistry.PRINTER.get() != null ? BlockRegistry.PRINTER.get() : Items.AIR)).displayItems((enabledFeatures, entries) -> {
          Consumer<ItemLike> output = itemLike -> {
             if (itemLike != null && itemLike != Items.AIR) {
                if (itemLike instanceof Enableable e) {

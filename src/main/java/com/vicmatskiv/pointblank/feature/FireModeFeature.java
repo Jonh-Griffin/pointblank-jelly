@@ -1,5 +1,6 @@
 package com.vicmatskiv.pointblank.feature;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
@@ -527,14 +528,17 @@ public class FireModeFeature extends ConditionalFeature {
             fireModeBuilder.withBurstShots(JsonUtil.getJsonInt(fireModeObj, "burstShots", -1));
             //fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", 1));
             //Rather than checking for just an int, we'll use GunItem's implementation of checking for infinite ammo
-            JsonPrimitive jsonMaxAmmoCapacity = fireModeObj.getAsJsonPrimitive("maxAmmoCapacity");
-            if(jsonMaxAmmoCapacity.isString() && "infinite".equalsIgnoreCase(jsonMaxAmmoCapacity.getAsString())) {
-               //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO INFINITE!!!");
-               fireModeBuilder.withMaxAmmoCapacity(Integer.MAX_VALUE);
-            }
-            else {
-               //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO WHATEVER IT IS IN ITS JSON FILE!!!");
-               fireModeBuilder.withMaxAmmoCapacity(fireModeObj.getAsJsonPrimitive("maxAmmoCapacity").getAsInt());
+            JsonElement jsonMaxAmmoCapacity = fireModeObj.get("maxAmmoCapacity");
+            if(jsonMaxAmmoCapacity != null) {
+               if (jsonMaxAmmoCapacity instanceof JsonPrimitive pri && pri.isString() && "infinite".equalsIgnoreCase(pri.getAsString())) {
+                  //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO INFINITE!!!");
+                  fireModeBuilder.withMaxAmmoCapacity(Integer.MAX_VALUE);
+               } else {
+                  //System.out.println("AMMO FOR THIS ITEM IS BEING SET TO WHATEVER IT IS IN ITS JSON FILE!!!");
+                  fireModeBuilder.withMaxAmmoCapacity(fireModeObj.getAsJsonPrimitive("maxAmmoCapacity").getAsInt());
+               }
+            } else {
+               fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", -1));
             }
             fireModeBuilder.withPelletCount(JsonUtil.getJsonInt(fireModeObj, "pelletCount", 0));
             fireModeBuilder.withPelletSpread(JsonUtil.getJsonDouble(fireModeObj, "pelletSpread", 1.0F));
