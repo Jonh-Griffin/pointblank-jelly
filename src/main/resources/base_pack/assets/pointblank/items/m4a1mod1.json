@@ -136,7 +136,7 @@
             "fireSoundVolume": 1,
             "condition": {
                 "allOf": [
-                    { "hasAttachmentGroup": "ar_supressors"},
+                    { "hasAttachmentGroup": "ar_suppressors"},
                     { "unselectedFireMode": "grenade_launcher"},
                     { "unselectedFireMode": "laser_cannon"},
                     { "unselectedFireMode": "shotgun"}

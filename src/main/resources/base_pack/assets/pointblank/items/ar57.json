@@ -19,7 +19,7 @@
         "smg_muzzle",
         "underbarrel",
         "underbarrel_2",
-        "m4a1_skins"
+        "ar57_skins"
     ],
     "gunRecoilInitialAmplitude" : 0.8,
     "shakeRecoilAmplitude" : 0.35,
@@ -132,11 +132,11 @@
         },
         {
             "type": "Sound",
-            "fireSound": "ar57_silenced",
+            "fireSound": "p90_silenced",
             "fireSoundVolume": 1,
             "condition": {
                 "allOf": [
-                    { "hasAttachmentGroup": "ar_supressors"},
+                    { "hasAttachmentGroup": "smg_suppressors"},
                     { "unselectedFireMode": "grenade_launcher"},
                     { "unselectedFireMode": "laser_cannon"},
                     { "unselectedFireMode": "shotgun"}
@@ -200,7 +200,7 @@
             ],
             "condition": {
                 "allOf": [
-                    { "doesNotHaveAttachmentGroup": "ar_suppressors"},
+                    { "doesNotHaveAttachment": "smg_suppressor"},
                     { "unselectedFireMode": "grenade_launcher"},
                     { "unselectedFireMode": "laser_cannon"},
                     { "unselectedFireMode": "shotgun"}

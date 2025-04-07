@@ -1,30 +1,27 @@
 {
-    "name": "m4sopmodii",
+    "name": "ro635",
     "type": "Gun",
-    "maxAmmoCapacity": 30,
-    "compatibleAmmo": ["ammo556","ammocreative"],
-    "damage": 5,
+    "maxAmmoCapacity": 32,
+    "compatibleAmmo": ["ammo9mm","ammocreative"],
+    "damage": 3.5,
     "rpm": 800,
-    "fireModes": ["SINGLE", "AUTOMATIC", "BURST"],
-    "fireSound": "m4sopmodii",
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "ro635",
     "animationType": "rifle",
     "compatibleAttachments": [
-        "cantedrail",
-        "m203launcher",
-        "ulg99cannon",
-        "m870modshotgun"
+        "cantedrail"
     ],
     "compatibleAttachmentGroups": [
         "ar_sightsandscopes",
-        "ar_muzzle",
+        "smg_muzzle",
         "underbarrel",
         "underbarrel_2",
-        "m4a1_skins"
+        "ro635_skins"
     ],
-    "gunRecoilInitialAmplitude" : 0.8,
+    "gunRecoilInitialAmplitude" : 0.6,
     "shakeRecoilAmplitude" : 0.35,
     "shakeRecoilSpeed" : 2,
-    "viewRecoilAmplitude" : 1.6,
+    "viewRecoilAmplitude" : 1.2,
     "phasedReloads": [
         {
             "phase": "RELOADING",
@@ -36,7 +33,7 @@
                     { "unselectedFireMode": "shotgun" }
                 ]
             },
-            "duration": 2750,
+            "duration": 2080,
             "animation": "animation.model.reloadempty"
         },
         {
@@ -132,11 +129,11 @@
         },
         {
             "type": "Sound",
-            "fireSound": "m4a1_silenced",
+            "fireSound": "ro635_silenced",
             "fireSoundVolume": 1,
             "condition": {
                 "allOf": [
-                    { "hasAttachmentGroup": "ar_suppressors"},
+                    { "hasAttachmentGroup": "smg_suppressors"},
                     { "unselectedFireMode": "grenade_launcher"},
                     { "unselectedFireMode": "laser_cannon"},
                     { "unselectedFireMode": "shotgun"}
@@ -207,6 +204,5 @@
                 ]
             }
         }
-    ],
-    "glowingParts": [{"name": "glowy_new6"}]
+    ]
 }

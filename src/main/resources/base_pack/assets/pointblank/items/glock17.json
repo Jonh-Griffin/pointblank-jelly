@@ -117,7 +117,7 @@
         },
         {
             "type": "Sound",
-            "fireSound": "glock17_silenced",
+            "fireSound": "glock_suppressed",
             "fireSoundVolume": 1,
             "condition": {
                 "hasAttachmentGroup": "smg_suppressors"
