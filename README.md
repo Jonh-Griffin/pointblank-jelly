@@ -18,3 +18,4 @@ If you wish to contribute it is extremely appreciated! Just clone the repository
 - Transfer of all default pointblank weapons to their own content pack to allow for easier modification of the base weapons
   and to serve as an example for future developers.
 - New types of items for content pack developers to create, primarily content pack-able armor systems.
+- Scripting system using the Groovy language for more control with content packs
