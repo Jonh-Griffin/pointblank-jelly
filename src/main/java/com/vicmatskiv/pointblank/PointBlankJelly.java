@@ -92,11 +92,12 @@ import software.bernie.geckolib.GeckoLib;
 @Mod("pointblank")
 public class PointBlankJelly {
    public static final Logger LOGGER = LogManager.getLogger("pointblank");
-   private ExtensionRegistry extensionRegistry;
+   public ExtensionRegistry extensionRegistry;
    private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
-
+   public static PointBlankJelly instance;
    public PointBlankJelly() {
+      instance = this;
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();
@@ -214,14 +215,24 @@ public class PointBlankJelly {
 
       }
    }
-
+   private static ItemStack currentHeldItem = ItemStack.EMPTY;
    @SubscribeEvent
    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+      //Cancel sprint
       ItemStack itemStack = event.player.getMainHandItem();
       if (itemStack != null && itemStack.getItem() instanceof GunItem && GunItem.isAiming(itemStack)) {
          event.player.setSprinting(false);
       }
 
+      if(itemStack != null ) {
+         if(itemStack != currentHeldItem) {
+            if(currentHeldItem.getItem() instanceof GunItem gun) {
+               if (GunClientState.getState(GunItem.getItemStackId(currentHeldItem)).isReloading()) {
+                  gun.cancelReload(currentHeldItem);
+               }
+            }
+         }
+      }
    }
 
    @SubscribeEvent

@@ -17,7 +17,10 @@ import com.vicmatskiv.pointblank.registry.EffectRegistry;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
+import com.vicmatskiv.pointblank.util.ScriptParser;
 import com.vicmatskiv.pointblank.util.TimeUnit;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -452,6 +455,7 @@ public class FireModeFeature extends ConditionalFeature {
    public static class Builder implements FeatureBuilder<Builder, FireModeFeature> {
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private final List<FireModeDescriptor> fireModes = new ArrayList<>();
+      private FeatureScript<FireModeFeature> script;
 
       public Builder() {
       }
@@ -501,6 +505,11 @@ public class FireModeFeature extends ConditionalFeature {
 
       public Builder withFireMode(FireModeDescriptor descriptor) {
          this.fireModes.add(descriptor);
+         return this;
+      }
+
+      public Builder withScript(String name, String scriptPath) {
+         this.script = new FeatureScript<>(name, ScriptParser.getScript(Path.of(scriptPath)));
          return this;
       }
 

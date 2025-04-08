@@ -5,11 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.InvalidExtensionComponentException;
 import com.vicmatskiv.pointblank.InvalidExtensionException;
+import com.vicmatskiv.pointblank.PointBlankJelly;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
 import com.vicmatskiv.pointblank.compat.playeranimator.PlayerAnimationBuilder;
 import com.vicmatskiv.pointblank.entity.EntityBuilder;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ItemBuilder;
+import com.vicmatskiv.pointblank.util.ScriptParser;
 import cpw.mods.jarhandling.SecureJar;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,6 +32,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import groovy.lang.Script;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -54,6 +58,8 @@ import net.minecraftforge.resource.PathPackResources;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
+
 public class ExtensionRegistry {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private Pack extensionsPack;
@@ -62,7 +68,6 @@ public class ExtensionRegistry {
       if (ExtensionRegistry.this.extensionsPack != null) {
          consumer.accept(ExtensionRegistry.this.extensionsPack);
       }
-
    };
 
    public ExtensionRegistry() {
@@ -184,6 +189,16 @@ public class ExtensionRegistry {
       }
 
    }
+   @Nullable
+   public static Script getScript(String packName, String scriptName) {
+      ExtensionRegistry registry = PointBlankJelly.instance.extensionRegistry;
+      Extension extension = registry.getExtensions().stream().filter((ext) -> ext.getName().equals(packName)).findFirst().orElse(null);
+      if (extension != null) {
+          return extension.getScript(scriptName);
+      }
+
+      return null;
+   }
 
    private static List<Extension> scanExtensions(Path extensionsPath) {
       List<Extension> extensions = new ArrayList<>();
@@ -261,6 +276,7 @@ public class ExtensionRegistry {
       private Path path;
       private final String creativeTabIconItem;
       private List<ItemBuilder<?>> itemBuilders;
+      private Map<String, Script> scripts;
       private List<EffectBuilder<?, ?>> effectBuilders;
       private List<EntityBuilder<?, ?>> entityBuilders;
       private List<PlayerAnimationBuilder> playerAnimationBuilders;
@@ -283,6 +299,13 @@ public class ExtensionRegistry {
 
       List<EntityBuilder<?, ?>> getEntityBuilders() {
          return this.entityBuilders;
+      }
+
+      Map<String, Script> getScripts() {
+         return this.scripts;
+      }
+      Script getScript(String name) {
+         return this.scripts.get(name);
       }
 
       Set<String> getSounds() {
@@ -314,8 +337,21 @@ public class ExtensionRegistry {
                   extension.entityBuilders = new ArrayList<>();
                   extension.registeredExtSounds = new HashMap<>();
                   extension.playerAnimationBuilders = new ArrayList<>();
+                  extension.scripts = new HashMap<>();
                   Path namespacePath = extPath.resolve("assets").resolve("pointblank");
                   Path itemsPath = namespacePath.resolve("items");
+                  Path scriptsPath = namespacePath.resolve("scripts");
+
+                  if(Files.exists(scriptsPath) && Files.isDirectory(scriptsPath)) {
+                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
+                        for(Path scriptFile : scriptFiles) {
+                           String scriptName = scriptFile.getFileName().toString();
+                           extension.scripts.put(scriptName, ScriptParser.getScript(scriptFile));
+                           PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
+                        }
+                     }
+                  }
+
                   if (Files.exists(itemsPath) && Files.isDirectory(itemsPath)) {
                      try (DirectoryStream<Path> itemFiles = Files.newDirectoryStream(itemsPath, "*.json")) {
                         for(Path itemFile : itemFiles) {

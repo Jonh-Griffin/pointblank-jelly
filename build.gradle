@@ -5,6 +5,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath 'org.codehaus.groovy:groovy-all:3.0.24'
     }
 }
 
@@ -13,8 +14,12 @@ plugins {
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'groovy'
 }
+jarJar {
+    enable()
 
+}
 apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
@@ -86,6 +91,7 @@ mixin {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    mavenCentral()
     maven {
         url 'https://cursemaven.com/'
     }
@@ -116,6 +122,10 @@ dependencies {
     compileOnly(fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2"))
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))
     runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
+
+    //Groovy
+    implementation 'org.codehaus.groovy:groovy-all:3.0.24'
+
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 

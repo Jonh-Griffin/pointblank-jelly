@@ -116,6 +116,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -591,6 +592,10 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          List<FireModeInstance> allFireModes = getFireModes(itemStack);
          return allFireModes.contains(fireModeInstance) ? fireModeInstance.getBurstShots() : this.burstShots;
       }
+   }
+
+   public void cancelReload(ItemStack stack) {
+
    }
 
    public int getMaxAmmoCapacity(ItemStack itemStack, FireModeInstance fireModeInstance) {
