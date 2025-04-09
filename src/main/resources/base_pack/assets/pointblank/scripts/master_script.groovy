@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Pair
 import com.vicmatskiv.pointblank.client.GunClientState
 import com.vicmatskiv.pointblank.client.VertexConsumers
 import com.vicmatskiv.pointblank.feature.*
+import com.vicmatskiv.pointblank.item.AmmoItem
 import com.vicmatskiv.pointblank.item.AnimationProvider
 import com.vicmatskiv.pointblank.item.FireModeInstance
 import com.vicmatskiv.pointblank.item.GunItem
@@ -11,6 +12,9 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
@@ -53,6 +57,40 @@ boolean preFire(GunClientState.GunClientStateContext context, GunClientState sta
  * @param flag The tooltip flag
  */
 void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {}
+/** Runs on the <code>Client</code> every tick
+ * @param plr
+ * @param itemStack
+ * @param isSelected
+ * @param state
+ */
+void onClientTick(Player plr, ItemStack itemStack, boolean isSelected, GunClientState state) {}
+/** Runs on <code>Both</code> sides every tick, use <code>if (level.isClientSide)</code> to choose which side to run on
+ * also runs if not selected so use <code>if (isSelected)</code> in most cases
+ * @param plr
+ * @param itemStack
+ * @param level
+ * @param isSelected
+ */
+void onInventoryTick(ItemStack itemStack, Level level, Player plr, boolean isSelected) {}
+/** Runs when the gun is "swung" with an entity in the way, return false to enable melee functionality
+ * @param itemStack
+ * @param plr Player who used the item
+ * @param swungAt Entity swung at
+ */
+boolean onLeftClickEntity(ItemStack itemStack, Player plr, Entity swungAt) { return true }
+/** Runs when the gun is "swung", return false to enable melee functionality
+ * @param itemStack
+ * @param heldEntity Entity holding the item, usually can be cast to Player with <code>if(heldEntity instanceof Player plr)</code>
+ */
+boolean onEntitySwing(ItemStack itemStack, LivingEntity heldEntity) { return true }
+/** Runs when the gun right clicks a living entity, could be used for some melee weapon functions
+ *
+ * @param itemStack
+ * @param player
+ * @param entity
+ * @param hand
+ */
+void interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {}
 
 / -Feature Methods- /
 
@@ -119,6 +157,14 @@ float getDamage(ItemStack stack, FireModeInstance fireMode) { return 0 }
  * @return <code>int</code>
  */
 int getMaxShootingDistance(ItemStack stack, FireModeInstance fireMode) { return 0 }
+/** Overrides the compatible ammo for this FireModeInstance
+ *
+ * @param ammoItem
+ * @param gunItem
+ * @param fireMode
+ * @return <code>boolean</code>
+ */
+boolean isCompatibleBullet(AmmoItem ammoItem, ItemStack gunItem, FireModeInstance fireMode) { return false }
 /** Overrides the pellet count and spread of those pellets, you can modify the value as well since you can get it from the FireModeInstance.
  *  |
  * Useful for creating a shotgun with random spread, or spread based on player velocity, etc. | Use Pair.of() to create the values

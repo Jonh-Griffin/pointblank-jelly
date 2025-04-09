@@ -469,6 +469,7 @@ public class GunClientState {
 
       for(GunStateListener listener : this.stateListeners) {
          listener.onGameTick(player, this);
+         if(gunItem.hasFunction("onClientTick")) gunItem.invokeFunction("onClientTick", (Player) player, itemStack, isSelected, this);
       }
 
    }

@@ -656,14 +656,21 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    }
 
    public InteractionResult interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {
+      invokeFunction("interactLivingEntity", itemStack, player, entity, hand);
       return InteractionResult.SUCCESS;
    }
 
    public boolean onLeftClickEntity(ItemStack stack, Player player, Entity entity) {
+      if(hasFunction("onLeftClickEntity"))
+         return (boolean) invokeFunction("onLeftClickEntity", stack, player, entity);
+
       return true;
    }
 
    public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
+      if(hasFunction("onEntitySwing"))
+         return (boolean) invokeFunction("onEntitySwing", stack, entity);
+
       return true;
    }
 
@@ -880,9 +887,14 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    }
 
    private static boolean isCompatibleBullet(Item ammoItem, ItemStack gunStack, FireModeInstance fireModeInstance) {
+
       boolean result = false;
       Item item = gunStack.getItem();
       if (item instanceof GunItem gunItem) {
+
+         if(fireModeInstance.hasFunction("isCompatibleBullet"))
+            return (boolean) fireModeInstance.invokeFunction("isCompatibleBullet", (AmmoItem) ammoItem, gunStack, fireModeInstance);
+
          List<FireModeInstance> firModeInstances = getFireModes(gunStack);
          if (!firModeInstances.contains(fireModeInstance)) {
             return false;
@@ -996,6 +1008,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    }
 
    public void inventoryTick(ItemStack itemStack, Level level, Entity entity, int itemSlot, boolean isSelected) {
+      if(entity instanceof Player plr) invokeFunction("onInventoryTick", itemStack, level, plr, itemSlot, isSelected);
       boolean isOffhand = entity instanceof Player && ((Player)entity).getOffhandItem() == itemStack;
       if (!level.isClientSide) {
          this.ensureItemStack(itemStack, level, entity, isOffhand);
