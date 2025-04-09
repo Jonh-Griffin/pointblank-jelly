@@ -259,7 +259,7 @@ public class GunClientState {
    private void actionCompleteReload(GunClientStateContext context, FireState fromState, FireState toState) {
       this.reloadIterationIndex = 0;
       LOGGER.debug("Completing reload");
-
+      //this.gunItem.requestReloadFromServer((Player) context.player, context.itemStack);
       for(GunStateListener listener : this.stateListeners) {
          listener.onCompleteReloading(context.player, this, context.itemStack);
       }

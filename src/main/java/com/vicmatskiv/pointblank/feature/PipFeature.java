@@ -8,21 +8,26 @@ import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.Optional;
 import java.util.function.Predicate;
+
+import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public final class PipFeature extends ConditionalFeature {
    private final float zoom;
    private final ResourceLocation overlayTexture;
    private final ResourceLocation maskTexture;
    private final boolean isParallaxEnabled;
+   private @Nullable Script script;
 
-   private PipFeature(FeatureProvider owner, Predicate<ConditionContext> condition, float zoom, boolean isParallaxEnabled, ResourceLocation overlayTexture, ResourceLocation maskTexture) {
+   private PipFeature(FeatureProvider owner, Predicate<ConditionContext> condition, float zoom, boolean isParallaxEnabled, ResourceLocation overlayTexture, ResourceLocation maskTexture, Script script) {
       super(owner, condition);
       this.zoom = zoom;
+      this.script = script;
       this.isParallaxEnabled = isParallaxEnabled;
       this.overlayTexture = overlayTexture;
       this.maskTexture = maskTexture;
@@ -61,6 +66,8 @@ public final class PipFeature extends ConditionalFeature {
       if (item instanceof FeatureProvider fp) {
          PipFeature feature = fp.getFeature(PipFeature.class);
          if (feature != null) {
+            if(feature.hasFunction("getPipZoom")) return Optional.of((float)feature.invokeFunction("getPipZoom", itemStack, feature));
+
             return Optional.of(feature.getZoom());
          }
       }
@@ -81,6 +88,7 @@ public final class PipFeature extends ConditionalFeature {
       if (item instanceof FeatureProvider fp) {
          PipFeature feature = fp.getFeature(PipFeature.class);
          if (feature != null) {
+            if(feature.hasFunction("getMaskTexture")) return (ResourceLocation) feature.invokeFunction("getMaskTexture", itemStack, feature);
             return feature.getMaskTexture();
          }
       }
@@ -104,6 +112,11 @@ public final class PipFeature extends ConditionalFeature {
       }
    }
 
+   @Override
+   public @Nullable Script getScript() {
+      return script;
+   }
+
    public static class Builder implements FeatureBuilder<Builder, PipFeature> {
       private static final float DEFAULT_ZOOM = 0.9F;
       private static final String DEFAULT_MASK_TEXTURE = "textures/gui/pip_mask_solid_rect.png";
@@ -112,6 +125,7 @@ public final class PipFeature extends ConditionalFeature {
       private ResourceLocation maskTexture;
       private float zoom;
       private boolean isParallaxEnabled;
+      private Script script;
 
       public Builder() {
       }
@@ -141,11 +155,16 @@ public final class PipFeature extends ConditionalFeature {
          return this;
       }
 
+      public Builder withScript(Script script) {
+         this.script = script;
+         return this;
+      }
+
       public Builder withJsonObject(JsonObject obj) {
          if (obj.has("condition")) {
             this.withCondition(Conditions.fromJson(obj.get("condition")));
          }
-
+         this.withScript(JsonUtil.getJsonScript(obj));
          this.isParallaxEnabled = JsonUtil.getJsonBoolean(obj, "parallax", false);
          this.isParallaxEnabled = JsonUtil.getJsonBoolean(obj, "parallax", false);
          String overlayTextureName = JsonUtil.getJsonString(obj, "overlayTexture", null);
@@ -172,7 +191,7 @@ public final class PipFeature extends ConditionalFeature {
             maskTexture = new ResourceLocation("pointblank", "textures/gui/pip_mask_solid_rect.png");
          }
 
-         return new PipFeature(featureProvider, this.condition, this.zoom, this.isParallaxEnabled, this.overlayTexture, maskTexture);
+         return new PipFeature(featureProvider, this.condition, this.zoom, this.isParallaxEnabled, this.overlayTexture, maskTexture, this.script);
       }
    }
 }

@@ -12,25 +12,34 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import groovy.lang.Script;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class SoundFeature extends ConditionalFeature {
    private final List<Pair<SoundDescriptor, Predicate<ConditionContext>>> fireSounds;
+   private @Nullable Script script;
 
-   private SoundFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, List<Pair<SoundDescriptor, Predicate<ConditionContext>>> fireSounds) {
+   private SoundFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, List<Pair<SoundDescriptor, Predicate<ConditionContext>>> fireSounds, Script script) {
       super(owner, predicate);
       this.fireSounds = Collections.unmodifiableList(fireSounds);
+      this.script = script;
    }
 
    public static SoundDescriptor getFireSoundAndVolume(ItemStack itemStack) {
       for(Features.EnabledFeature enabledFeature : Features.getEnabledFeatures(itemStack, SoundFeature.class)) {
          SoundFeature soundFeature = (SoundFeature)enabledFeature.feature();
          ConditionContext context = new ConditionContext(itemStack);
-
+         if(soundFeature.hasFunction("getSoundAndVolume")) {
+            Pair<String, Float> func = (Pair<String, Float>) soundFeature.invokeFunction("getSoundAndVolume", itemStack, soundFeature);
+            Supplier<SoundEvent> soundEventSupplier = ()-> SoundRegistry.getSoundEvent(func.getFirst());
+            return new SoundDescriptor(soundEventSupplier, func.getSecond());
+         }
          for(Pair<SoundDescriptor, Predicate<ConditionContext>> fireSound : soundFeature.fireSounds) {
             if (fireSound.getSecond().test(context)) {
                return fireSound.getFirst();
@@ -62,6 +71,11 @@ public class SoundFeature extends ConditionalFeature {
 
    }
 
+   @Override
+   public @Nullable Script getScript() {
+      return script;
+   }
+
    public record SoundDescriptor(Supplier<SoundEvent> soundSupplier, float volume) {
 
        public Supplier<SoundEvent> soundSupplier() {
@@ -78,6 +92,7 @@ public class SoundFeature extends ConditionalFeature {
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private SoundDescriptor fireSoundDescriptor;
       private final List<Pair<SoundDescriptor, Predicate<ConditionContext>>> fireSounds = new ArrayList<>();
+      private Script script;
 
       public Builder() {
       }
@@ -97,10 +112,17 @@ public class SoundFeature extends ConditionalFeature {
          return this;
       }
 
+      public Builder withScript(Script script) {
+         this.script = script;
+         return this;
+      }
+
       public Builder withJsonObject(JsonObject obj) {
          if (obj.has("condition")) {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
+
+         this.withScript(JsonUtil.getJsonScript(obj));
 
          for(JsonObject fireSoundObj : JsonUtil.getJsonObjects(obj, "fireSounds")) {
             Predicate<ConditionContext> condition;
@@ -131,7 +153,7 @@ public class SoundFeature extends ConditionalFeature {
             fireSounds.add(Pair.of(this.fireSoundDescriptor, this.condition));
          }
 
-         return new SoundFeature(featureProvider, this.condition, fireSounds);
+         return new SoundFeature(featureProvider, this.condition, fireSounds, this.script);
       }
    }
 }

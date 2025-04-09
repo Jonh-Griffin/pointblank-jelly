@@ -567,7 +567,7 @@ public class FireModeFeature extends ConditionalFeature {
                fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", -1));
             }
             //Script
-            fireModeBuilder.withScript(JsonUtil.getJsonScript(obj));
+            fireModeBuilder.withScript(JsonUtil.getJsonScript(fireModeObj));
             fireModeBuilder.withPelletCount(JsonUtil.getJsonInt(fireModeObj, "pelletCount", 0));
             fireModeBuilder.withPelletSpread(JsonUtil.getJsonDouble(fireModeObj, "pelletSpread", 1.0F));
             fireModeBuilder.withIsUsingDefaultMuzzle(JsonUtil.getJsonBoolean(fireModeObj, "isUsingDefaultMuzzle", true));

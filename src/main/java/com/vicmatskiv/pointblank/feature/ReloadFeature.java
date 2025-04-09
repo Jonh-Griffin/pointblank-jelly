@@ -5,13 +5,17 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.function.Predicate;
+
+import groovy.lang.Script;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class ReloadFeature extends ConditionalFeature {
    private static final int MIN_AMMO_PER_RELOAD_ITERATION = 1;
    private static final int MAX_AMMO_PER_RELOAD_ITERATION = Integer.MAX_VALUE;
    private int maxAmmoPerReloadIteration;
+   private @Nullable Script script;
 
    private ReloadFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, int maxAmmoPerReloadIteration) {
       super(owner, predicate);
@@ -25,6 +29,11 @@ public class ReloadFeature extends ConditionalFeature {
          Features.EnabledFeature enabledReloadFeature = Features.getFirstEnabledFeature(itemStack, ReloadFeature.class);
          return enabledReloadFeature != null ? ((ReloadFeature)enabledReloadFeature.feature()).maxAmmoPerReloadIteration : Integer.MAX_VALUE;
       }
+   }
+
+   @Override
+   public @Nullable Script getScript() {
+      return script;
    }
 
    public static class Builder implements FeatureBuilder<Builder, ReloadFeature> {

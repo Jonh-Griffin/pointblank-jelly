@@ -16,7 +16,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import groovy.lang.Script;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public final class MuzzleFlashFeature extends ConditionalFeature {
    private final List<Pair<MuzzleFlashEffect.Builder, Predicate<ConditionContext>>> muzzleEffectBuilders = new ArrayList<>();
@@ -42,6 +45,11 @@ public final class MuzzleFlashFeature extends ConditionalFeature {
 
    public boolean isEnabled(ItemStack itemStack) {
       return super.isEnabled(itemStack);
+   }
+
+   @Override
+   public @Nullable Script getScript() {
+      return null;
    }
 
    public static class Builder implements FeatureBuilder<Builder, MuzzleFlashFeature> {

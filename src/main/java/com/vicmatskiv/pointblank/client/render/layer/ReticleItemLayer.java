@@ -12,6 +12,7 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import java.util.List;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
@@ -28,16 +29,19 @@ public class ReticleItemLayer extends FeaturePassLayer<GunItem> {
       boolean isParallaxEnabled = false;
       float maxAngularOffsetCos = ReticleFeature.DEFAULT_MAX_ANGULAR_OFFSET_COS;
       RenderType renderType = null;
+      ReticleFeature feature = null;
       HierarchicalRenderContext hrc = HierarchicalRenderContext.current();
       if (hrc != null) {
          Item var19 = hrc.getItemStack().getItem();
          if (var19 instanceof FeatureProvider fp) {
-             ReticleFeature feature = fp.getFeature(ReticleFeature.class);
+             feature = fp.getFeature(ReticleFeature.class);
             if (feature != null && feature.isEnabled(hrc.getItemStack())) {
                isParallaxEnabled = feature.isParallaxEnabled();
                maxAngularOffsetCos = feature.getMaxAngularOffsetCos();
                RenderTypeProvider renderTypeProvider = RenderTypeProvider.getInstance();
-               renderType = renderTypeProvider.getReticleRenderType(feature.getTexture(), isParallaxEnabled);
+               ResourceLocation reticleTexture = feature.getTexture();
+               if(feature.hasFunction("getReticleTexture")) reticleTexture = (ResourceLocation) feature.invokeFunction("getReticleTexture", hrc.getItemStack(), feature);
+               renderType = renderTypeProvider.getReticleRenderType(reticleTexture, isParallaxEnabled);
             }
          }
       }
@@ -51,7 +55,9 @@ public class ReticleItemLayer extends FeaturePassLayer<GunItem> {
          try {
             subHrc.setAttribute("is_parallax_enabled", isParallaxEnabled);
             subHrc.setAttribute("max_angular_offset_cos", maxAngularOffsetCos);
+            if(feature.hasFunction("renderReticleBefore")) feature.invokeFunction("renderReticleBefore", feature, attachmentModel, poseStack, bufferSource, animatable, renderType, buffer, partialTick, packedLight, reticleBrightness);
             super.render(attachmentModel, poseStack, bufferSource, animatable, renderType, buffer, partialTick, packedLight, overlay, reticleBrightness, reticleBrightness, reticleBrightness, 1.0F);
+            if(feature.hasFunction("renderReticleAfter")) feature.invokeFunction("renderReticleAfter", feature, attachmentModel, poseStack, bufferSource, animatable, renderType, buffer, partialTick, packedLight, reticleBrightness);
          } catch (Throwable var25) {
             if (subHrc != null) {
                try {

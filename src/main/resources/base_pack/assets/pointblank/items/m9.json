@@ -89,21 +89,11 @@
                     "type": "SINGLE",
                     "rpm": 900,
                     "damage": 4.0,
-                    "script": "m9_stock_script",
+                    "script": "pointblank-ext:m9_stock_script",
                     "fireAnimations": [
                         {
                             "name": "animation.model.fire",
-                            "duration": 50,
-                            "condition": {
-                                "doesNotHaveAttachment": "m9_stock"
-                            }
-                        },
-                        {
-                            "name": "animation.model.firestock",
-                            "duration": 50,
-                            "condition": {
-                                "hasAttachment": "m9_stock"
-                            }
+                            "duration": 50
                         }
                     ]
                 }

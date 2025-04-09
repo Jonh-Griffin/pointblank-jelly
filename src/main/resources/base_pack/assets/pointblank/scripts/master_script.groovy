@@ -1,14 +1,21 @@
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
 import com.mojang.datafixers.util.Pair
 import com.vicmatskiv.pointblank.client.GunClientState
+import com.vicmatskiv.pointblank.client.VertexConsumers
 import com.vicmatskiv.pointblank.feature.*
 import com.vicmatskiv.pointblank.item.AnimationProvider
 import com.vicmatskiv.pointblank.item.FireModeInstance
 import com.vicmatskiv.pointblank.item.GunItem
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
 import net.minecraft.world.phys.HitResult
+import software.bernie.geckolib.cache.object.BakedGeoModel
 
 import javax.annotation.Nullable
 import java.util.logging.Level
@@ -71,14 +78,14 @@ float addDamageModifier(ItemStack stack, DamageFeature feature) { return 0.0f }
  * @param feature
  * @return <code>float</code>
  */
-float getAccuracyModifier(ItemStack stack, DamageFeature feature) { return 0.0f }
+float getAccuracyModifier(ItemStack stack, AccuracyFeature feature) { return 0.0f }
 /** Adds a new accuracy modifier on top of the base <code>AccuracyFeature</code> modifier
  *
  * @param stack
  * @param feature
  * @return <code>float<code>
  */
-float addAccuracyModifier(ItemStack stack, DamageFeature feature) { return 0.0f }
+float addAccuracyModifier(ItemStack stack, AccuracyFeature feature) { return 0.0f }
 
 / Aiming Feature /
 /** Overrides the zoom value, you can modify the zoom value by returning a modified value of <code>feature.zoom</code>
@@ -190,3 +197,84 @@ long getEnableFireModeCooldown(ItemStack stack, FireModeInstance fireMode, Anima
  * @return <code>int</code>
  */
 int modifyAmmoCapacity(int original, ItemStack stack, AmmoCapacityFeature feature) { return 0 }
+
+/ PiP Feature /
+/** Returns a resource location of the PiP stencil mask, used to change the shape of a PiP scope
+ * @param stack
+ * @param feature
+ * @return <code>ResourceLocation</code>
+ */
+ResourceLocation getMaskTexture(ItemStack stack, PipFeature feature) { return ResourceLocation.parse("") }
+/** Returns a float for the PiP zoom level, could be used to make multi-zoom scopes like LPVOs
+ * @param stack
+ * @param feature
+ * @return <code>float</code>
+ */
+float getPipZoom(ItemStack stack, PipFeature feature) { return 0f }
+
+/ Recoil Feature /
+/** Overrides the recoil modifier
+ *
+ * @param stack
+ * @param feature
+ * @return <code>float</code>
+ */
+float getRecoilModifier(ItemStack stack, RecoilFeature feature) { return 0.0f }
+/** Adds a new recoil modifier on top of the base <code>RecoilFeature</code> modifier
+ *
+ * @param stack
+ * @param feature
+ * @return <code>float<code>
+ */
+float addRecoilModifier(ItemStack stack, RecoilFeature feature) { return 0.0f }
+
+/ Reticle Feature aka Red Dot sights and Holographics /
+/** Overrides the reticle texture
+ *
+ * @param stack
+ * @param feature
+ * @return <code>ResourceLocation</code>
+ */
+ResourceLocation getReticleTexture(ItemStack stack, ReticleFeature feature) { return ResourceLocation.parse("") }
+/** Advanced function, should only be used if you are familiar with Minecraft's rendering, runs right before the reticle's rendering
+ * @param feature
+ * @param attachmentModel
+ * @param poseStack Not popped or pushed, you will need to do that yourself if its necessary
+ * @param source
+ * @param animatable
+ * @param renderType
+ * @param consumer
+ * @param pDelta Also known as the partial tick
+ * @param packedLight
+ * @param reticleBrightness 0-1.0 float
+ */
+void renderReticleBefore(ReticleFeature feature, BakedGeoModel attachmentModel, PoseStack poseStack, MultiBufferSource source, GunItem animatable, RenderType renderType, VertexConsumer consumer, float pDelta, int packedLight, float reticleBrightness) {}
+/** Advanced function, should only be used if you are familiar with Minecraft's rendering, runs right after the reticle's rendering
+ * @param feature
+ * @param attachmentModel
+ * @param poseStack Not popped or pushed, you will need to do that yourself if its necessary
+ * @param source
+ * @param animatable
+ * @param renderType
+ * @param consumer
+ * @param pDelta Also known as the partial tick
+ * @param packedLight
+ * @param reticleBrightness 0-1.0 float
+ */
+void renderReticleAfter(ReticleFeature feature, BakedGeoModel attachmentModel, PoseStack poseStack, MultiBufferSource source, GunItem animatable, RenderType renderType, VertexConsumer consumer, float pDelta, int packedLight, float reticleBrightness) {}
+
+/ Skin Feature /
+/** Returns the skin's texture, can be used to apply the same skin to multiple guns
+ * @param stack
+ * @param feature
+ * @return <code>ResourceLocation</code>
+ */
+ResourceLocation getSkinTexture(ItemStack stack, SkinFeature feature) { return ResourceLocation.parse("") }
+
+/ Sound Feature /
+/** Returns the sound id and the volume of the sound
+ * @param stack
+ * @param feature
+ * @return <code>Pair(String, Float)</code>
+ */
+Pair<String, Float> getSoundAndVolume(ItemStack stack, SoundFeature feature) { return Pair.of("", 1f) }
