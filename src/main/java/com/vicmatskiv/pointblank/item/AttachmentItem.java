@@ -11,10 +11,13 @@ import com.vicmatskiv.pointblank.feature.Feature;
 import com.vicmatskiv.pointblank.feature.FeatureBuilder;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
 import com.vicmatskiv.pointblank.feature.Features;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.Tradeable;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -202,7 +205,12 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       private final List<Component> descriptionLines = new ArrayList<>();
       private final List<Supplier<Attachment>> defaultAttachments = new ArrayList<>();
 
+      public Builder(ExtensionRegistry.Extension extension) {
+         this.extension = extension;
+      }
+
       public Builder() {
+         this.extension = new ExtensionRegistry.Extension("pointblank", Path.of("pointblank"), "pointblank");
       }
 
       public Builder withName(String name) {

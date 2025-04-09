@@ -5,6 +5,7 @@ import groovy.lang.Script;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -16,11 +17,17 @@ public final class ScriptParser {
 
     public static Script getScript(Path pathFromRun) {
         try {
-            return shell.parse(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toUri());
+            Script parse = shell.parse(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toUri());
+            System.out.println("Script Parsed: " + parse);
+            return parse;
         } catch (IOException e) {
             LOGGER.severe("Failed to parse script: " + pathFromRun);
             throw new RuntimeException(e);
         }
+    }
+
+    public static Script getScript(Reader reader) {
+        return shell.parse(reader);
     }
 
     public static void cacheScript(Path toScript) {

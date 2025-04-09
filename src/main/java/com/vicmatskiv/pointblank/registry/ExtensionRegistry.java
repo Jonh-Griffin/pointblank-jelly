@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
@@ -63,7 +64,7 @@ import javax.annotation.Nullable;
 public class ExtensionRegistry {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private Pack extensionsPack;
-   private List<Extension> extensions;
+   private List<Extension> extensions = new ArrayList<>();
    private final RepositorySource repositorySource = consumer -> {
       if (ExtensionRegistry.this.extensionsPack != null) {
          consumer.accept(ExtensionRegistry.this.extensionsPack);
@@ -192,6 +193,8 @@ public class ExtensionRegistry {
    @Nullable
    public static Script getScript(String packName, String scriptName) {
       ExtensionRegistry registry = PointBlankJelly.instance.extensionRegistry;
+      System.out.println("Getting Script of " + packName + " with name " + scriptName);
+      System.out.println(registry.getExtensions());
       Extension extension = registry.getExtensions().stream().filter((ext) -> ext.getName().equals(packName)).findFirst().orElse(null);
       if (extension != null) {
           return extension.getScript(scriptName);
@@ -301,10 +304,10 @@ public class ExtensionRegistry {
          return this.entityBuilders;
       }
 
-      Map<String, Script> getScripts() {
+      public Map<String, Script> getScripts() {
          return this.scripts;
       }
-      Script getScript(String name) {
+      public Script getScript(String name) {
          return this.scripts.get(name);
       }
 
@@ -316,7 +319,7 @@ public class ExtensionRegistry {
          return this.playerAnimationBuilders;
       }
 
-      String getName() {
+      public String getName() {
          return this.name;
       }
 
@@ -345,7 +348,7 @@ public class ExtensionRegistry {
                   if(Files.exists(scriptsPath) && Files.isDirectory(scriptsPath)) {
                      try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
                         for(Path scriptFile : scriptFiles) {
-                           String scriptName = scriptFile.getFileName().toString();
+                           String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
                            extension.scripts.put(scriptName, ScriptParser.getScript(scriptFile));
                            PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
                         }
@@ -355,7 +358,7 @@ public class ExtensionRegistry {
                   if (Files.exists(itemsPath) && Files.isDirectory(itemsPath)) {
                      try (DirectoryStream<Path> itemFiles = Files.newDirectoryStream(itemsPath, "*.json")) {
                         for(Path itemFile : itemFiles) {
-                           extension.itemBuilders.add(ItemBuilder.fromPath(itemFile));
+                           extension.itemBuilders.add(ItemBuilder.fromPath(itemFile, extension));
                         }
                      }
                   }
@@ -416,11 +419,18 @@ public class ExtensionRegistry {
                   extension.registeredExtSounds = new HashMap<>();
                   extension.playerAnimationBuilders = new ArrayList<>();
                   Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                  Path scriptsPath = zipPath.resolve("assets/pointblank/scripts");
+
+
 
                   while(entries.hasMoreElements()) {
                      ZipEntry entry = entries.nextElement();
-                     if (entry.getName().startsWith("assets/pointblank/items/") && entry.getName().endsWith(".json")) {
-                        extension.itemBuilders.add(ItemBuilder.fromZipEntry(zipFile, entry));
+                     if(entry.getName().startsWith("assets/pointblank/scripts/") && entry.getName().endsWith(".groovy")) {
+                        try(BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
+                           extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
+                        }
+                     } else if (entry.getName().startsWith("assets/pointblank/items/") && entry.getName().endsWith(".json")) {
+                        extension.itemBuilders.add(ItemBuilder.fromZipEntry(zipFile, entry, extension));
                      } else if (entry.getName().startsWith("assets/pointblank/effects/") && entry.getName().endsWith(".json")) {
                         extension.effectBuilders.add(EffectBuilder.fromZipEntry(zipFile, entry));
                      } else if (entry.getName().startsWith("assets/pointblank/entities/") && entry.getName().endsWith(".json")) {
@@ -444,6 +454,14 @@ public class ExtensionRegistry {
             ExtensionRegistry.LOGGER.error("Failed to load extension from ZIP {}. Error: {}", zipPath, e);
             return null;
          }
+      }
+
+      @Override
+      public String toString() {
+         return "Extension{" +
+                 "name='" + name + '\'' +
+                 ", path=" + path +
+                 '}';
       }
    }
 }

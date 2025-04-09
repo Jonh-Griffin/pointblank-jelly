@@ -1,6 +1,7 @@
 package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 
 public interface FeatureBuilder<T extends FeatureBuilder<T, F>, F extends Feature> {
    T withJsonObject(JsonObject var1);

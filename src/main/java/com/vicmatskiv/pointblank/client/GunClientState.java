@@ -3,10 +3,7 @@ package com.vicmatskiv.pointblank.client;
 import com.vicmatskiv.pointblank.client.effect.MuzzleFlashEffect;
 import com.vicmatskiv.pointblank.feature.FireModeFeature;
 import com.vicmatskiv.pointblank.feature.ReloadFeature;
-import com.vicmatskiv.pointblank.item.AmmoCount;
-import com.vicmatskiv.pointblank.item.FireMode;
-import com.vicmatskiv.pointblank.item.FireModeInstance;
-import com.vicmatskiv.pointblank.item.GunItem;
+import com.vicmatskiv.pointblank.item.*;
 import com.vicmatskiv.pointblank.item.GunItem.ReloadPhase;
 import com.vicmatskiv.pointblank.network.MainHeldSimplifiedStateSyncRequest;
 import com.vicmatskiv.pointblank.network.Network;
@@ -73,10 +70,10 @@ public class GunClientState {
    private Component temporaryMessage;
    private long messageEndTime;
    private Predicate<GunClientState> messagePredicate;
-   private final Predicate<Context> hasAmmo = (context) -> this.ammoCount.getAmmoCount(context.getFireModeInstance()) > 0;
-   private final Predicate<Context> isValidGameMode = (context) -> context.player != null && !context.player.isSpectator();
+   private final Predicate<GunClientStateContext> hasAmmo = (context) -> this.ammoCount.getAmmoCount(context.getFireModeInstance()) > 0;
+   private final Predicate<GunClientStateContext> isValidGameMode = (context) -> context.player != null && !context.player.isSpectator();
    private FireState simplifiedFireState;
-   private final StateMachine<FireState, Context> stateMachine;
+   private final StateMachine<FireState, GunClientStateContext> stateMachine;
    private static final Map<UUID, GunClientState> statesById = new HashMap<>();
 
    public GunClientState(UUID id, GunItem item) {
@@ -87,8 +84,8 @@ public class GunClientState {
       statesById.put(id, this);
    }
 
-   private StateMachine<FireState, Context> createStateMachine() {
-      StateMachine.Builder<FireState, Context> builder = new StateMachine.Builder<>();
+   private StateMachine<FireState, GunClientStateContext> createStateMachine() {
+      StateMachine.Builder<FireState, GunClientStateContext> builder = new StateMachine.Builder<>();
       builder.withTransition(List.of(GunClientState.FireState.PREPARE_IDLE, GunClientState.FireState.IDLE, GunClientState.FireState.IDLE_COOLDOWN), GunClientState.FireState.DRAW, this.isValidGameMode, TransitionMode.EVENT, null, this::actionDraw);
       builder.withTransition(GunClientState.FireState.DRAW, GunClientState.FireState.DRAW_COOLDOWN, (context) -> true, TransitionMode.AUTO, null, (ctx, f, t) -> {
          this.drawCooldownStartTime = System.nanoTime();
@@ -179,60 +176,60 @@ public class GunClientState {
       return builder.build(GunClientState.FireState.PREPARE_IDLE);
    }
 
-   private boolean isPrepareIdleCooldownInProgress(Context context) {
+   private boolean isPrepareIdleCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.prepareIdleCooldownStartTime <= this.prepareIdleCooldownDuration;
    }
 
-   private boolean isIdleCooldownInProgress(Context context) {
+   private boolean isIdleCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.idleCooldownStartTime <= this.idleCooldownDuration;
    }
 
-   private boolean isDrawCooldownInProgress(Context context) {
+   private boolean isDrawCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.drawCooldownStartTime <= this.drawCooldownDuration;
    }
 
-   private boolean inspectCooldownInProgress(Context context) {
+   private boolean inspectCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.inspectCooldownStartTime <= this.inspectCooldownDuration;
    }
 
-   private boolean isEnableFireModeCooldownInProgress(Context context) {
+   private boolean isEnableFireModeCooldownInProgress(GunClientStateContext context) {
       return (double)(System.nanoTime() - this.enableFireModeCooldownStartTime) <= (double)1000000.0F * (double)FireModeFeature.getEnableFireModeCooldownDuration(context.player, this, context.itemStack);
    }
 
-   private boolean isCompleteFireCooldownInProgress(Context context) {
+   private boolean isCompleteFireCooldownInProgress(GunClientStateContext context) {
       return (double)(System.nanoTime() - this.completeFireCooldownStartTime) <= (double)1000000.0F * (double)FireModeFeature.getCompleteFireCooldownDuration(context.player, this, context.itemStack);
    }
 
-   private boolean isFireCooldownInProgress(Context context) {
+   private boolean isFireCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.fireCooldownStartTime <= this.getFireCooldownDuration(context);
    }
 
-   private long getFireCooldownDuration(Context context) {
+   private long getFireCooldownDuration(GunClientStateContext context) {
       return (long)(6.0E10 / (double)FireModeFeature.getRpm(context.itemStack));
    }
 
-   private boolean isPrepareFireCooldownInProgress(Context context) {
+   private boolean isPrepareFireCooldownInProgress(GunClientStateContext context) {
       return (double)(System.nanoTime() - this.prepareFireCooldownStartTime) <= (double)1000000.0F * (double)FireModeFeature.getPrepareFireCooldownDuration(context.player, this, context.itemStack);
    }
 
-   private boolean isReloadCooldownInProgress(Context context) {
+   private boolean isReloadCooldownInProgress(GunClientStateContext context) {
       return System.nanoTime() - this.reloadCooldownStartTime <= this.reloadCooldownDuration;
    }
 
-   private boolean requiresPhasedReload(Context context) {
+   private boolean requiresPhasedReload(GunClientStateContext context) {
       return this.gunItem.requiresPhasedReload();
    }
 
-   private boolean canReload(Context context) {
+   private boolean canReload(GunClientStateContext context) {
       int ammoToReload = this.gunItem.canReloadGun(context.itemStack, (Player)context.player, context.getFireModeInstance());
       return ammoToReload > 0;
    }
 
-   private boolean canCompleteReload(Context context) {
+   private boolean canCompleteReload(GunClientStateContext context) {
       return this.reloadAmmoCount.getAmmoCount(context.getFireModeInstance()) > 0 || this.isClientSyncTimeoutExpired(MiscUtil.getLevel(context.player));
    }
 
-   private void actionPrepareReload(Context context, FireState fromState, FireState toState) {
+   private void actionPrepareReload(GunClientStateContext context, FireState fromState, FireState toState) {
       this.reloadIterationIndex = this.ammoCount.getAmmoCount(context.getFireModeInstance()) - 1;
       this.remainingAmmoToReload = this.gunItem.canReloadGun(context.itemStack, (Player)context.player, context.getFireModeInstance());
       LOGGER.debug("Preparing to reload ammo: {}", this.remainingAmmoToReload);
@@ -245,7 +242,7 @@ public class GunClientState {
 
    }
 
-   private void actionReload(Context context, FireState fromState, FireState toState) {
+   private void actionReload(GunClientStateContext context, FireState fromState, FireState toState) {
       ++this.reloadIterationIndex;
       int ammoToReloadPerIteration = Math.min(this.remainingAmmoToReload, ReloadFeature.getMaxAmmoPerReloadIteration(context.itemStack));
       this.remainingAmmoToReload -= ammoToReloadPerIteration;
@@ -259,7 +256,7 @@ public class GunClientState {
 
    }
 
-   private void actionCompleteReload(Context context, FireState fromState, FireState toState) {
+   private void actionCompleteReload(GunClientStateContext context, FireState fromState, FireState toState) {
       this.reloadIterationIndex = 0;
       LOGGER.debug("Completing reload");
 
@@ -269,7 +266,7 @@ public class GunClientState {
 
    }
 
-   private void actionPrepareFire(Context context, FireState fromState, FireState toState) {
+   private void actionPrepareFire(GunClientStateContext context, FireState fromState, FireState toState) {
       this.publishMessage(Component.translatable("message.pointblank.preparing").append("..."), 3500L, GunClientState::isPreparingFiring);
 
       for(GunStateListener listener : this.stateListeners) {
@@ -278,36 +275,43 @@ public class GunClientState {
 
    }
 
-   private void actionFire(Context context, FireState fromState, FireState toState) {
-      this.gunItem.requestFireFromServer(this, (Player)context.player, context.itemStack, context.targetEntity);
-      if (this.gunItem.getMaxAmmoCapacity(context.itemStack, context.getFireModeInstance()) < Integer.MAX_VALUE) {
-         this.ammoCount.incrementAmmoCount(context.getFireModeInstance(), -1);
+   private void actionFire(GunClientStateContext context, FireState fromState, FireState toState) {
+      boolean scriptFlag = true;
+
+      if(context.itemStack.getItem() instanceof ScriptHolder scriptHolder) {
+         if(scriptHolder.hasFunction("preFire"))
+            scriptFlag = (boolean) scriptHolder.invokeFunction("preFire", context, this);
       }
+      if(scriptFlag) {
+         this.gunItem.requestFireFromServer(this, (Player) context.player, context.itemStack, context.targetEntity);
+         if (this.gunItem.getMaxAmmoCapacity(context.itemStack, context.getFireModeInstance()) < Integer.MAX_VALUE) {
+            this.ammoCount.incrementAmmoCount(context.getFireModeInstance(), -1);
+         }
 
-      ++this.totalUninterruptedShots;
-      this.lastShotFiredTime = MiscUtil.getLevel(context.player).getGameTime();
+         ++this.totalUninterruptedShots;
+         this.lastShotFiredTime = MiscUtil.getLevel(context.player).getGameTime();
 
-      for(GunStateListener listener : this.stateListeners) {
-         listener.onStartFiring(context.player, this, context.itemStack);
+         for (GunStateListener listener : this.stateListeners) {
+            listener.onStartFiring(context.player, this, context.itemStack);
+         }
       }
-
    }
 
-   private void actionDraw(Context context, FireState fromState, FireState toState) {
+   private void actionDraw(GunClientStateContext context, FireState fromState, FireState toState) {
       for(GunStateListener listener : this.stateListeners) {
          listener.onDrawing(context.player, this, context.itemStack);
       }
 
    }
 
-   private void actionInspect(Context context, FireState fromState, FireState toState) {
+   private void actionInspect(GunClientStateContext context, FireState fromState, FireState toState) {
       for(GunStateListener listener : this.stateListeners) {
          listener.onInspecting(context.player, this, context.itemStack);
       }
 
    }
 
-   private void actionEnableFireMode(Context context, FireState fromState, FireState toState) {
+   private void actionEnableFireMode(GunClientStateContext context, FireState fromState, FireState toState) {
       ((GunItem)context.itemStack.getItem()).initiateClientSideFireMode((Player)context.player, context.itemStack);
 
       for(GunStateListener listener : this.stateListeners) {
@@ -316,7 +320,7 @@ public class GunClientState {
 
    }
 
-   private void actionCompleteFire(Context context, FireState fromState, FireState toState) {
+   private void actionCompleteFire(GunClientStateContext context, FireState fromState, FireState toState) {
       this.publishMessage(Component.translatable("message.pointblank.completing").append("..."), 3500L, GunClientState::isCompletingFiring);
       LOGGER.debug("{} Completing firing in state {}", System.currentTimeMillis() % 100000L, toState);
 
@@ -326,7 +330,7 @@ public class GunClientState {
 
    }
 
-   private void actionPrepareIdle(Context context) {
+   private void actionPrepareIdle(GunClientStateContext context) {
       this.prepareIdleCooldownStartTime = System.nanoTime();
       this.totalUninterruptedShots = 0;
 
@@ -336,7 +340,7 @@ public class GunClientState {
 
    }
 
-   private void actionFiddle(Context context) {
+   private void actionFiddle(GunClientStateContext context) {
       this.totalUninterruptedShots = 0;
 
       for(GunStateListener listener : this.stateListeners) {
@@ -345,21 +349,21 @@ public class GunClientState {
 
    }
 
-   private void actionStartAutoFiring(Context context) {
+   private void actionStartAutoFiring(GunClientStateContext context) {
       for(GunStateListener listener : this.stateListeners) {
          listener.onStartAutoFiring(context.player, this, context.itemStack);
       }
 
    }
 
-   private void actionStopAutoFiring(Context context) {
+   private void actionStopAutoFiring(GunClientStateContext context) {
       for(GunStateListener listener : this.stateListeners) {
          listener.onStopAutoFiring(context.player, this, context.itemStack);
       }
 
    }
 
-   private void actionApplyReloadAmmo(Context context, FireState fromState, FireState toState) {
+   private void actionApplyReloadAmmo(GunClientStateContext context, FireState fromState, FireState toState) {
       FireModeInstance fireModeInstance = context.getFireModeInstance();
       if (this.reloadAmmoCount.getAmmoCount(fireModeInstance) > 0) {
          LOGGER.debug("Applying reload ammo count: {}", this.reloadAmmoCount);
@@ -370,32 +374,32 @@ public class GunClientState {
    }
 
    public boolean tryReload(LivingEntity player, ItemStack itemStack) {
-      Context context = new Context(player, itemStack);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack);
       return this.stateMachine.setStateToAnyOf(context, List.of(GunClientState.FireState.PREPARE_RELOAD, GunClientState.FireState.PREPARE_RELOAD_ITER)) != null;
    }
 
    public boolean tryFire(LivingEntity player, ItemStack itemStack, Entity targetEntity) {
-      Context context = new Context(player, itemStack, targetEntity);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack, targetEntity);
       return this.stateMachine.setStateToAnyOf(context, List.of(GunClientState.FireState.PREPARE_FIRE_SINGLE, GunClientState.FireState.PREPARE_FIRE_BURST, GunClientState.FireState.PREPARE_FIRE_AUTO)) != null;
    }
 
    public boolean tryDraw(LivingEntity player, ItemStack itemStack) {
-      Context context = new Context(player, itemStack);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack);
       return this.stateMachine.setState(context, GunClientState.FireState.DRAW) != null;
    }
 
    public boolean tryDeactivate(LivingEntity player, ItemStack itemStack) {
-      Context context = new Context(player, itemStack);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack);
       return this.stateMachine.setState(context, GunClientState.FireState.PREPARE_IDLE) != null;
    }
 
    public boolean tryInspect(LivingEntity player, ItemStack itemStack) {
-      Context context = new Context(player, itemStack);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack);
       return this.stateMachine.setState(context, GunClientState.FireState.INSPECT) != null;
    }
 
    public boolean tryChangeFireMode(LivingEntity player, ItemStack itemStack) {
-      Context context = new Context(player, itemStack);
+      GunClientStateContext context = new GunClientStateContext(player, itemStack);
       return this.stateMachine.setState(context, GunClientState.FireState.CHANGE_FIRE_MODE) != null;
    }
 
@@ -499,7 +503,7 @@ public class GunClientState {
             LOGGER.debug("Turning the aiming off");
          }
 
-         Context context = new Context(player, itemStack);
+         GunClientStateContext context = new GunClientStateContext(player, itemStack);
          this.stateMachine.update(context);
          Level level = MiscUtil.getLevel(player);
          if (!this.isFiring() && !this.isReloading() && this.isClientSyncTimeoutExpired(level)) {
@@ -769,17 +773,17 @@ public class GunClientState {
       }
    }
 
-   private static class Context {
-      LivingEntity player;
-      ItemStack itemStack;
-      Entity targetEntity;
+   public static class GunClientStateContext {
+      public LivingEntity player;
+      public ItemStack itemStack;
+      public Entity targetEntity;
 
-      public Context(LivingEntity player, ItemStack itemStack) {
+      public GunClientStateContext(LivingEntity player, ItemStack itemStack) {
          this.player = player;
          this.itemStack = itemStack;
       }
 
-      public Context(LivingEntity player, ItemStack itemStack, Entity targetEntity) {
+      public GunClientStateContext(LivingEntity player, ItemStack itemStack, Entity targetEntity) {
          this.player = player;
          this.itemStack = itemStack;
          this.targetEntity = targetEntity;

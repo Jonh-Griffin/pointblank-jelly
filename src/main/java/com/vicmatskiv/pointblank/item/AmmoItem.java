@@ -17,6 +17,7 @@ import com.vicmatskiv.pointblank.entity.EntityBuilderProvider;
 import com.vicmatskiv.pointblank.entity.ProjectileLike;
 import com.vicmatskiv.pointblank.entity.SlowProjectile;
 import com.vicmatskiv.pointblank.registry.EffectRegistry;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.SoundInfo;
@@ -25,6 +26,8 @@ import com.vicmatskiv.pointblank.util.TopDownAttackTrajectory;
 import com.vicmatskiv.pointblank.util.Tradeable;
 import com.vicmatskiv.pointblank.util.Trajectory;
 import com.vicmatskiv.pointblank.util.TrajectoryProvider;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -200,7 +203,11 @@ public class AmmoItem extends HurtingItem implements ExplosionProvider, Trajecto
       private long craftingDuration = 500L;
       private AmmoItem builtItem;
 
+      public Builder(ExtensionRegistry.Extension extension) {
+         this.extension = extension;
+      }
       public Builder() {
+         this.extension = new ExtensionRegistry.Extension("pointblank", Path.of("pointblank"), "pointblank");
       }
 
       public Builder withName(String name) {

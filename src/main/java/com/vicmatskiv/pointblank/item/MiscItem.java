@@ -4,9 +4,12 @@ import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.client.render.DefaultModelRenderer;
 import com.vicmatskiv.pointblank.crafting.Craftable;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.Tradeable;
+
+import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
@@ -67,7 +70,12 @@ public class MiscItem extends Item implements Nameable, Tradeable, Craftable {
       private int tradeLevel = 0;
       private long craftingDuration = 500L;
 
+      public MiscItemBuilder(ExtensionRegistry.Extension extension) {
+         this.extension = extension;
+      }
+
       public MiscItemBuilder() {
+         this.extension = new ExtensionRegistry.Extension("pointblank", Path.of("pointblank"), "pointblank");
       }
 
       public MiscItemBuilder withName(String name) {

@@ -6,12 +6,7 @@ import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
-import com.vicmatskiv.pointblank.item.AmmoItem;
-import com.vicmatskiv.pointblank.item.AnimationProvider;
-import com.vicmatskiv.pointblank.item.ConditionalAnimationProvider;
-import com.vicmatskiv.pointblank.item.FireMode;
-import com.vicmatskiv.pointblank.item.FireModeInstance;
-import com.vicmatskiv.pointblank.item.GunItem;
+import com.vicmatskiv.pointblank.item.*;
 import com.vicmatskiv.pointblank.registry.AmmoRegistry;
 import com.vicmatskiv.pointblank.registry.EffectRegistry;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
@@ -28,11 +23,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class FireModeFeature extends ConditionalFeature {
    public static final int DEFAULT_RPM = -1;
@@ -44,6 +43,7 @@ public class FireModeFeature extends ConditionalFeature {
    private static final AnimationProvider DEFAULT_ANIMATION_PROVIDER = new AnimationProvider.Simple("animation.model.fire");
    private final List<FireModeInstance> fireModeInstances;
    private final Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders;
+   private @Nullable Script script;
 
    private FireModeFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, List<FireModeInstance> fireModes) {
       super(owner, predicate);
@@ -89,6 +89,8 @@ public class FireModeFeature extends ConditionalFeature {
       Item item = itemStack.getItem();
       if (item instanceof GunItem gunItem) {
          FireModeInstance fireModeInstance = GunItem.getFireModeInstance(itemStack);
+         if(fireModeInstance.hasFunction("getRpm"))
+            return (int) fireModeInstance.invokeFunction("getRpm", itemStack, fireModeInstance);
          int rpm = fireModeInstance.getRpm();
          return rpm != -1 ? rpm : gunItem.getRpm();
       } else {
@@ -104,6 +106,8 @@ public class FireModeFeature extends ConditionalFeature {
          return 0.0F;
       } else {
          FireModeInstance fireModeInstance = GunItem.getFireModeInstance(itemStack);
+         if(fireModeInstance.hasFunction("getDamage"))
+            return (int) fireModeInstance.invokeFunction("getDamage", itemStack, fireModeInstance);
          return fireModeInstance.getDamage();
       }
    }
@@ -113,6 +117,8 @@ public class FireModeFeature extends ConditionalFeature {
          return 200;
       } else {
          FireModeInstance fireModeInstance = GunItem.getFireModeInstance(itemStack);
+         if(fireModeInstance.hasFunction("getMaxShootingDistance"))
+            return (int) fireModeInstance.invokeFunction("getMaxShootingDistance", itemStack, fireModeInstance);
          return fireModeInstance.getMaxShootingDistance();
       }
    }
@@ -126,6 +132,8 @@ public class FireModeFeature extends ConditionalFeature {
             return null;
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getFireAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getFireAnimation"))
+               return (String) fireModeInstance.invokeFunction("getFireAnimation", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.animationName() : null;
          }
       }
@@ -140,6 +148,8 @@ public class FireModeFeature extends ConditionalFeature {
             return null;
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getPrepareFireAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getPrepareFireAnimation"))
+               return (String) fireModeInstance.invokeFunction("getPrepareFireAnimation", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.animationName() : null;
          }
       }
@@ -154,6 +164,8 @@ public class FireModeFeature extends ConditionalFeature {
             return null;
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getCompleteFireAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getCompleteFireAnimation"))
+               return (String) fireModeInstance.invokeFunction("getCompleteFireAnimation", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.animationName() : null;
          }
       }
@@ -168,6 +180,8 @@ public class FireModeFeature extends ConditionalFeature {
             return null;
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getEnableFireModeAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getEnableFireModeAnimation"))
+               return (String) fireModeInstance.invokeFunction("getEnableFireModeAnimation", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.animationName() : null;
          }
       }
@@ -190,6 +204,8 @@ public class FireModeFeature extends ConditionalFeature {
             return gunItem.getPrepareFireCooldownDuration();
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getPrepareFireAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getPrepareFireCooldown"))
+               return (long) fireModeInstance.invokeFunction("getPrepareFireCooldown", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.timeUnit().toMillis(descriptor.duration()) : gunItem.getPrepareFireCooldownDuration();
          }
       } else {
@@ -205,6 +221,8 @@ public class FireModeFeature extends ConditionalFeature {
             return gunItem.getCompleteFireCooldownDuration();
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getCompleteFireAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getCompleteFireCooldown"))
+               return (long) fireModeInstance.invokeFunction("getCompleteFireCooldown", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.timeUnit().toMillis(descriptor.duration()) : gunItem.getCompleteFireCooldownDuration();
          }
       } else {
@@ -220,6 +238,8 @@ public class FireModeFeature extends ConditionalFeature {
             return gunItem.getEnableFireModeCooldownDuration();
          } else {
             AnimationProvider.Descriptor descriptor = fireModeInstance.getEnableFireModeAnimationDescriptor(player, itemStack, state);
+            if(fireModeInstance.hasFunction("getEnableFireModeCooldown"))
+               return (long) fireModeInstance.invokeFunction("getEnableFireModeCooldown", itemStack, fireModeInstance, descriptor);
             return descriptor != null ? descriptor.timeUnit().toMillis(descriptor.duration()) : gunItem.getEnableFireModeCooldownDuration();
          }
       } else {
@@ -231,13 +251,20 @@ public class FireModeFeature extends ConditionalFeature {
       Item item = itemStack.getItem();
       if (item instanceof GunItem gunItem) {
          FireModeInstance fireModeInstance = GunItem.getFireModeInstance(itemStack);
+         if(fireModeInstance.hasFunction("getPelletCountAndSpread"))
+            return (Pair<Integer, Double>) fireModeInstance.invokeFunction("getPelletCountAndSpread", itemStack, fireModeInstance, (Player) player, state);
          return fireModeInstance == null ? Pair.of(gunItem.getPelletCount(), gunItem.getPelletSpread()) : Pair.of(fireModeInstance.getPelletCount(), fireModeInstance.getPelletSpread());
       } else {
          return Pair.of(0, (double)1.0F);
       }
    }
 
-   public record FireModeDescriptor(String name, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders) {
+   @Override
+   public @Nullable Script getScript() {
+      return script;
+   }
+
+   public record FireModeDescriptor(String name, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, Script script) {
 
        public String name() {
          return this.name;
@@ -330,6 +357,7 @@ public class FireModeFeature extends ConditionalFeature {
          private int pelletCount;
          private double pelletSpread;
          private final Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders;
+         private Script script;
 
          public Builder() {
             this.type = FireMode.SINGLE;
@@ -441,13 +469,17 @@ public class FireModeFeature extends ConditionalFeature {
             builders.add(Pair.of(effectBuilder, condition));
             return this;
          }
+         public Builder withScript(Script script) {
+            this.script = script;
+            return this;
+         }
 
          public FireModeDescriptor build() {
             if (this.pelletCount > 1) {
                this.maxShootingDistance = 50;
             }
 
-            return new FireModeDescriptor(this.name, this.displayName != null ? this.displayName : Component.translatable("label.pointblank.fireMode.single"), this.type, this.ammoSupplier, this.maxAmmoCapacity, this.rpm, this.burstShots, this.damage, this.maxShootingDistance, this.pelletCount, this.pelletSpread, this.isUsingDefaultMuzzle, this.prepareFireAnimationProvider, this.fireAnimationProvider, this.completeFireAnimationProvider, this.enableFireModeAnimationProvider, this.viewShakeDescriptor, this.effectBuilders);
+            return new FireModeDescriptor(this.name, this.displayName != null ? this.displayName : Component.translatable("label.pointblank.fireMode.single"), this.type, this.ammoSupplier, this.maxAmmoCapacity, this.rpm, this.burstShots, this.damage, this.maxShootingDistance, this.pelletCount, this.pelletSpread, this.isUsingDefaultMuzzle, this.prepareFireAnimationProvider, this.fireAnimationProvider, this.completeFireAnimationProvider, this.enableFireModeAnimationProvider, this.viewShakeDescriptor, this.effectBuilders, this.script);
          }
       }
    }
@@ -455,7 +487,7 @@ public class FireModeFeature extends ConditionalFeature {
    public static class Builder implements FeatureBuilder<Builder, FireModeFeature> {
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private final List<FireModeDescriptor> fireModes = new ArrayList<>();
-      private FeatureScript<FireModeFeature> script;
+      private Script script;
 
       public Builder() {
       }
@@ -463,21 +495,6 @@ public class FireModeFeature extends ConditionalFeature {
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
          return this;
-      }
-
-      public Builder withFireMode(String name, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, double damage, String fireAnimationName) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, Component.translatable(name), type, ammoSupplier, maxAmmoCapacity, rpm, -1, (float)damage, 200, 0, 1.0F, true, null, new AnimationProvider.Simple(fireAnimationName), null, null, null, Collections.emptyMap());
-         return this.withFireMode(fireModeDesriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, double damage, AnimationProvider fireAnimationProvider) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, Component.translatable(name), type, ammoSupplier, maxAmmoCapacity, rpm, -1, (float)damage, 200, 0, 1.0F, true, null, fireAnimationProvider, null, null, null, Collections.emptyMap());
-         return this.withFireMode(fireModeDesriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, String fireAnimationName) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, Component.translatable(name), type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, (float)damage, 200, 0, 1.0F, true, null, new AnimationProvider.Simple(fireAnimationName), null, null, null, Collections.emptyMap());
-         return this.withFireMode(fireModeDesriptor);
       }
 
       public Builder withFireMode(String name, FireMode type, Component displayName, int rpm, double damage, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
@@ -489,17 +506,17 @@ public class FireModeFeature extends ConditionalFeature {
       }
 
       public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, double damage, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, -1, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap());
+         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, -1, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap(), null);
          return this.withFireMode(fireModeDesriptor);
       }
 
       public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap());
+         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap(), null);
          return this.withFireMode(fireModeDesriptor);
       }
 
       public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, boolean isUsingDefaultMuzzle, AnimationProvider fireAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, fireAnimationProvider, null, null, viewShakeDescriptor, Collections.emptyMap());
+         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, fireAnimationProvider, null, null, viewShakeDescriptor, Collections.emptyMap(), null);
          return this.withFireMode(fireModeDesriptor);
       }
 
@@ -508,8 +525,8 @@ public class FireModeFeature extends ConditionalFeature {
          return this;
       }
 
-      public Builder withScript(String name, String scriptPath) {
-         this.script = new FeatureScript<>(name, ScriptParser.getScript(Path.of(scriptPath)));
+      public Builder withScript(Script script) {
+         this.script = script;
          return this;
       }
 
@@ -549,6 +566,8 @@ public class FireModeFeature extends ConditionalFeature {
             } else {
                fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", -1));
             }
+            //Script
+            fireModeBuilder.withScript(JsonUtil.getJsonScript(obj));
             fireModeBuilder.withPelletCount(JsonUtil.getJsonInt(fireModeObj, "pelletCount", 0));
             fireModeBuilder.withPelletSpread(JsonUtil.getJsonDouble(fireModeObj, "pelletSpread", 1.0F));
             fireModeBuilder.withIsUsingDefaultMuzzle(JsonUtil.getJsonBoolean(fireModeObj, "isUsingDefaultMuzzle", true));
@@ -651,7 +670,7 @@ public class FireModeFeature extends ConditionalFeature {
       }
 
       public FireModeFeature build(FeatureProvider featureProvider) {
-         return new FireModeFeature(featureProvider, this.condition, this.fireModes.stream().map((info) -> FireModeInstance.create(info.name, featureProvider, info.displayName, info.type, info.ammoSupplier, info.maxAmmoCapacity, info.rpm, info.burstShots, info.damage, info.maxShootingDistance, info.pelletCount, info.pelletSpread, info.isUsingDefaultMuzzle, info.prepareFireAnimationProvider, info.fireAnimationProvider, info.completeFireAnimationProvider, info.enableFireModeAnimationProvider, info.viewShakeDescriptor, info.effectBuilders)).toList());
+         return new FireModeFeature(featureProvider, this.condition, this.fireModes.stream().map((info) -> FireModeInstance.create(info.name, featureProvider, info.displayName, info.type, info.ammoSupplier, info.maxAmmoCapacity, info.rpm, info.burstShots, info.damage, info.maxShootingDistance, info.pelletCount, info.pelletSpread, info.isUsingDefaultMuzzle, info.prepareFireAnimationProvider, info.fireAnimationProvider, info.completeFireAnimationProvider, info.enableFireModeAnimationProvider, info.viewShakeDescriptor, info.effectBuilders, info.script)).toList());
       }
    }
 }

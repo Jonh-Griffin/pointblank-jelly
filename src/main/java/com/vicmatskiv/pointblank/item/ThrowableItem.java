@@ -19,12 +19,15 @@ import com.vicmatskiv.pointblank.entity.ProjectileLike;
 import com.vicmatskiv.pointblank.network.Network;
 import com.vicmatskiv.pointblank.network.ThrowProjectileRequestPacket;
 import com.vicmatskiv.pointblank.registry.EffectRegistry;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.registry.SoundRegistry;
 import com.vicmatskiv.pointblank.util.ClientUtil;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.Tradeable;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -337,7 +340,11 @@ public class ThrowableItem extends HurtingItem implements ThrowableLike, Explosi
       private long completeThrowCooldownDuration = 0L;
       private ThrowableItem builtItem;
 
+      public Builder(ExtensionRegistry.Extension extension) {
+         this.extension = extension;
+      }
       public Builder() {
+         this.extension = new ExtensionRegistry.Extension("pointblank", Path.of("pointblank"), "pointblank");
       }
 
       public Builder withName(String name) {

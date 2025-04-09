@@ -89,6 +89,7 @@
                     "type": "SINGLE",
                     "rpm": 900,
                     "damage": 4.0,
+                    "script": "m9_stock_script",
                     "fireAnimations": [
                         {
                             "name": "animation.model.fire",

@@ -16,12 +16,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import groovy.lang.Script;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
-public class FireModeInstance implements Comparable<FireModeInstance>, Nameable {
+public class FireModeInstance implements Comparable<FireModeInstance>, Nameable, ScriptHolder {
    private static final Map<UUID, FireModeInstance> fireModesById = new HashMap<>();
    private final UUID id;
    private final String name;
@@ -43,10 +46,12 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable 
    private final int maxShootingDistance;
    private int pelletCount = 0;
    private double pelletSpread = 1.0F;
+   private final Script script;
 
-   private FireModeInstance(String name, FeatureProvider featureProvider, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, float damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders) {
+   private FireModeInstance(String name, FeatureProvider featureProvider, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, float damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, Script script) {
       this.name = name;
       this.featureProvider = featureProvider;
+      this.script = script;
       String var10000;
       if (featureProvider instanceof Nameable n) {
          var10000 = n.getName();
@@ -200,8 +205,8 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable 
       return result;
    }
 
-   public static FireModeInstance create(String name, FeatureProvider featureProvider, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider changeFireModeAnimationProvider, ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders) {
-       return new FireModeInstance(name, featureProvider, type, displayName, ammoSupplier, maxAmmoCapacity, rpm, burstShots, (float)damage, maxShootingDistance, pelletCount, pelletSpread, isUsingDefaultMuzzle, prepareFireAnimationProvider, fireAnimationProvider, completeFireAnimationProvider, changeFireModeAnimationProvider, viewShakeDescriptor, effectBuilders);
+   public static FireModeInstance create(String name, FeatureProvider featureProvider, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider changeFireModeAnimationProvider, ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, Script script) {
+       return new FireModeInstance(name, featureProvider, type, displayName, ammoSupplier, maxAmmoCapacity, rpm, burstShots, (float)damage, maxShootingDistance, pelletCount, pelletSpread, isUsingDefaultMuzzle, prepareFireAnimationProvider, fireAnimationProvider, completeFireAnimationProvider, changeFireModeAnimationProvider, viewShakeDescriptor, effectBuilders, script);
    }
 
    public void writeToBuf(FriendlyByteBuf buffer) {
@@ -211,6 +216,11 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable 
    public static FireModeInstance readFromBuf(FriendlyByteBuf buffer) {
       UUID id = buffer.readUUID();
       return fireModesById.get(id);
+   }
+
+   @Override
+   public @Nullable Script getScript() {
+      return script;
    }
 
    public record ViewShakeDescriptor(long duration, double amplitude, double speed) {

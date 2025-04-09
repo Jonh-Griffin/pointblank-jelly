@@ -1,23 +1,30 @@
 package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.List;
 import java.util.function.Predicate;
+
+import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class AccuracyFeature extends ConditionalFeature {
    private static final float MIN_ACCURACY_MODIFIER = 0.1F;
    private static final float MAX_ACCURACY_MODIFIER = 10.0F;
    private float accuracyModifier;
+   @Nullable
+   private Script script;
 
-   private AccuracyFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float accuracyModifier) {
+   private AccuracyFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float accuracyModifier, Script script) {
       super(owner, predicate);
       this.accuracyModifier = accuracyModifier;
+      this.script = script;
    }
 
    public MutableComponent getDescription() {
@@ -34,15 +41,28 @@ public class AccuracyFeature extends ConditionalFeature {
 
       for(Features.EnabledFeature enabledFeature : enabledAccuracyFeatures) {
          AccuracyFeature accuracyFeature = (AccuracyFeature)enabledFeature.feature();
-         accuracyModifier *= accuracyFeature.getAccuracyModifier();
+         //Adds more accuracy modification
+         if(accuracyFeature.hasScript() && accuracyFeature.hasFunction("addAccuracyModifier"))
+            accuracyModifier *= (float)accuracyFeature.invokeFunction("addAccuracyModifier", itemStack, accuracyFeature);
+         //Replaces the base accuracy modifier
+         if(accuracyFeature.hasScript() && accuracyFeature.hasFunction("getAccuracyModifier"))
+            accuracyModifier *= (float)accuracyFeature.invokeFunction("getAccuracyModifier", itemStack, accuracyFeature);
+         else
+            accuracyModifier *= accuracyFeature.getAccuracyModifier();
       }
 
       return Mth.clamp(accuracyModifier, 0.1F, 10.0F);
    }
 
+   @Override
+   public @Nullable Script getScript() {
+      return script;
+   }
+
    public static class Builder implements FeatureBuilder<Builder, AccuracyFeature> {
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private float accuracyModifier;
+      private Script script;
 
       public Builder() {
       }
@@ -66,8 +86,13 @@ public class AccuracyFeature extends ConditionalFeature {
          return this;
       }
 
+      public Builder withScript(Script script) {
+         this.script = script;
+         return this;
+      }
+
       public AccuracyFeature build(FeatureProvider featureProvider) {
-         return new AccuracyFeature(featureProvider, this.condition, this.accuracyModifier);
+         return new AccuracyFeature(featureProvider, this.condition, this.accuracyModifier, script);
       }
    }
 }

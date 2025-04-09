@@ -5,19 +5,25 @@ import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.List;
 import java.util.function.Predicate;
+
+import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class DamageFeature extends ConditionalFeature {
    private static final float MIN_DAMAGE_MODIFIER = 0.01F;
    private static final float MAX_DAMAGE_MODIFIER = 10.0F;
    private final float hitScanDamageModifier;
    private final Component description;
+   @Nullable
+   private final Script script;
 
-   private DamageFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float hitScanDamageModifier) {
+   private DamageFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float hitScanDamageModifier, Script script) {
       super(owner, predicate);
       this.hitScanDamageModifier = hitScanDamageModifier;
+      this.script = script;
       if (hitScanDamageModifier < 1.0F) {
          this.description = Component.translatable("description.pointblank.reducesDamage").append(Component.literal(String.format(" %.0f%%", 100.0F * (1.0F - hitScanDamageModifier))));
       } else {
@@ -40,15 +46,28 @@ public class DamageFeature extends ConditionalFeature {
 
       for(Features.EnabledFeature enabledFeature : enabledDamageFeatures) {
          DamageFeature damageFeature = (DamageFeature)enabledFeature.feature();
-         hitScanDamageModifier *= damageFeature.getHitScanDamageModifier();
+         //Adds more damage modification
+         if(damageFeature.hasScript() && damageFeature.hasFunction("addDamageModifier"))
+            hitScanDamageModifier *= (float)damageFeature.invokeFunction("addDamageModifier", itemStack, damageFeature);
+         //Replaces the base damage modifier
+         if(damageFeature.hasScript() && damageFeature.hasFunction("getDamageModifier"))
+            hitScanDamageModifier *= (float)damageFeature.invokeFunction("getDamageModifier", itemStack, damageFeature);
+         else
+            hitScanDamageModifier *= damageFeature.getHitScanDamageModifier();
       }
 
       return Mth.clamp(hitScanDamageModifier, 0.01F, 10.0F);
    }
 
+   @Override
+   public @Nullable Script getScript() {
+      return script;
+   }
+
    public static class Builder implements FeatureBuilder<Builder, DamageFeature> {
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private float hitScanDamageModifier;
+      private Script script;
 
       public Builder() {
       }
@@ -62,18 +81,22 @@ public class DamageFeature extends ConditionalFeature {
          this.hitScanDamageModifier = (float)damageModifier;
          return this;
       }
-
+      public Builder withScript(Script script) {
+         this.script = script;
+         return this;
+      }
       public Builder withJsonObject(JsonObject obj) {
          if (obj.has("condition")) {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
          }
 
          this.withHitScanDamageModifier(JsonUtil.getJsonFloat(obj, "hitScanDamageModifier"));
+         this.withScript(JsonUtil.getJsonScript(obj));
          return this;
       }
 
       public DamageFeature build(FeatureProvider featureProvider) {
-         return new DamageFeature(featureProvider, this.condition, this.hitScanDamageModifier);
+         return new DamageFeature(featureProvider, this.condition, this.hitScanDamageModifier, script);
       }
    }
 }

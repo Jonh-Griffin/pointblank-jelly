@@ -4,12 +4,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
+import groovy.lang.Script;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
 public class JsonUtil {
+   private static final Logger log = LoggerFactory.getLogger(JsonUtil.class);
+
    public static <T extends Enum<T>> Enum<T> getEnum(JsonObject obj, String property, Class<T> enumClass, T defaultValue, boolean toUpperCase) {
       JsonElement element = obj.get(property);
       Enum<T> result;
@@ -184,5 +191,19 @@ public class JsonUtil {
 
          return (Interpolators.FloatInterpolator)result;
       }
+   }
+
+   public static Script getJsonScript(JsonObject obj) {
+      if(obj.has("script")) {
+         try {
+            String str = getJsonString(obj, "script");
+            String[] parts = str.split(":");
+            return ExtensionRegistry.getScript(parts[0], parts[1]);
+         } catch (Exception e) {
+             JsonUtil.log.debug("Failed to load script: {}", obj.getAsJsonPrimitive("script").getAsString(), e);
+             return null;
+         }
+      }
+      return null;
    }
 }

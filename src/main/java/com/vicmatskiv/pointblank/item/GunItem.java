@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.vicmatskiv.pointblank.Config;
 import com.vicmatskiv.pointblank.Nameable;
+import com.vicmatskiv.pointblank.PointBlankJelly;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.attachment.AttachmentHost;
@@ -37,21 +38,7 @@ import com.vicmatskiv.pointblank.client.effect.AbstractEffect.SpriteAnimationTyp
 import com.vicmatskiv.pointblank.client.render.GunItemRenderer;
 import com.vicmatskiv.pointblank.crafting.Craftable;
 import com.vicmatskiv.pointblank.entity.ProjectileLike;
-import com.vicmatskiv.pointblank.feature.AccuracyFeature;
-import com.vicmatskiv.pointblank.feature.ActiveMuzzleFeature;
-import com.vicmatskiv.pointblank.feature.AimingFeature;
-import com.vicmatskiv.pointblank.feature.AmmoCapacityFeature;
-import com.vicmatskiv.pointblank.feature.ConditionContext;
-import com.vicmatskiv.pointblank.feature.Feature;
-import com.vicmatskiv.pointblank.feature.FeatureBuilder;
-import com.vicmatskiv.pointblank.feature.Features;
-import com.vicmatskiv.pointblank.feature.FireModeFeature;
-import com.vicmatskiv.pointblank.feature.GlowFeature;
-import com.vicmatskiv.pointblank.feature.MuzzleFlashFeature;
-import com.vicmatskiv.pointblank.feature.PipFeature;
-import com.vicmatskiv.pointblank.feature.ReloadFeature;
-import com.vicmatskiv.pointblank.feature.ReticleFeature;
-import com.vicmatskiv.pointblank.feature.SoundFeature;
+import com.vicmatskiv.pointblank.feature.*;
 import com.vicmatskiv.pointblank.network.FireModeRequestPacket;
 import com.vicmatskiv.pointblank.network.FireModeResponsePacket;
 import com.vicmatskiv.pointblank.network.HitScanFireRequestPacket;
@@ -60,10 +47,7 @@ import com.vicmatskiv.pointblank.network.Network;
 import com.vicmatskiv.pointblank.network.ProjectileFireRequestPacket;
 import com.vicmatskiv.pointblank.network.ReloadRequestPacket;
 import com.vicmatskiv.pointblank.network.ReloadResponsePacket;
-import com.vicmatskiv.pointblank.registry.AmmoRegistry;
-import com.vicmatskiv.pointblank.registry.EffectRegistry;
-import com.vicmatskiv.pointblank.registry.ItemRegistry;
-import com.vicmatskiv.pointblank.registry.SoundRegistry;
+import com.vicmatskiv.pointblank.registry.*;
 import com.vicmatskiv.pointblank.util.ClientUtil;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.HitScan;
@@ -72,23 +56,15 @@ import com.vicmatskiv.pointblank.util.MiscUtil;
 import com.vicmatskiv.pointblank.util.SimpleHitResult;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.Tradeable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+
+import java.nio.file.Path;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import groovy.lang.Script;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -116,7 +92,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -152,7 +127,7 @@ import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class GunItem extends HurtingItem implements Craftable, AttachmentHost, Nameable, GeoItem, LockableTarget.TargetLocker, Tradeable {
+public class GunItem extends HurtingItem implements ScriptHolder, Craftable, AttachmentHost, Nameable, GeoItem, LockableTarget.TargetLocker, Tradeable {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private static final String DEFAULT_ANIMATION_IDLE = "animation.model.idle";
    private static final String DEFAULT_ANIMATION_RELOAD = "animation.model.reload";
@@ -196,6 +171,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    private static final ResourceLocation DEFAULT_SCOPE_OVERLAY = ResourceLocation.fromNamespaceAndPath("pointblank", "textures/gui/scope.png");
    private static final int MAX_ATTACHMENT_CATEGORIES = 11;
    private final String name;
+   private final String nameSpace;
    private final float tradePrice;
    private final int tradeLevel;
    private final int tradeBundleQuantity;
@@ -275,10 +251,12 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    private final AnimationType animationType;
    private ResourceLocation firstPersonFallbackAnimations;
    private final String thirdPersonFallbackAnimations;
-
+   @Nullable
+   private Script script = null;
    private GunItem(Builder builder, String namespace) {
-      super(new Item.Properties(), builder);
+      super(new Properties(), builder);
       this.name = builder.name;
+      this.nameSpace = builder.extension.getName();
       if (this.name.contains(":")) {
          this.modelResourceLocation = ResourceLocation.parse(this.name);
       } else {
@@ -289,6 +267,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.tradePrice = builder.tradePrice;
       this.tradeLevel = builder.tradeLevel;
       this.tradeBundleQuantity = builder.tradeBundleQuantity;
+      this.script = builder.mainScript;
       this.maxAmmoCapacity = builder.maxAmmoCapacity;
       this.rpm = builder.rpm;
       this.isAimingEnabled = builder.isAimingEnabled;
@@ -369,7 +348,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       this.reloadCooldownTime = builder.reloadCooldownTime;
       this.reloadAnimation = builder.reloadAnimation;
       if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
-         this.phasedReloads.add(new PhasedReload(GunItem.ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
+         this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
       } else {
          this.requiresPhasedReload = true;
       }
@@ -411,7 +390,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             for(Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> s : fbsl) {
                EffectBuilder<? extends EffectBuilder<?, ?>, ?> eb = s.get();
                if (eb instanceof MuzzleFlashEffect.Builder) {
-                  muzzleFlashFeatureBulder.withEffect(GunItem.FirePhase.FIRING, s);
+                  muzzleFlashFeatureBulder.withEffect(FirePhase.FIRING, s);
                }
             }
          }
@@ -490,6 +469,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
 
       ammoDescription.withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC);
       tooltip.add(ammoDescription);
+      if(hasFunction("appendHoverText")) {
+         invokeFunction("appendHoverText", stack, world, tooltip, flag);
+      }
    }
 
    public MutableComponent getDisplayName() {
@@ -1143,34 +1125,33 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       long requestSeed = random.nextLong();
       FireModeInstance fireModeInstance = getFireModeInstance(itemStack);
       AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
-      if (projectileItem != null) {
-         GunStatePoseProvider gunStatePoseProvider = GunStatePoseProvider.getInstance();
-         Vec3[] pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE);
-         if (pd == null) {
-            pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE_FLASH);
-         }
 
-         Vec3 startPos;
-         Vec3 direction;
-         if (pd != null) {
-            startPos = pd[0];
-            direction = pd[1];
+         if (projectileItem != null) {
+            GunStatePoseProvider gunStatePoseProvider = GunStatePoseProvider.getInstance();
+            Vec3[] pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE);
+            if (pd == null) {
+               pd = gunStatePoseProvider.getPositionAndDirection(gunClientState, PoseContext.FIRST_PERSON_MUZZLE_FLASH);
+            }
+
+            Vec3 startPos;
+            Vec3 direction;
+            if (pd != null) {
+               startPos = pd[0];
+               direction = pd[1];
+            } else {
+               startPos = player.getEyePosition();
+               direction = player.getViewVector(0.0F);
+               startPos = startPos.add(direction.normalize().multiply(2.0F, 2.0F, 2.0F));
+            }
+            Network.networkChannel.sendToServer(new ProjectileFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), startPos.x, startPos.y, startPos.z, direction.x, direction.y, direction.z, targetEntity != null ? targetEntity.getId() : -1, requestSeed));
          } else {
-            startPos = player.getEyePosition();
-            direction = player.getViewVector(0.0F);
-            startPos = startPos.add(direction.normalize().multiply(2.0F, 2.0F, 2.0F));
+            double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, gunClientState.isAiming());
+            long itemSeed = getOrAssignRandomSeed(itemStack);
+            long xorSeed = itemSeed ^ requestSeed;
+            this.acquireHitScan(player, itemStack, gunClientState, shotCount, xorSeed, adjustedInaccuracy);
+            Network.networkChannel.sendToServer(new HitScanFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), requestSeed));
+            LOGGER.debug("{} sent fire request to server", System.currentTimeMillis() % 100000L);
          }
-
-         Network.networkChannel.sendToServer(new ProjectileFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), startPos.x, startPos.y, startPos.z, direction.x, direction.y, direction.z, targetEntity != null ? targetEntity.getId() : -1, requestSeed));
-      } else {
-         double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, gunClientState.isAiming());
-         long itemSeed = getOrAssignRandomSeed(itemStack);
-         long xorSeed = itemSeed ^ requestSeed;
-         this.acquireHitScan(player, itemStack, gunClientState, shotCount, xorSeed, adjustedInaccuracy);
-         Network.networkChannel.sendToServer(new HitScanFireRequestPacket(fireModeInstance, getItemStackId(itemStack), activeSlot, gunClientState.isAiming(), requestSeed));
-         LOGGER.debug("{} sent fire request to server", System.currentTimeMillis() % 100000L);
-      }
-
    }
 
    private void acquireHitScan(Player player, ItemStack itemStack, @NotNull GunClientState gunClientState, int shotCount, long seed, double adjustedInaccuracy) {
@@ -1404,52 +1385,53 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
    }
 
    public void handleClientHitScanFireRequest(ServerPlayer player, FireModeInstance fireModeInstance, UUID stateId, int slotIndex, int correlationId, boolean isAiming, long requestSeed) {
-      try {
-         LOGGER.debug("{} handling client fire request", System.currentTimeMillis() % 100000L);
-         ItemStack itemStack = player.getInventory().getItem(slotIndex);
-         AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
-         if (projectileItem != null) {
-            LOGGER.error("Attempted to handle client hit scan fire request with an item that fires projectiles: " + this);
-            return;
-         }
-
-         if (!this.isEnabled()) {
-            return;
-         }
-
-         boolean isOffhand = player.getOffhandItem() == itemStack;
-         if (itemStack == null || isOffhand || !(itemStack.getItem() instanceof GunItem)) {
-            return;
-         }
-
-         List<HitResult> hitResults = new ArrayList<>();
-         int ammo = 0;
-         if ((ammo = getAmmo(itemStack, fireModeInstance)) > 0) {
-            if (this.getMaxAmmoCapacity(itemStack, fireModeInstance) < Integer.MAX_VALUE) {
-               setAmmo(itemStack, fireModeInstance, ammo - 1);
+            try {
+            LOGGER.debug("{} handling client fire request", System.currentTimeMillis() % 100000L);
+            ItemStack itemStack = player.getInventory().getItem(slotIndex);
+            AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
+            if (projectileItem != null) {
+               LOGGER.error("Attempted to handle client hit scan fire request with an item that fires projectiles: " + this);
+               return;
             }
 
-            SoundFeature.playFireSound(player, itemStack);
-            Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, null, itemStack);
-            int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
-            double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, isAiming);
-            long xorSeed = getOrAssignRandomSeed(itemStack) ^ requestSeed;
-            Vec3 eyePos = player.getEyePosition();
-            Vec3 lookVec = player.getViewVector(0.0F);
-            ServerLevel level = (ServerLevel)MiscUtil.getLevel(player);
-            double maxHitScanDistance = this.getMaxServerShootingDistance(itemStack, isAiming, level);
-            List<BlockPos> blockPosToDestroy = new ArrayList<>();
-            hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
-            LOGGER.debug("{} obtained hit results", System.currentTimeMillis() % 100000L);
-
-            for(HitResult hitResult : hitResults) {
-               this.hitScanTarget(player, itemStack, slotIndex, correlationId, hitResult, maxHitScanDistance, blockPosToDestroy);
+            if (!this.isEnabled()) {
+               return;
             }
-         }
-      } catch (Exception e) {
-         LOGGER.error("Failed to handle client hit scan fire request: {}", e);
-      }
 
+            boolean isOffhand = player.getOffhandItem() == itemStack;
+            if (itemStack == null || isOffhand || !(itemStack.getItem() instanceof GunItem)) {
+               return;
+            }
+
+            List<HitResult> hitResults = new ArrayList<>();
+            int ammo = 0;
+            if ((ammo = getAmmo(itemStack, fireModeInstance)) > 0) {
+               if (this.getMaxAmmoCapacity(itemStack, fireModeInstance) < Integer.MAX_VALUE) {
+                  setAmmo(itemStack, fireModeInstance, ammo - 1);
+               }
+
+               SoundFeature.playFireSound(player, itemStack);
+               Pair<Integer, Double> pcs = FireModeFeature.getPelletCountAndSpread(player, null, itemStack);
+               int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
+               double adjustedInaccuracy = this.adjustInaccuracy(player, itemStack, isAiming);
+               long xorSeed = getOrAssignRandomSeed(itemStack) ^ requestSeed;
+               Vec3 eyePos = player.getEyePosition();
+               Vec3 lookVec = player.getViewVector(0.0F);
+               ServerLevel level = (ServerLevel) MiscUtil.getLevel(player);
+               double maxHitScanDistance = this.getMaxServerShootingDistance(itemStack, isAiming, level);
+               List<BlockPos> blockPosToDestroy = new ArrayList<>();
+               hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
+               LOGGER.debug("{} obtained hit results", System.currentTimeMillis() % 100000L);
+
+               for (HitResult hitResult : hitResults) {
+                  this.hitScanTarget(player, itemStack, slotIndex, correlationId, hitResult, maxHitScanDistance, blockPosToDestroy);
+                  if (hasFunction("postFire"))
+                     invokeFunction("postFire", itemStack, player, this, hitResult);
+               }
+            }
+         } catch(Exception e){
+            LOGGER.error("Failed to handle client hit scan fire request: {}", e);
+         }
    }
 
    private double getMaxServerShootingDistance(ItemStack itemStack, boolean isAiming, ServerLevel level) {
@@ -1741,7 +1723,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             final Predicate<ConditionContext> combinedPredicate = (ctx) -> ctx.gunClientState().isReloading() && phasedReload.predicate.test(ctx);
             GunStateAnimationController reloadAnimationController = new GunStateAnimationController(this, reloadAnimation.animationName + "_" + counter++, reloadAnimation.animationName, combinedPredicate) {
                public void onStartReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.RELOADING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.RELOADING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on start reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1749,7 +1731,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                }
 
                public void onCompleteReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.COMPLETETING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.COMPLETETING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on complete reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1757,7 +1739,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                }
 
                public void onPrepareReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
-                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == GunItem.ReloadPhase.PREPARING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
+                  if (ClientUtil.isFirstPerson(player) && phasedReload.phase == ReloadPhase.PREPARING && combinedPredicate.test(new ConditionContext(player, itemStack, state, null))) {
                      GunItem.LOGGER.debug("Reset {} on prepare reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
@@ -1793,7 +1775,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          };
 
          for(Tuple<Long, AbstractProceduralAnimationController> t : this.reloadEffectControllers) {
-            reloadTimerController.schedule(GunItem.ReloadPhase.RELOADING, t.getA(), TimeUnit.MILLISECOND, t.getB(), null);
+            reloadTimerController.schedule(ReloadPhase.RELOADING, t.getA(), TimeUnit.MILLISECOND, t.getB(), null);
          }
       } else {
          long maxReloadDuration = 0L;
@@ -2041,7 +2023,16 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       return this.thirdPersonFallbackAnimations;
    }
 
-   public enum AnimationType {
+   @Override
+   public Script getScript() {
+      return script;
+   }
+
+   public boolean hasScript() {
+        return script != null;
+   }
+
+    public enum AnimationType {
       RIFLE("__DEFAULT_RIFLE_ANIMATIONS__", GunItem.FALLBACK_COMMON_ANIMATIONS),
       PISTOL("__DEFAULT_PISTOL_ANIMATIONS__", GunItem.FALLBACK_PISTOL_ANIMATIONS);
 
@@ -2337,14 +2328,21 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       private final List<String> compatibleAttachmentGroups;
       private final List<FeatureBuilder<?, ?>> featureBuilders;
       private final List<Supplier<Attachment>> defaultAttachments;
+      @Nullable
+      private Script mainScript;
 
-      public Builder() {
-         this.animationType = GunItem.AnimationType.RIFLE;
+      public Builder(ExtensionRegistry.Extension extension) {
+         this.animationType = AnimationType.RIFLE;
          this.compatibleAttachments = new ArrayList<>();
          this.compatibleAttachmentGroups = new ArrayList<>();
          this.featureBuilders = new ArrayList<>();
          this.defaultAttachments = new ArrayList<>();
          this.reloadEffectControllers = new ArrayList<>();
+         this.extension = extension;
+
+      }
+      public Builder() {
+         this(new ExtensionRegistry.Extension("pointblank", Path.of("pointblank"), "pointblank"));
       }
 
       public String getName() {
@@ -2794,7 +2792,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
       }
 
       public Builder withGlow(String glowingPartName, String textureName) {
-         return this.withGlow(Collections.singleton(GunItem.FirePhase.ANY), Collections.singleton(glowingPartName), textureName);
+         return this.withGlow(Collections.singleton(FirePhase.ANY), Collections.singleton(glowingPartName), textureName);
       }
 
       public Builder withGlow(Collection<FirePhase> firePhases, String glowingPartName) {
@@ -2812,7 +2810,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          return this;
       }
 
-      public Builder withGlow(Collection<FirePhase> firePhases, String glowingPartName, String texture, AbstractEffect.SpriteAnimationType spriteAnimationType, int spriteRows, int spriteColumns, int spritesPerSecond, Direction... directions) {
+      public Builder withGlow(Collection<FirePhase> firePhases, String glowingPartName, String texture, SpriteAnimationType spriteAnimationType, int spriteRows, int spriteColumns, int spritesPerSecond, Direction... directions) {
          GlowAnimationController.Builder builder = (new GlowAnimationController.Builder()).withFirePhases(firePhases);
          if (texture != null) {
             builder.withTexture(ResourceLocation.fromNamespaceAndPath("pointblank", texture));
@@ -2868,6 +2866,11 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          return this;
       }
 
+      public Builder withScript(Script script) {
+         this.mainScript = script;
+         return this;
+      }
+
       public GunItem build() {
          return this.build("pointblank");
       }
@@ -2880,7 +2883,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          super.withJsonObject(obj);
          Builder builder = this;
          this.withName(obj.getAsJsonPrimitive("name").getAsString());
-         this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, GunItem.AnimationType.RIFLE, true));
+         this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, AnimationType.RIFLE, true));
          this.withFirstPersonFallbackAnimations(JsonUtil.getJsonString(obj, "firstPersonFallbackAnimations", null));
          this.withThirdPersonFallbackAnimations(JsonUtil.getJsonString(obj, "thirdPersonFallbackAnimations", null));
          this.withModelScale(JsonUtil.getJsonFloat(obj, "modelScale", 1.0F));
@@ -2967,7 +2970,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             }
 
             Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
-            builder.withPhasedReload(new PhasedReload(GunItem.ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
+            builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
          }
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
@@ -3016,9 +3019,9 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
          for(JsonObject glowingPart : JsonUtil.getJsonObjects(obj, "glowingParts")) {
             String partName = JsonUtil.getJsonString(glowingPart, "name");
             List<String> firePhaseNames = JsonUtil.getStrings(obj, "phases");
-            List<FirePhase> firePhases = firePhaseNames.stream().map((n) -> GunItem.FirePhase.valueOf(n.toUpperCase(Locale.ROOT))).toList();
+            List<FirePhase> firePhases = firePhaseNames.stream().map((n) -> FirePhase.valueOf(n.toUpperCase(Locale.ROOT))).toList();
             if (firePhases.isEmpty()) {
-               firePhases = Collections.singletonList(GunItem.FirePhase.ANY);
+               firePhases = Collections.singletonList(FirePhase.ANY);
             }
 
             String textureName = JsonUtil.getJsonString(glowingPart, "texture", null);
@@ -3028,7 +3031,7 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
                int rows = JsonUtil.getJsonInt(spritesObj, "rows", 1);
                int columns = JsonUtil.getJsonInt(spritesObj, "columns", 1);
                int fps = JsonUtil.getJsonInt(spritesObj, "fps", 60);
-               AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", AbstractEffect.SpriteAnimationType.class, SpriteAnimationType.LOOP, true);
+               SpriteAnimationType spriteAnimationType = (SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", SpriteAnimationType.class, SpriteAnimationType.LOOP, true);
                if (direction != null) {
                   builder.withGlow(firePhases, partName, textureName, spriteAnimationType, rows, columns, fps, direction);
                } else {
@@ -3092,6 +3095,8 @@ public class GunItem extends HurtingItem implements Craftable, AttachmentHost, N
             Predicate<ConditionContext> condition = jsFireAnimation.has("condition") ? Conditions.fromJson(jsFireAnimation.get("condition")) : (ctx) -> true;
             builder.withFireAnimation(JsonUtil.getJsonString(jsFireAnimation, "name", "animation.model.inspect"), condition, 0, TimeUnit.MILLISECOND);
          }
+
+         builder.withScript(JsonUtil.getJsonScript(obj));
 
          return this;
       }

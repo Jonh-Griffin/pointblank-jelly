@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.vicmatskiv.pointblank.item.ScriptHolder;
 import net.minecraft.world.item.ItemStack;
 
-public abstract class ConditionalFeature implements Feature {
+public abstract class ConditionalFeature implements Feature, ScriptHolder {
    protected FeatureProvider owner;
    protected Predicate<ConditionContext> predicate;
    protected Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders;

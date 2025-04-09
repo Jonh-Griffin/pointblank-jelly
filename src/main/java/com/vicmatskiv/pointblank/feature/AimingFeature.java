@@ -8,10 +8,13 @@ import com.vicmatskiv.pointblank.attachment.AttachmentModelInfo;
 import com.vicmatskiv.pointblank.attachment.Attachments;
 import com.vicmatskiv.pointblank.client.GunStateListener;
 import com.vicmatskiv.pointblank.item.GunItem;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.NavigableMap;
 import java.util.function.Predicate;
+
+import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
@@ -19,12 +22,14 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
 public final class AimingFeature extends ConditionalFeature implements GunStateListener {
    private static final Matrix4f IDENTITY_MATRIX = new Matrix4f();
    private final float zoom;
    private final float viewBobbing;
+   private final Script script;
 
    @OnlyIn(Dist.CLIENT)
    public static void applyAimingPosition(ItemStack itemStack, PoseStack poseStack, float rescale, float aimingProgress) {
@@ -59,10 +64,11 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       }
    }
 
-   private AimingFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float zoom, float viewBobbing) {
+   private AimingFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float zoom, float viewBobbing, Script script) {
       super(owner, predicate);
       this.zoom = zoom;
       this.viewBobbing = viewBobbing;
+      this.script = script;
    }
 
    public MutableComponent getDescription() {
@@ -90,6 +96,7 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       if (item instanceof FeatureProvider fp) {
          AimingFeature feature = fp.getFeature(AimingFeature.class);
          if (feature != null) {
+            if(feature.hasScript() && feature.hasFunction("getZoom")) return (float) feature.invokeFunction("getZoom", itemStack, feature);
             return feature.getZoom();
          }
       } else {
@@ -120,6 +127,11 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       }
 
       return 1.0F;
+   }
+
+   @Override
+   public @Nullable Script getScript() {
+      return script;
    }
 
    @OnlyIn(Dist.CLIENT)
@@ -179,6 +191,8 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       private Predicate<ConditionContext> condition = (ctx) -> true;
       private float zoom;
       private float viewBobbing = 1.0F;
+      public ExtensionRegistry.Extension extension;
+      private Script script;
 
       public Builder() {
       }
@@ -198,6 +212,11 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
          return this;
       }
 
+        public Builder withScript(Script script) {
+             this.script = script;
+             return this;
+        }
+
       public Builder withJsonObject(JsonObject obj) {
          if (obj.has("condition")) {
             this.withCondition(Conditions.fromJson(obj.getAsJsonObject("condition")));
@@ -205,11 +224,12 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
 
          this.withZoom(JsonUtil.getJsonFloat(obj, "zoom", 0.1F));
          this.withViewBobbing(JsonUtil.getJsonFloat(obj, "viewBobbing", 1.0F));
+         this.withScript(JsonUtil.getJsonScript(obj));
          return this;
       }
 
       public AimingFeature build(FeatureProvider featureProvider) {
-         return new AimingFeature(featureProvider, this.condition, this.zoom, this.viewBobbing);
+         return new AimingFeature(featureProvider, this.condition, this.zoom, this.viewBobbing, script);
       }
    }
 }
