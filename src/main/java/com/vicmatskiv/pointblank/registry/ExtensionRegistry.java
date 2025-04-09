@@ -191,16 +191,10 @@ public class ExtensionRegistry {
 
    }
    @Nullable
-   public static Script getScript(String packName, String scriptName) {
-      ExtensionRegistry registry = PointBlankJelly.instance.extensionRegistry;
-      System.out.println("Getting Script of " + packName + " with name " + scriptName);
-      System.out.println(registry.getExtensions());
-      Extension extension = registry.getExtensions().stream().filter((ext) -> ext.getName().equals(packName)).findFirst().orElse(null);
-      if (extension != null) {
-          return extension.getScript(scriptName);
-      }
+   public static Script getScript(ResourceLocation scriptName) {
+      System.out.println("Getting Script of " + scriptName.getNamespace() + " with name " + scriptName.getPath());
 
-      return null;
+      return ScriptParser.SCRIPTCACHE.get(scriptName);
    }
 
    private static List<Extension> scanExtensions(Path extensionsPath) {
@@ -279,7 +273,6 @@ public class ExtensionRegistry {
       private Path path;
       private final String creativeTabIconItem;
       private List<ItemBuilder<?>> itemBuilders;
-      private Map<String, Script> scripts;
       private List<EffectBuilder<?, ?>> effectBuilders;
       private List<EntityBuilder<?, ?>> entityBuilders;
       private List<PlayerAnimationBuilder> playerAnimationBuilders;
@@ -302,13 +295,6 @@ public class ExtensionRegistry {
 
       List<EntityBuilder<?, ?>> getEntityBuilders() {
          return this.entityBuilders;
-      }
-
-      public Map<String, Script> getScripts() {
-         return this.scripts;
-      }
-      public Script getScript(String name) {
-         return this.scripts.get(name);
       }
 
       Set<String> getSounds() {
@@ -340,7 +326,6 @@ public class ExtensionRegistry {
                   extension.entityBuilders = new ArrayList<>();
                   extension.registeredExtSounds = new HashMap<>();
                   extension.playerAnimationBuilders = new ArrayList<>();
-                  extension.scripts = new HashMap<>();
                   Path namespacePath = extPath.resolve("assets").resolve("pointblank");
                   Path itemsPath = namespacePath.resolve("items");
                   Path scriptsPath = namespacePath.resolve("scripts");
@@ -349,7 +334,7 @@ public class ExtensionRegistry {
                      try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
                         for(Path scriptFile : scriptFiles) {
                            String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
-                           extension.scripts.put(scriptName, ScriptParser.getScript(scriptFile));
+                           ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName));
                            PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
                         }
                      }
@@ -427,7 +412,8 @@ public class ExtensionRegistry {
                      ZipEntry entry = entries.nextElement();
                      if(entry.getName().startsWith("assets/pointblank/scripts/") && entry.getName().endsWith(".groovy")) {
                         try(BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
-                           extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
+                           //extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
+                           ScriptParser.cacheScript(scriptreader, ResourceLocation.fromNamespaceAndPath(extension.name, entry.getName().replace("assets/pointblank/scripts/", "")));
                         }
                      } else if (entry.getName().startsWith("assets/pointblank/items/") && entry.getName().endsWith(".json")) {
                         extension.itemBuilders.add(ItemBuilder.fromZipEntry(zipFile, entry, extension));

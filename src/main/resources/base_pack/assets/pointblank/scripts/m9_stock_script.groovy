@@ -10,7 +10,6 @@ import net.minecraft.world.item.ItemStack
 
 String getFireAnimation(ItemStack stack, FireModeInstance fireMode, AnimationProvider.Descriptor descriptor) {
     if (Conditions.hasAttachment("m9_stock").test(new ConditionContext(stack))) {
-       // println("test complete")
         return !GunItem.isAiming(stack) ? "animation.model.fire" : "animation.model.firestock"
     }
     return "animation.model.fire"

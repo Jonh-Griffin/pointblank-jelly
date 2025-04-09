@@ -53,6 +53,7 @@ boolean preFire(GunClientState.GunClientStateContext context, GunClientState sta
  * @param flag The tooltip flag
  */
 void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {}
+
 / -Feature Methods- /
 
 / Damage Feature /

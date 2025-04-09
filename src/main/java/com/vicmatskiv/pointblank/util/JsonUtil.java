@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import groovy.lang.Script;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,8 +198,7 @@ public class JsonUtil {
       if(obj.has("script")) {
          try {
             String str = getJsonString(obj, "script");
-            String[] parts = str.split(":");
-            return ExtensionRegistry.getScript(parts[0], parts[1]);
+            return ExtensionRegistry.getScript(ResourceLocation.parse(str));
          } catch (Exception e) {
              JsonUtil.log.debug("Failed to load script: {}", obj.getAsJsonPrimitive("script").getAsString(), e);
              return null;
