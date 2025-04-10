@@ -2,8 +2,6 @@ package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.vicmatskiv.pointblank.event.RenderHandEvent;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 
