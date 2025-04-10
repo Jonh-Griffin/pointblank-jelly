@@ -44,7 +44,6 @@ public class SkinFeature extends ConditionalFeature {
             for (int i = 0; i < feature.conditions.size(); i++) {
                ConditionContext testCondition = new ConditionContext(itemStack);
                if (!feature.conditions.get(i).test(testCondition)) {
-                  //System.out.println("SKIN CONDITION FAILED!!!");
                   return null;
                }
             }
@@ -90,7 +89,6 @@ public class SkinFeature extends ConditionalFeature {
       }
 
       public Builder withTextures(JsonArray tArr) { //Thank you so much for the help, CorrineDuck!
-         //System.out.println("withTextures called with array: " + tArr);
          this.textures = new HashMap<>();
          this.conditions = new ArrayList<>();
          for (int i = 0; i < tArr.size(); i++) {
@@ -98,11 +96,8 @@ public class SkinFeature extends ConditionalFeature {
             String gunId = obj.get("gunId").getAsString();
             String texture = obj.get("texture").getAsString();
             Predicate<ConditionContext> skinCondition = (ctx) -> true;
-            if (obj.has("condition")) {
-               //System.out.println("SKIN CONDITION IS AN OBJECT!!!");
-               if (obj.get("condition") != null) {
-                  skinCondition = Conditions.fromJson(obj.get("condition"));
-               }
+            if (obj.has("condition") && obj.get("condition") != null) {
+               skinCondition = Conditions.fromJson(obj.get("condition"));
             }
 
             this.textures.put(gunId, new ResourceLocation("pointblank", texture));
