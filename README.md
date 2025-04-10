@@ -1,4 +1,4 @@
-Pointblank: Jelly is a continuation of the Vic's Point Blank mod by Vic4Games given his 6-month silence. Since VPB is ARR if the original author requests, Pointblank: Jelly will be removed.
+Pointblank: Jelly is a continuation of the Vic's Point Blank mod by Vic4Games given his 6 month silence. Since VPB is ARR if the original author requests, Pointblank: Jelly will be removed.
 
 ## Project Goals
 1) Expand upon Pointblank's content pack features.
