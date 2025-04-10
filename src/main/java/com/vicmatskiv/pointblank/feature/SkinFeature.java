@@ -2,6 +2,7 @@ package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 
@@ -17,6 +18,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.util.ClientUtils;
 
 public class SkinFeature extends ConditionalFeature {
    private ResourceLocation texture;
@@ -42,7 +44,8 @@ public class SkinFeature extends ConditionalFeature {
          if (!feature.conditions.isEmpty()) {
             Predicate<ConditionContext> condition = (ctx) -> true;
             for (int i = 0; i < feature.conditions.size(); i++) {
-               ConditionContext testCondition = new ConditionContext(itemStack);
+               GunClientState gunState = GunClientState.getMainHeldState(ClientUtils.getClientPlayer());
+               ConditionContext testCondition = new ConditionContext(itemStack, gunState);
                if (!feature.conditions.get(i).test(testCondition)) {
                   return null;
                }
