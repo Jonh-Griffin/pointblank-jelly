@@ -23,7 +23,7 @@ public class SkinFeature extends ConditionalFeature {
    private final @Nullable Script script;
    private Map<String, Pair<ResourceLocation, Predicate<ConditionContext>>> conditions;
 
-   private SkinFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, ResourceLocation texture, Script script, /*Map<String, ResourceLocation> textures, List<Predicate<ConditionContext>> conditions,*/ Map<String, Pair<ResourceLocation, Predicate<ConditionContext>>> conditions) {
+   private SkinFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, ResourceLocation texture, Script script, Map<String, Pair<ResourceLocation, Predicate<ConditionContext>>> conditions) {
       super(owner, predicate);
       this.texture = texture;
       this.script = script;
