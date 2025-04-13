@@ -16,7 +16,8 @@
   ],
   "compatibleAttachmentGroups": [
     "ar_muzzle",
-    "m16a1_skins"
+    "m16a1_skins",
+    "m16_sightsandscopes"
   ],
   "gunRecoilInitialAmplitude" : 0.9,
   "shakeRecoilAmplitude" : 0.4,
