@@ -1,16 +1,10 @@
-Pointblank: Jelly is a continuation of the Vic's Point Blank mod by Vic4Games given his 6-month silence. Since VPB is ARR if the original author requests, Pointblank: Jelly will be removed.
-
-This fork of Pointblank: Jelly is used for testing changes from TheScepticBlock to improve the Quality of Life (QoL) of content pack creation
+Pointblank: Jelly is a continuation of the Vic's Point Blank mod by Vic4Games given his 6 month silence. Since VPB is ARR if the original author requests, Pointblank: Jelly will be removed.
 
 ## Project Goals
 1) Expand upon Pointblank's content pack features.
 2) Enhance compatibility with various other mods, namely VS2 and FirstAid style mods.
 3) Ensure compatibility with future versions of mods.
 
-## Staging Fork Goals
-1) Fix inconsistencies and bugs from the original mod (For example: It was not possible in the original Vic's Point Blank mod to assign a fire mode infinite ammo in the FireMode feature.)
-2) Extend the properties of existing features to increase flexibility and improve QoL of their usage.
-3) Add new conditions to improve QoL of creating conditional statements in content packs.
  
 ## Player Information
 This mod will be compatible with any 1.9.6 Pointblank packs.

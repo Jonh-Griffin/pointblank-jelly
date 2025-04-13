@@ -1225,14 +1225,18 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
        if (itemStack.getItem() instanceof GunItem) {
            CompoundTag idTag = itemStack.getTag();
            if (idTag != null) {
-               if (fireModeInstance.isUsingDefaultAmmoPool()) {
-                   return idTag.getInt("ammo");
-               }
+              if (GunItem.getFireModeInstance(itemStack).getMaxAmmoCapacity() == Integer.MAX_VALUE) {
+                 return Integer.MAX_VALUE;
+              }
 
-               CompoundTag auxAmmoTag = idTag.getCompound("ammox");
-               if (auxAmmoTag != null) {
-                   return auxAmmoTag.getInt(fireModeInstance.getAmmo().getName());
-               }
+              if (fireModeInstance.isUsingDefaultAmmoPool()) {
+                 return idTag.getInt("ammo");
+              }
+
+              CompoundTag auxAmmoTag = idTag.getCompound("ammox");
+              if (auxAmmoTag != null) {
+                 return auxAmmoTag.getInt(fireModeInstance.getAmmo().getName());
+              }
            }
 
        }
