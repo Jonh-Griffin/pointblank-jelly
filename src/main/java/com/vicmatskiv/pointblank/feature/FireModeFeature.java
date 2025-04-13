@@ -552,7 +552,6 @@ public class FireModeFeature extends ConditionalFeature {
             fireModeBuilder.withAmmoSupplier(ammoSupplier);
             fireModeBuilder.withRpm(JsonUtil.getJsonInt(fireModeObj, "rpm", -1));
             fireModeBuilder.withBurstShots(JsonUtil.getJsonInt(fireModeObj, "burstShots", -1));
-            //fireModeBuilder.withMaxAmmoCapacity(JsonUtil.getJsonInt(fireModeObj, "maxAmmoCapacity", 1));
             //Rather than checking for just an int, we'll use GunItem's implementation of checking for infinite ammo
             JsonElement jsonMaxAmmoCapacity = fireModeObj.get("maxAmmoCapacity");
             if(jsonMaxAmmoCapacity != null) {
