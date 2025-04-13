@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.registry;
 
 import com.vicmatskiv.pointblank.Enableable;
-import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.config.ConfigManager;
 import com.vicmatskiv.pointblank.config.Configurable;
 import com.vicmatskiv.pointblank.entity.EntityBuilderProvider;
@@ -117,7 +116,7 @@ public final class ItemRegistry {
       MiscItemRegistry.init();
       AmmoRegistry.init();
       AttachmentRegistry.init();
-      GunRegistry.init();
+      //GunRegistry.init();
       POINTBLANK_TAB = TABS.register("pointblank", () -> CreativeModeTab.builder().title(Component.translatable("itemGroup.pointblank.items")).icon(() -> new ItemStack(BlockRegistry.PRINTER.get() != null ? BlockRegistry.PRINTER.get() : Items.AIR)).displayItems((enabledFeatures, entries) -> {
          Consumer<ItemLike> output = itemLike -> {
             if (itemLike != null && itemLike != Items.AIR) {
@@ -131,7 +130,7 @@ public final class ItemRegistry {
             }
 
          };
-         GunRegistry.registerTabItems(output);
+         //GunRegistry.registerTabItems(output);
          AttachmentRegistry.registerTabItems(output);
          AmmoRegistry.registerTabItems(output);
          MiscItemRegistry.registerTabItems(output);
