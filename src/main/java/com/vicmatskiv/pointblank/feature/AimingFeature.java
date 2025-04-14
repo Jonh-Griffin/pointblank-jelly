@@ -27,6 +27,7 @@ import org.joml.Matrix4f;
 
 public final class AimingFeature extends ConditionalFeature implements GunStateListener {
    private static final Matrix4f IDENTITY_MATRIX = new Matrix4f();
+   private Matrix4f aimMatrix;
    private final float zoom;
    private final float viewBobbing;
    private final Script script;
@@ -40,7 +41,10 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
                Features.EnabledFeature aimingFeature = Features.getFirstEnabledFeature(itemStack, AimingFeature.class);
                Pair<ItemStack, Matrix4f> attachmentPos = null;
                if (aimingFeature != null) {
-                  attachmentPos = poseMatrices.get(aimingFeature.ownerPath());
+                  if(aimingFeature.feature() instanceof AimingFeature feature && feature.aimMatrix != null)
+                     attachmentPos = Pair.of(itemStack, feature.aimMatrix);
+                  else
+                     attachmentPos = poseMatrices.get(aimingFeature.ownerPath());
                }
 
                if (attachmentPos == null) {
@@ -64,11 +68,12 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       }
    }
 
-   private AimingFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float zoom, float viewBobbing, Script script) {
+   private AimingFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float zoom, float viewBobbing, Matrix4f aimMatrix, Script script) {
       super(owner, predicate);
       this.zoom = zoom;
       this.viewBobbing = viewBobbing;
       this.script = script;
+      this.aimMatrix = aimMatrix;
    }
 
    public MutableComponent getDescription() {
@@ -193,6 +198,7 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       private float viewBobbing = 1.0F;
       public ExtensionRegistry.Extension extension;
       private Script script;
+      private Matrix4f aimMatrix;
 
       public Builder() {
       }
@@ -204,6 +210,11 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
 
       public Builder withZoom(double zoom) {
          this.zoom = (float)zoom;
+         return this;
+      }
+
+      public Builder withAimMatrix(Matrix4f aimMatrix) {
+         this.aimMatrix = aimMatrix;
          return this;
       }
 
@@ -229,7 +240,7 @@ public final class AimingFeature extends ConditionalFeature implements GunStateL
       }
 
       public AimingFeature build(FeatureProvider featureProvider) {
-         return new AimingFeature(featureProvider, this.condition, this.zoom, this.viewBobbing, script);
+         return new AimingFeature(featureProvider, this.condition, this.zoom, this.viewBobbing, this.aimMatrix, script);
       }
    }
 }

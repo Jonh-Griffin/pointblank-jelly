@@ -1,62 +1,70 @@
 package com.vicmatskiv.pointblank.item;
 
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.attachment.Attachment;
+import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.attachment.AttachmentHost;
+import com.vicmatskiv.pointblank.attachment.Attachments;
+import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
+import com.vicmatskiv.pointblank.client.effect.AbstractEffect;
+import com.vicmatskiv.pointblank.client.render.ArmorInHandRenderer;
+import com.vicmatskiv.pointblank.client.render.ArmorItemRenderer;
 import com.vicmatskiv.pointblank.crafting.Craftable;
-import com.vicmatskiv.pointblank.feature.Feature;
-import com.vicmatskiv.pointblank.feature.FeatureBuilder;
-import com.vicmatskiv.pointblank.feature.Features;
-import com.vicmatskiv.pointblank.util.DoubleBiPredicate;
+import com.vicmatskiv.pointblank.feature.*;
+import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import com.vicmatskiv.pointblank.util.Tradeable;
 import groovy.lang.Script;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.EntitySelector;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.Equipable;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
+import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.renderer.GeoItemRenderer;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem {
+public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final String name;
-    private final List<Supplier<Attachment>> compatibleAttachments;
+    public ResourceLocation modelResourceLocation;
+    private final List<Supplier<Attachment>> compatibleAttachmentsSuppliers;
+    private Collection<Attachment> compatibleAttachments;
+
     private final List<String> compatibleAttachmentGroups;
     private final Map<Class<? extends Feature>, Feature> features;
-    private final List<Supplier<Attachment>> defaultAttachments;
+    private final List<Supplier<AttachmentItem>> defaultAttachments;
     private final Script script;
     private static final EnumMap<net.minecraft.world.item.ArmorItem.Type, UUID> ARMOR_MODIFIER_UUID_PER_TYPE = Util.make(new EnumMap<>(net.minecraft.world.item.ArmorItem.Type.class), (p_266744_) -> {
         p_266744_.put(net.minecraft.world.item.ArmorItem.Type.BOOTS, UUID.fromString("845DB27C-C624-495F-8C9F-6020A9A58B6B"));
@@ -77,9 +85,17 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
     private final Ingredient repairMaterial;
     private final long craftingDuration;
     private final SoundEvent equipSound;
+    private final List<GlowAnimationController.Builder> glowEffectBuilders;
 
     public ArmorItem(Builder builder, String namespace) {
-        super(new Properties().stacksTo(1).durability(builder.durability));
+        super(ArmorMaterials.LEATHER,builder.armorType,new Properties().stacksTo(1).durability(builder.durability));
+        this.name = builder.name;
+        if (this.name.contains(":"))
+            this.modelResourceLocation = ResourceLocation.parse(this.name);
+        else
+            this.modelResourceLocation = ResourceLocation.fromNamespaceAndPath(namespace, this.name);
+
+        this.glowEffectBuilders = builder.glowEffectBuilders;
         this.defense = builder.armor;
         this.type = builder.armorType;
         this.toughness = builder.armorToughness;
@@ -87,9 +103,8 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
         this.knockbackResistance = builder.knockbackResistance;
         this.compatibleAttachmentGroups = builder.compatibleAttachmentGroups;
         this.defaultAttachments = builder.defaultAttachments;
-        this.compatibleAttachments = builder.compatibleAttachments;
+        this.compatibleAttachmentsSuppliers = builder.compatibleAttachments;
         this.script = builder.script;
-        this.name = builder.name;
         this.craftingDuration = builder.craftingDuration;
         this.repairMaterial = Ingredient.of(builder.repairItems.stream());
         Map<Class<? extends Feature>, Feature> features = new HashMap<>();
@@ -131,7 +146,45 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
 
     @Override
     public Collection<Attachment> getCompatibleAttachments() {
-        return List.of();
+        if (this.compatibleAttachments == null) {
+            Set<AttachmentCategory> attachmentCategories = new HashSet<>();
+            Set<Attachment> compatibleAttachments = new LinkedHashSet<>();
+
+            for(Attachment attachment : this.getDefaultAttachments()) {
+                if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
+                    break;
+                }
+
+                attachmentCategories.add(attachment.getCategory());
+                compatibleAttachments.add(attachment);
+            }
+
+            for(Supplier<Attachment> attachmentSupplier : this.compatibleAttachmentsSuppliers) {
+                Attachment attachment = attachmentSupplier.get();
+                if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
+                    break;
+                }
+
+                attachmentCategories.add(attachment.getCategory());
+                compatibleAttachments.add(attachment);
+            }
+
+            for(String group : this.compatibleAttachmentGroups) {
+                for(Supplier<? extends Item> ga : ItemRegistry.ITEMS.getAttachmentsForGroup(group)) {
+                    Item item = ga.get();
+                    if (item instanceof Attachment attachment) {
+                        if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
+                            break;
+                        }
+
+                        compatibleAttachments.add(attachment);
+                    }
+                }
+            }
+
+            this.compatibleAttachments = compatibleAttachments;
+        }
+        return this.compatibleAttachments;
     }
 
     @Override
@@ -141,7 +194,7 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
 
     @Override
     public Collection<Feature> getFeatures() {
-        return List.of();
+        return this.features.values();
     }
 
     @Override
@@ -156,7 +209,31 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
+      //  controllerRegistrar.add(new AnimationController<>(this, "idle",0, (state)-> PlayState.CONTINUE));
+    }
 
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            private ArmorItemRenderer renderer = null;
+            public GeoItemRenderer<ArmorItem> inHandRenderer = null;
+            @Override
+            public @NotNull ArmorItemRenderer getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
+                if (this.renderer == null)
+                    this.renderer = new ArmorItemRenderer(((ArmorItem)itemStack.getItem()).modelResourceLocation, ((ArmorItem)itemStack.getItem()).glowEffectBuilders);
+
+                this.renderer.prepForRender(livingEntity, itemStack, equipmentSlot, original);
+                return this.renderer;
+            }
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                if (this.inHandRenderer == null) {
+                    this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation);
+                }
+                return this.inHandRenderer;
+            }
+        });
     }
 
     @Override
@@ -175,12 +252,36 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
         return this.repairMaterial.test(pRepair) || super.isValidRepairItem(pToRepair, pRepair);
     }
 
-    public InteractionResultHolder<ItemStack> use(Level pLevel, Player pPlayer, InteractionHand pHand) {
-        return this.swapWithEquipmentSlot(this, pLevel, pPlayer, pHand);
+    @Override
+    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot pEquipmentSlot, ItemStack stack) {
+        float defenseMod = DefenseFeature.getDefenseModifier(stack);
+        int defenseAdd = DefenseFeature.getDefenseAdditive(stack);
+
+        Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
+
+        final int defenseFinal = (int) ((float)this.defense * defenseMod) + defenseAdd;
+
+        multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", defenseFinal, AttributeModifier.Operation.ADDITION));
+
+        return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
     }
 
-    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot pEquipmentSlot) {
-        return pEquipmentSlot == this.type.getSlot() ? this.defaultModifiers : super.getDefaultAttributeModifiers(pEquipmentSlot);
+    @Override
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR)) {
+            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
+        }
+        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR_TOUGHNESS)) {
+            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
+        }
+        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.KNOCKBACK_RESISTANCE)) {
+            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
+        }
+    }
+
+    @Override
+    public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
+        return 2;
     }
 
     public int getDefense() {
@@ -199,6 +300,14 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
         return this.equipSound;
     }
 
+    @Override
+    public ItemStack getDefaultInstance() {
+        ItemStack stack = super.getDefaultInstance();
+        for(Supplier<AttachmentItem> attachmentSupplier : this.defaultAttachments)
+            Attachments.addAttachment(stack, attachmentSupplier.get().getDefaultInstance(), true);
+        return stack;
+    }
+
     public static class Builder extends ItemBuilder<Builder> {
         private long craftingDuration = 500;
         private int armor;
@@ -212,7 +321,8 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
         private final List<Supplier<Attachment>> compatibleAttachments;
         private final List<String> compatibleAttachmentGroups;
         private final List<FeatureBuilder<?, ?>> featureBuilders;
-        private final List<Supplier<Attachment>> defaultAttachments;
+        private final List<Supplier<AttachmentItem>> defaultAttachments;
+        private final List<GlowAnimationController.Builder> glowEffectBuilders = new ArrayList<>();
         private Script script;
 
         public Builder withName(String name) {
@@ -264,6 +374,41 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
             this.durability = durability;
             return this;
         }
+
+        public Builder withGlow(String glowingPartName) {
+            return this.withGlow(glowingPartName, null);
+        }
+
+        public Builder withGlow(String glowingPartName, String textureName) {
+            return this.withGlow(Collections.singleton(GunItem.FirePhase.ANY), Collections.singleton(glowingPartName), textureName);
+        }
+
+        public Builder withGlow(Collection<GunItem.FirePhase> firePhases, String glowingPartName) {
+            return this.withGlow(firePhases, Collections.singleton(glowingPartName), null);
+        }
+
+        public Builder withGlow(Collection<GunItem.FirePhase> firePhases, Collection<String> glowingPartNames, String texture) {
+            GlowAnimationController.Builder builder = (new GlowAnimationController.Builder()).withFirePhases(firePhases);
+            if (texture != null) {
+                builder.withTexture(ResourceLocation.fromNamespaceAndPath("pointblank", texture));
+            }
+
+            builder.withGlowingPartNames(glowingPartNames);
+            this.glowEffectBuilders.add(builder);
+            return this;
+        }
+
+        public Builder withGlow(Collection<GunItem.FirePhase> firePhases, String glowingPartName, String texture, AbstractEffect.SpriteAnimationType spriteAnimationType, int spriteRows, int spriteColumns, int spritesPerSecond, Direction... directions) {
+            GlowAnimationController.Builder builder = (new GlowAnimationController.Builder()).withFirePhases(firePhases);
+            if (texture != null)
+                builder.withTexture(ResourceLocation.fromNamespaceAndPath("pointblank", texture));
+            builder.withGlowingPartNames(Collections.singleton(glowingPartName));
+            builder.withSprites(spriteRows, spriteColumns, spritesPerSecond, spriteAnimationType);
+            builder.withDirections(directions);
+            this.glowEffectBuilders.add(builder);
+            return this;
+        }
+
         public Builder() {
             this.compatibleAttachments = new ArrayList<>();
             this.compatibleAttachmentGroups = new ArrayList<>();
@@ -286,12 +431,46 @@ public class ArmorItem extends Item implements Equipable, Nameable, ScriptHolder
                 FeatureBuilder<?, ?> featureBuilder = Features.fromJson(featureObj);
                 this.withFeature(featureBuilder);
             }
+            for(String compatibleAttachmentName : JsonUtil.getStrings(obj, "compatibleAttachments")) {
+                Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(compatibleAttachmentName);
+                if (ri != null) {
+                    this.compatibleAttachments.add(() -> (Attachment)ri.get());
+                }
+            }
+            for(String compatibleAttachmentName : JsonUtil.getStrings(obj, "defaultAttachments")) {
+                Supplier<Item> ri = ItemRegistry.ITEMS.getDeferredRegisteredObject(compatibleAttachmentName);
+                if (ri != null) {
+                    this.defaultAttachments.add(() -> (AttachmentItem) ri.get());
+                }
+            }
+            for(JsonObject glowingPart : JsonUtil.getJsonObjects(obj, "glowingParts")) {
+                String partName = JsonUtil.getJsonString(glowingPart, "name");
+                List<GunItem.FirePhase> firePhases = Collections.singletonList(GunItem.FirePhase.ANY);
 
+                String textureName = JsonUtil.getJsonString(glowingPart, "texture", null);
+                Direction direction = (Direction)JsonUtil.getEnum(glowingPart, "direction", Direction.class, null, true);
+                JsonObject spritesObj = glowingPart.getAsJsonObject("sprites");
+                if (spritesObj != null) {
+                    int rows = JsonUtil.getJsonInt(spritesObj, "rows", 1);
+                    int columns = JsonUtil.getJsonInt(spritesObj, "columns", 1);
+                    int fps = JsonUtil.getJsonInt(spritesObj, "fps", 60);
+                    AbstractEffect.SpriteAnimationType spriteAnimationType = (AbstractEffect.SpriteAnimationType)JsonUtil.getEnum(spritesObj, "type", AbstractEffect.SpriteAnimationType.class, AbstractEffect.SpriteAnimationType.LOOP, true);
+                    if (direction != null) {
+                        this.withGlow(firePhases, partName, textureName, spriteAnimationType, rows, columns, fps, direction);
+                    } else {
+                        this.withGlow(firePhases, partName, textureName, spriteAnimationType, rows, columns, fps);
+                    }
+                } else {
+                    this.withGlow(firePhases, Collections.singletonList(partName), textureName);
+                }
+            }
+            List<String> compatibleAttachmentGroups = JsonUtil.getStrings(obj, "compatibleAttachmentGroups");
+            this.compatibleAttachmentGroups.addAll(compatibleAttachmentGroups);
             return this;
         }
 
         @Override
-        public Item build() {
+        public ArmorItem build() {
             return new ArmorItem(this, "pointblank");
         }
 

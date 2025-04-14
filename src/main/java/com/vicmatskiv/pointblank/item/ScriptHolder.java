@@ -21,7 +21,7 @@ public interface ScriptHolder {
         if (getScript() == null)
             return null;
         if(!hasFunction(functionName)) {
-            PointBlankJelly.LOGGER.debug("Function {} not found in script: {}", functionName, getScript().getClass().getName());
+            //PointBlankJelly.LOGGER.debug("Function {} not found in script: {}", functionName, getScript().getClass().getName());
             return null;
         }
         try {

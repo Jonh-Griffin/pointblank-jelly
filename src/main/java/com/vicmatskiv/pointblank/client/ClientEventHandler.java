@@ -37,6 +37,7 @@ import com.vicmatskiv.pointblank.explosion.ExplosionEvent;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
 import com.vicmatskiv.pointblank.item.ExplosionDescriptor;
+import com.vicmatskiv.pointblank.item.FireMode;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ThrowableItem;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
@@ -623,6 +624,8 @@ public class ClientEventHandler {
       Minecraft mc = Minecraft.getInstance();
       LocalPlayer player = mc.player;
       ItemStack heldItem = player.getMainHandItem();
+      if(GunItem.getSelectedFireModeType(heldItem) == FireMode.MELEE) return;
+
       if (heldItem.getItem() instanceof GunItem || heldItem.getItem() instanceof ThrowableItem) {
          event.setCanceled(true);
       }

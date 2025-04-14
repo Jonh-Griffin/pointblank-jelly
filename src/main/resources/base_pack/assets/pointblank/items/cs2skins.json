@@ -1,0 +1,25 @@
+{
+  "name": "cs2skins",
+  "type": "Attachment",
+  "category": "skin",
+  "groups": [
+    "m4a1_skins",
+    "l96a1_skins"
+  ],
+  "features": [
+    {
+      "type": "skin",
+      "texture": "",
+      "items": [
+        {
+          "id": "m4a1",
+          "texture": "textures/item/skin_m4a1_asiimov.png"
+        },
+        {
+          "id": "l96a1",
+          "texture": "textures/item/skin_l96a1_hyperbeast.png"
+        }
+      ]
+    }
+  ]
+}

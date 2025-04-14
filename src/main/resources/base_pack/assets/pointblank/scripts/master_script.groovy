@@ -1,8 +1,8 @@
+import com.google.gson.JsonObject
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import com.mojang.datafixers.util.Pair
 import com.vicmatskiv.pointblank.client.GunClientState
-import com.vicmatskiv.pointblank.client.VertexConsumers
 import com.vicmatskiv.pointblank.feature.*
 import com.vicmatskiv.pointblank.item.AmmoItem
 import com.vicmatskiv.pointblank.item.AnimationProvider
@@ -91,6 +91,12 @@ boolean onEntitySwing(ItemStack itemStack, LivingEntity heldEntity) { return tru
  * @param hand
  */
 void interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {}
+/** Overrides the PhasedReload(s) added when the gun is built in code.
+ *
+ * @param gunObj
+ * @return <code>List(PhasedReload)</code>
+ */
+List<GunItem.PhasedReload> overridePhasedReloads(JsonObject gunObj) { return List.of() }
 
 / -Feature Methods- /
 

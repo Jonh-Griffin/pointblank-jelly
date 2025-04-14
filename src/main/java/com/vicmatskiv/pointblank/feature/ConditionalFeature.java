@@ -40,4 +40,8 @@ public abstract class ConditionalFeature implements Feature, ScriptHolder {
    public Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> getEffectBuilders() {
       return this.effectBuilders;
    }
+
+   public String toString() {
+      return this.getClass().getSimpleName();
+   }
 }

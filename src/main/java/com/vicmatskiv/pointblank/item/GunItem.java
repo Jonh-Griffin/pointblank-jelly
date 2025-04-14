@@ -7,7 +7,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.vicmatskiv.pointblank.Config;
 import com.vicmatskiv.pointblank.Nameable;
-import com.vicmatskiv.pointblank.PointBlankJelly;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.attachment.AttachmentHost;
@@ -30,7 +29,6 @@ import com.vicmatskiv.pointblank.client.controller.RotationAnimationController;
 import com.vicmatskiv.pointblank.client.controller.TimerController;
 import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController;
 import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController2;
-import com.vicmatskiv.pointblank.client.effect.AbstractEffect;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
 import com.vicmatskiv.pointblank.client.effect.EffectLauncher;
 import com.vicmatskiv.pointblank.client.effect.MuzzleFlashEffect;
@@ -115,6 +113,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
@@ -253,6 +252,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    private final String thirdPersonFallbackAnimations;
    @Nullable
    private Script script = null;
+
    private GunItem(Builder builder, String namespace) {
       super(new Properties(), builder);
       this.name = builder.name;
@@ -1137,6 +1137,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
       long requestSeed = random.nextLong();
       FireModeInstance fireModeInstance = getFireModeInstance(itemStack);
+      if(fireModeInstance.getType() == FireMode.MELEE) return;
       AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
 
          if (projectileItem != null) {
@@ -2209,7 +2210,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       }
    }
 
-   public static class Builder extends HurtingItem.Builder<Builder> implements Nameable {
+   public static class Builder extends HurtingItem.Builder<Builder> implements Nameable, ScriptHolder {
       private static final float DEFAULT_PRICE = Float.NaN;
       private static final int DEFAULT_TRADE_LEVEL = 0;
       private static final int DEFAULT_TRADE_BUNDLE_QUANTITY = 1;
@@ -2895,6 +2896,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       public Builder withJsonObject(JsonObject obj) {
          super.withJsonObject(obj);
          Builder builder = this;
+         this.withScript(JsonUtil.getJsonScript(obj));
          this.withName(obj.getAsJsonPrimitive("name").getAsString());
          this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, AnimationType.RIFLE, true));
          this.withFirstPersonFallbackAnimations(JsonUtil.getJsonString(obj, "firstPersonFallbackAnimations", null));
@@ -2967,7 +2969,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
          }
 
          List<String> fireModeNames = JsonUtil.getStrings(obj, "fireModes");
-         this.withFireModes(fireModeNames.stream().map((n) -> FireMode.valueOf(n.toUpperCase(Locale.ROOT))).toArray((x$0) -> new FireMode[x$0]));
+         this.withFireModes(fireModeNames.stream().map((n) -> FireMode.valueOf(n.toUpperCase(Locale.ROOT))).toArray(FireMode[]::new));
          this.withHitScanSpeed(JsonUtil.getJsonFloat(obj, "hitScanSpeed", 800.0F));
          this.withHitScanAcceleration(JsonUtil.getJsonFloat(obj, "hitScanAcceleration", 0.0F));
 
@@ -2975,16 +2977,24 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
             builder.withReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsInt(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01));
          }
 
-         for(JsonObject jsPhasedReload : JsonUtil.getJsonObjects(obj, "phasedReloads")) {
-            List<ReloadShakeEffect> shakeEffects = new ArrayList<>();
+         if(hasFunction("overridePhasedReloads")) {
+            List<PhasedReload> reloads = (List<PhasedReload>) invokeFunction("overridePhasedReloads", obj);
+            for(PhasedReload reload : reloads)
+               builder.withPhasedReload(reload);
+         } else {
+            for(JsonObject jsPhasedReload : JsonUtil.getJsonObjects(obj, "phasedReloads")) {
+               List<ReloadShakeEffect> shakeEffects = new ArrayList<>();
 
-            for(JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects")) {
-               shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01)));
+               for (JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects")) {
+                  shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01)));
+               }
+
+               Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
+               builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
             }
-
-            Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
-            builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
          }
+
+         this.withFeature(new AimingFeature.Builder().withZoom(0.1f).withAimMatrix(new Matrix4f().rotateXYZ(0f, 0f, -25f).translate(-1, 0, 0)));
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
          String reloadAnimation = reloadAnimationElem != null ? reloadAnimationElem.getAsString() : null;
@@ -3109,9 +3119,12 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
             builder.withFireAnimation(JsonUtil.getJsonString(jsFireAnimation, "name", "animation.model.inspect"), condition, 0, TimeUnit.MILLISECOND);
          }
 
-         builder.withScript(JsonUtil.getJsonScript(obj));
-
          return this;
+      }
+
+      @Override
+      public @org.jetbrains.annotations.Nullable Script getScript() {
+         return mainScript;
       }
    }
 }

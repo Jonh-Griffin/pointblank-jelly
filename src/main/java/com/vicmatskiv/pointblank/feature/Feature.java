@@ -52,4 +52,6 @@ public interface Feature {
    default Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> getEffectBuilders() {
       return Collections.emptyMap();
    }
+
+
 }

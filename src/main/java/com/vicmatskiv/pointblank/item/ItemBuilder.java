@@ -90,6 +90,8 @@ public abstract class ItemBuilder<T extends ItemBuilder<T>> implements Nameable 
             return (new MiscItem.MiscItemBuilder(extension)).withJsonObject(obj);
          } else if (itemType == ItemType.ATTACHMENT) {
             return (new AttachmentItem.Builder(extension)).withJsonObject(obj);
+         } else if (itemType == ItemType.ARMOR) {
+            return (new ArmorItem.Builder()).withJsonObject(obj);
          } else {
             throw new IllegalArgumentException("Invalid item type: " + itemType);
          }
@@ -111,6 +113,7 @@ public abstract class ItemBuilder<T extends ItemBuilder<T>> implements Nameable 
       AMMO,
       MISC,
       ATTACHMENT,
-      THROWABLE
+      THROWABLE,
+      ARMOR
    }
 }
