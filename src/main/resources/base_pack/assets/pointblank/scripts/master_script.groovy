@@ -331,3 +331,69 @@ ResourceLocation getSkinTexture(ItemStack stack, SkinFeature feature) { return R
  * @return <code>Pair(String, Float)</code>
  */
 Pair<String, Float> getSoundAndVolume(ItemStack stack, SoundFeature feature) { return Pair.of("", 1f) }
+
+/ Armor Item /
+/** Runs every inventory tick, regardless if you are wearing the armor or not
+ * @param stack
+ * @param pLevel
+ * @param pEntity
+ */
+void inventoryTick(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
+/** Runs every tick if you are wearing the armor
+ * @param stack
+ * @param pLevel
+ * @param pEntity
+ */
+void armorTick(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
+/** Adds the amount of armor to the item
+ * @param stack
+ * @return <code>int</code>
+ */
+int addArmorDefense(ItemStack stack) { return 0 }
+/** Multiplies the amount of armor to the item, called before script adding, rounded because defense is always an integer
+ * @param stack
+ * @return <code>float</code>
+ */
+float mulArmorDefense(ItemStack stack) { return 1f }
+/** Adds the amount of toughness to the item
+ * @param stack
+ * @return <code>float</code>
+ */
+float addArmorToughness(ItemStack stack) { return 0f }
+/** Multiplies the amount of toughness to the item, called before script adding
+ * @param stack
+ * @return <code>float</code>
+ */
+float mulArmorToughness(ItemStack stack) { return 1f }
+
+/ Defense Feature /
+
+int addDefenseModifier(ItemStack stack) { return 0 }
+
+float getDefenseModifier(ItemStack stack) { return 1f }
+
+float addToughnessModifier(ItemStack stack) { return 0f }
+
+float getToughnessModifier(ItemStack stack) { return 1f }
+
+int addDefense(ItemStack stack) { return 0 }
+
+int getDefense(ItemStack stack) { return 0 }
+
+float addToughness(ItemStack stack) { return 0f }
+
+float getToughness(ItemStack stack) { return 0f }
+
+/ Attachment Script /
+/** Runs every inventory tick, regardless if you are wearing the armor or not
+ * @param stack
+ * @param pLevel
+ * @param pEntity
+ */
+void inventoryTick$A(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
+/** Runs every tick if you are wearing the armor
+ * @param stack
+ * @param pLevel
+ * @param pEntity
+ */
+void armorTick$A(ItemStack stack, Level pLevel, LivingEntity pEntity) {}

@@ -22,7 +22,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
@@ -36,19 +35,15 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.DispenserBlock;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.renderer.GeoItemRenderer;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.*;
@@ -125,22 +120,17 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         this.defaultModifiers = attrbuilder.build();
     }
 
-    public static boolean dispenseArmor(BlockSource pSource, ItemStack pStack) {
-        BlockPos blockpos = pSource.getPos().relative(pSource.getBlockState().getValue(DispenserBlock.FACING));
-        List<LivingEntity> list = pSource.getLevel().getEntitiesOfClass(LivingEntity.class, new AABB(blockpos), EntitySelector.NO_SPECTATORS.and(new EntitySelector.MobCanWearArmorEntitySelector(pStack)));
-        if (list.isEmpty()) {
-            return false;
-        } else {
-            LivingEntity livingentity = list.get(0);
-            EquipmentSlot equipmentslot = Mob.getEquipmentSlotForItem(pStack);
-            ItemStack itemstack = pStack.split(1);
-            livingentity.setItemSlot(equipmentslot, itemstack);
-            if (livingentity instanceof Mob) {
-                ((Mob)livingentity).setDropChance(equipmentslot, 2.0F);
-                ((Mob)livingentity).setPersistenceRequired();
-            }
-
-            return true;
+    @Override
+    public void inventoryTick(ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
+        if (pEntity instanceof LivingEntity entity) {
+                if (pStack.getEquipmentSlot() != null && pStack.getEquipmentSlot() != EquipmentSlot.MAINHAND && pStack.getEquipmentSlot() != EquipmentSlot.OFFHAND) {
+                    invokeFunction("armorTick", pStack, pLevel, entity);
+                    for (ItemStack attachment : Attachments.getAttachments(pStack))
+                        ((AttachmentItem)attachment.getItem()).invokeFunction("armorTick$A", pStack, pLevel, entity);
+                }
+            invokeFunction("inventoryTick", pStack, pLevel, entity);
+            for (ItemStack attachment : Attachments.getAttachments(pStack))
+                ((AttachmentItem)attachment.getItem()).invokeFunction("inventoryTick$A", pStack, pLevel, entity);
         }
     }
 
@@ -216,11 +206,13 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             private ArmorItemRenderer renderer = null;
-            public GeoItemRenderer<ArmorItem> inHandRenderer = null;
+            public ArmorInHandRenderer inHandRenderer = null;
             @Override
             public @NotNull ArmorItemRenderer getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
+                if(this.inHandRenderer == null)
+                    this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation, ArmorItem.this.glowEffectBuilders);
                 if (this.renderer == null)
-                    this.renderer = new ArmorItemRenderer(((ArmorItem)itemStack.getItem()).modelResourceLocation, ((ArmorItem)itemStack.getItem()).glowEffectBuilders);
+                    this.renderer = new ArmorItemRenderer(((ArmorItem)itemStack.getItem()).modelResourceLocation, this.inHandRenderer);
 
                 this.renderer.prepForRender(livingEntity, itemStack, equipmentSlot, original);
                 return this.renderer;
@@ -229,7 +221,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
             @Override
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 if (this.inHandRenderer == null) {
-                    this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation);
+                    this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation, ArmorItem.this.glowEffectBuilders);
                 }
                 return this.inHandRenderer;
             }
@@ -257,17 +249,35 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         float defenseMod = DefenseFeature.getDefenseModifier(stack);
         int defenseAdd = DefenseFeature.getDefenseAdditive(stack);
 
+        float toughnessMod = DefenseFeature.getToughnessModifier(stack);
+        float toughnessAdd = DefenseFeature.getToughnessAdditive(stack);
+
         Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
 
-        final int defenseFinal = (int) ((float)this.defense * defenseMod) + defenseAdd;
+        int defenseFinal = (int) ((float)this.defense * defenseMod) + defenseAdd;
+        float toughnessFinal = (this.toughness * toughnessMod) + toughnessAdd;
+
+        if(hasFunction("addArmorDefense"))
+            defenseFinal += (int) invokeFunction("addArmorDefense", stack);
+
+        if(hasFunction("mulArmorDefense"))
+            defenseFinal *= (int) invokeFunction("mulArmorDefense", stack);
+
+        if(hasFunction("addArmorToughness"))
+            toughnessFinal += (int) invokeFunction("addArmorToughness", stack);
+
+        if(hasFunction("mulArmorToughness"))
+            toughnessFinal *= (int) invokeFunction("mulArmorToughness", stack);
 
         multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", defenseFinal, AttributeModifier.Operation.ADDITION));
+        multimap.get(Attributes.ARMOR_TOUGHNESS).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Toughness", toughnessFinal, AttributeModifier.Operation.ADDITION));
 
         return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
     }
 
     @Override
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
         for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR)) {
             pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
         }

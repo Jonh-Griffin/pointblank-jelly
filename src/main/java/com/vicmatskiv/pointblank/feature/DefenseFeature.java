@@ -15,12 +15,50 @@ public class DefenseFeature extends ConditionalFeature {
     private final float defenseModifier;
     private final Script script;
     private final int defense;
+    private final float toughnessModifier;
+    private final float toughness;
 
-    public DefenseFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float defenseModifier, int defense, @Nullable Script script) {
+    public DefenseFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, float defenseModifier, int defense, float toughness, float toughnessModifier, @Nullable Script script) {
         super(owner, predicate);
         this.defenseModifier = defenseModifier;
         this.script = script;
         this.defense = defense;
+        this.toughnessModifier = toughnessModifier;
+        this.toughness = toughness;
+    }
+
+    public static float getToughnessModifier(ItemStack itemStack) {
+        List<Features.EnabledFeature> enabledDefenseFeatures = Features.getEnabledFeatures(itemStack, DefenseFeature.class);
+        float toughnessModifier = 1.0F;
+
+        for(Features.EnabledFeature enabledFeature : enabledDefenseFeatures) {
+            DefenseFeature defenseFeature = (DefenseFeature) enabledFeature.feature();
+            if(defenseFeature.hasScript() && defenseFeature.hasFunction("addToughnessModifier"))
+                toughnessModifier *= (float)defenseFeature.invokeFunction("addToughnessModifier", itemStack, defenseFeature);
+            if(defenseFeature.hasScript() && defenseFeature.hasFunction("getToughnessModifier"))
+                toughnessModifier *= (float)defenseFeature.invokeFunction("getToughnessModifier", itemStack, defenseFeature);
+            else
+                toughnessModifier *= defenseFeature.getToughnessModifier();
+        }
+
+        return Mth.clamp(toughnessModifier, 0.01F, 10.0F);
+    }
+
+    public static float getToughnessAdditive(ItemStack itemStack) {
+        List<Features.EnabledFeature> enabledDefenseFeatures = Features.getEnabledFeatures(itemStack, DefenseFeature.class);
+        float toughness = 0.0f;
+
+        for(Features.EnabledFeature enabledFeature : enabledDefenseFeatures) {
+            DefenseFeature defenseFeature = (DefenseFeature) enabledFeature.feature();
+            if(defenseFeature.hasScript() && defenseFeature.hasFunction("addToughness"))
+                toughness += (float) defenseFeature.invokeFunction("addToughness", itemStack, defenseFeature);
+            if(defenseFeature.hasScript() && defenseFeature.hasFunction("getToughness"))
+                toughness += (float) defenseFeature.invokeFunction("getToughness", itemStack, defenseFeature);
+            else
+                toughness += defenseFeature.getTougnessAdditive();
+        }
+
+        return toughness;
     }
 
     public static float getDefenseModifier(ItemStack itemStack) {
@@ -44,12 +82,12 @@ public class DefenseFeature extends ConditionalFeature {
         List<Features.EnabledFeature> enabledDefenseFeatures = Features.getEnabledFeatures(itemStack, DefenseFeature.class);
         int defenseModifier = 0;
 
-        for(Features.EnabledFeature enabledFeature : enabledDefenseFeatures) {
+        for (Features.EnabledFeature enabledFeature : enabledDefenseFeatures) {
             DefenseFeature defenseFeature = (DefenseFeature) enabledFeature.feature();
-            if(defenseFeature.hasScript() && defenseFeature.hasFunction("addDefense"))
-                defenseModifier += (int)defenseFeature.invokeFunction("addDefense", itemStack, defenseFeature);
-            if(defenseFeature.hasScript() && defenseFeature.hasFunction("getDefense"))
-                defenseModifier += (int)defenseFeature.invokeFunction("getDefense", itemStack, defenseFeature);
+            if (defenseFeature.hasScript() && defenseFeature.hasFunction("addDefense"))
+                defenseModifier += (int) defenseFeature.invokeFunction("addDefense", itemStack, defenseFeature);
+            if (defenseFeature.hasScript() && defenseFeature.hasFunction("getDefense"))
+                defenseModifier += (int) defenseFeature.invokeFunction("getDefense", itemStack, defenseFeature);
             else
                 defenseModifier += defenseFeature.getDefenseAdditive();
         }
@@ -65,6 +103,14 @@ public class DefenseFeature extends ConditionalFeature {
         return defense;
     }
 
+    public float getToughnessModifier() {
+        return toughnessModifier;
+    }
+
+    public float getTougnessAdditive() {
+        return toughness;
+    }
+
     @Override
     public @Nullable Script getScript() {
         return script;
@@ -75,6 +121,8 @@ public class DefenseFeature extends ConditionalFeature {
         private float defenseModifier;
         private Script script;
         private int defense;
+        private float toughness;
+        private float toughnessModifier;
 
         public Builder() {
         }
@@ -99,6 +147,8 @@ public class DefenseFeature extends ConditionalFeature {
 
             this.withDefenseModifier(JsonUtil.getJsonFloat(obj, "defenseModifier", 1.0F));
             this.withDefense(JsonUtil.getJsonInt(obj, "defenseAdditive", 0));
+            this.withToughnessModifier(JsonUtil.getJsonFloat(obj, "toughnessModifier", 1.0f));
+            this.withToughness(JsonUtil.getJsonFloat(obj, "toughnessAdditive", 0f));
             this.withScript(JsonUtil.getJsonScript(obj));
             return this;
         }
@@ -108,8 +158,18 @@ public class DefenseFeature extends ConditionalFeature {
             return this;
         }
 
+        public Builder withToughness(float toughness) {
+            this.toughness = toughness;
+            return this;
+        }
+
+        public Builder withToughnessModifier(float toughnessModifier) {
+            this.toughnessModifier = toughnessModifier;
+            return this;
+        }
+
         public DefenseFeature build(FeatureProvider featureProvider) {
-            return new DefenseFeature(featureProvider, this.condition, this.defenseModifier, this.defense, script);
+            return new DefenseFeature(featureProvider, this.condition, this.defenseModifier, this.defense, toughness, toughnessModifier, script);
         }
     }
 }

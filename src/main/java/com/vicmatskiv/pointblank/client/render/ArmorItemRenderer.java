@@ -17,27 +17,20 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.core.object.Color;
 import software.bernie.geckolib.model.DefaultedItemGeoModel;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
+import software.bernie.geckolib.util.RenderUtils;
 
 import java.util.Collection;
 import java.util.List;
 
 public class ArmorItemRenderer extends GeoArmorRenderer<ArmorItem> implements RenderPassGeoRenderer<ArmorItem> {
-
-    public ArmorItemRenderer(ResourceLocation assetSubpath, List<GlowAnimationController.Builder> glowEffectBuilders) {
+public ArmorInHandRenderer internal;
+    public ArmorItemRenderer(ResourceLocation assetSubpath, ArmorInHandRenderer internal) {
         super(new DefaultedItemGeoModel<>(assetSubpath));
-        this.addRenderLayer(new AttachmentLayer<>(this));
-
-        for(GlowAnimationController.Builder glowEffectBuilder : glowEffectBuilders) {
-            ResourceLocation glowTexture = glowEffectBuilder.getTexture();
-            if (glowTexture == null) {
-                glowTexture = this.getGeoModel().getTextureResource(this.animatable);
-            }
-
-            this.addRenderLayer(new GlowingItemLayer<>(this, glowEffectBuilder.getEffectId(), glowTexture));
-        }
+        this.internal = internal;
     }
 
     public boolean approveRendering(String boneName, ItemStack rootStack) {
@@ -62,14 +55,36 @@ public class ArmorItemRenderer extends GeoArmorRenderer<ArmorItem> implements Re
     @Override
     public void defaultRender(PoseStack poseStack, ArmorItem animatable, MultiBufferSource bufferSource, @Nullable RenderType renderType, @Nullable VertexConsumer buffer, float yaw, float partialTick, int packedLight) {
         try (HierarchicalRenderContext hrc = HierarchicalRenderContext.push(getCurrentStack(), ItemDisplayContext.FIXED)) {
-            super.defaultRender(poseStack, animatable, bufferSource, renderType, buffer, yaw, partialTick, packedLight);
-        }
-    }
+            poseStack.pushPose();
+            Color renderColor = this.getRenderColor(animatable, partialTick, packedLight);
+            float red = renderColor.getRedFloat();
+            float green = renderColor.getGreenFloat();
+            float blue = renderColor.getBlueFloat();
+            float alpha = renderColor.getAlphaFloat();
+            int packedOverlay = this.getPackedOverlay(animatable, 0.0F, partialTick);
+            BakedGeoModel model = this.getGeoModel().getBakedModel(this.getGeoModel().getModelResource(animatable, this));
+            if (renderType == null) {
+                renderType = this.getRenderType(animatable, this.getTextureLocation(animatable), bufferSource, partialTick);
+            }
 
-    @Override
-    public void renderRecursively(PoseStack poseStack, ArmorItem animatable, GeoBone bone, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer, boolean isReRender, float partialTick, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-        if(approveRendering(bone.getName(), this.currentStack))
-            super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+            if (buffer == null) {
+                buffer = bufferSource.getBuffer(renderType);
+            }
+
+            this.preRender(poseStack, animatable, model, bufferSource, buffer, false, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+            if (this.firePreRenderEvent(poseStack, model, bufferSource, partialTick, packedLight)) {
+                poseStack.pushPose();
+                poseStack.scale(-1,-1,1);
+                poseStack.translate(-0.5,-2,-0.5);
+                internal.renderByItem(currentStack, ItemDisplayContext.HEAD, poseStack, bufferSource, packedLight, packedOverlay);
+                poseStack.popPose();
+                this.postRender(poseStack, animatable, model, bufferSource, buffer, false, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+                this.firePostRenderEvent(poseStack, model, bufferSource, partialTick, packedLight);
+            }
+
+            poseStack.popPose();
+            this.renderFinal(poseStack, animatable, model, bufferSource, buffer, partialTick, packedLight, packedOverlay, red, green, blue, alpha);
+            this.doPostRenderCleanup();        }
     }
 
     public ResourceLocation getTextureLocation(ArmorItem animatable) {

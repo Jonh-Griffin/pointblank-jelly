@@ -2,10 +2,13 @@ package com.vicmatskiv.pointblank.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
 import com.vicmatskiv.pointblank.client.render.layer.AttachmentLayer;
+import com.vicmatskiv.pointblank.client.render.layer.GlowingItemLayer;
 import com.vicmatskiv.pointblank.feature.ConditionContext;
 import com.vicmatskiv.pointblank.feature.Feature;
 import com.vicmatskiv.pointblank.feature.PartVisibilityFeature;
+import com.vicmatskiv.pointblank.feature.SkinFeature;
 import com.vicmatskiv.pointblank.item.ArmorItem;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -19,25 +22,25 @@ import software.bernie.geckolib.renderer.GeoItemRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 
 import java.util.Collection;
+import java.util.List;
 
 public class ArmorInHandRenderer extends GeoItemRenderer<ArmorItem> implements RenderPassGeoRenderer<ArmorItem> {
-    public ArmorInHandRenderer(ResourceLocation assetPath) {
+    public ArmorInHandRenderer(ResourceLocation assetPath, List<GlowAnimationController.Builder> glowEffectBuilders) {
         super(new DefaultedItemGeoModel<>(assetPath));
+        for(GlowAnimationController.Builder glowEffectBuilder : glowEffectBuilders) {
+            ResourceLocation glowTexture = glowEffectBuilder.getTexture();
+            if (glowTexture == null)
+                glowTexture = this.getGeoModel().getTextureResource(this.animatable);
 
+            this.addRenderLayer(new GlowingItemLayer<>(this, glowEffectBuilder.getEffectId(), glowTexture));
+        }
         this.addRenderLayer(new AttachmentLayer<>(this));
     }
 
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext transformType, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         try (HierarchicalRenderContext hrc = HierarchicalRenderContext.push(stack, transformType)) {
-            poseStack.pushPose();
-            switch (((ArmorItem) stack.getItem()).getEquipmentSlot()) {
-                case HEAD -> poseStack.translate(0, -1.5, 0);
-                case CHEST -> poseStack.translate(0, -1, 0);
-                case LEGS -> poseStack.translate(0, -0.5, 0);
-            }
             super.renderByItem(stack, transformType, poseStack, bufferSource, packedLight, packedOverlay);
-            poseStack.popPose();
         }
     }
 
@@ -87,5 +90,19 @@ public class ArmorInHandRenderer extends GeoItemRenderer<ArmorItem> implements R
     @Override
     public RenderPass getRenderPass() {
         return RenderPass.MAIN_ITEM;
+    }
+
+    public ResourceLocation getTextureLocation(ArmorItem animatable) {
+        ResourceLocation texture = null;
+        HierarchicalRenderContext hrc = HierarchicalRenderContext.getRoot();
+        if (hrc != null) {
+            ItemStack itemStack = hrc.getItemStack();
+            texture = SkinFeature.getTexture(itemStack);
+        }
+
+        if (texture == null) {
+            texture = super.getTextureLocation(animatable);
+        }
+        return texture;
     }
 }
