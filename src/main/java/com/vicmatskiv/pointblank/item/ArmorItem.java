@@ -22,10 +22,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
-import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
-import net.minecraft.core.dispenser.DispenseItemBehavior;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -35,6 +32,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -56,7 +54,6 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     public ResourceLocation modelResourceLocation;
     private final List<Supplier<Attachment>> compatibleAttachmentsSuppliers;
     private Collection<Attachment> compatibleAttachments;
-
     private final List<String> compatibleAttachmentGroups;
     private final Map<Class<? extends Feature>, Feature> features;
     private final List<Supplier<AttachmentItem>> defaultAttachments;
@@ -67,11 +64,6 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         p_266744_.put(net.minecraft.world.item.ArmorItem.Type.CHESTPLATE, UUID.fromString("9F3D476D-C118-4544-8365-64846904B48E"));
         p_266744_.put(net.minecraft.world.item.ArmorItem.Type.HELMET, UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150"));
     });
-    public static final DispenseItemBehavior DISPENSE_ITEM_BEHAVIOR = new DefaultDispenseItemBehavior() {
-        protected ItemStack execute(BlockSource p_40408_, ItemStack p_40409_) {
-            return dispenseArmor(p_40408_, p_40409_) ? p_40409_ : super.execute(p_40408_, p_40409_);
-        }
-    };
     protected final net.minecraft.world.item.ArmorItem.Type type;
     private final int defense;
     private final float toughness;
@@ -120,21 +112,23 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         this.defaultModifiers = attrbuilder.build();
     }
 
-    @Override
+    
     public void inventoryTick(ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
         if (pEntity instanceof LivingEntity entity) {
-                if (pStack.getEquipmentSlot() != null && pStack.getEquipmentSlot() != EquipmentSlot.MAINHAND && pStack.getEquipmentSlot() != EquipmentSlot.OFFHAND) {
-                    invokeFunction("armorTick", pStack, pLevel, entity);
-                    for (ItemStack attachment : Attachments.getAttachments(pStack))
-                        ((AttachmentItem)attachment.getItem()).invokeFunction("armorTick$A", pStack, pLevel, entity);
-                }
             invokeFunction("inventoryTick", pStack, pLevel, entity);
             for (ItemStack attachment : Attachments.getAttachments(pStack))
                 ((AttachmentItem)attachment.getItem()).invokeFunction("inventoryTick$A", pStack, pLevel, entity);
         }
     }
 
-    @Override
+    public void onArmorTick(ItemStack stack, Level level, Player player) {
+        invokeFunction("armorTick", stack, level, player);
+        for (ItemStack attachment : Attachments.getAttachments(stack))
+            ((AttachmentItem)attachment.getItem()).invokeFunction("armorTick$A", stack, level, player);
+
+    }
+
+    
     public Collection<Attachment> getCompatibleAttachments() {
         if (this.compatibleAttachments == null) {
             Set<AttachmentCategory> attachmentCategories = new HashSet<>();
@@ -177,37 +171,37 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         return this.compatibleAttachments;
     }
 
-    @Override
+    
     public long getCraftingDuration() {
         return this.craftingDuration;
     }
 
-    @Override
+    
     public Collection<Feature> getFeatures() {
         return this.features.values();
     }
 
-    @Override
+    
     public @Nullable Script getScript() {
         return this.script;
     }
 
-    @Override
+    
     public String getName() {
         return this.name;
     }
 
-    @Override
+    
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
       //  controllerRegistrar.add(new AnimationController<>(this, "idle",0, (state)-> PlayState.CONTINUE));
     }
 
-    @Override
+    
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             private ArmorItemRenderer renderer = null;
             public ArmorInHandRenderer inHandRenderer = null;
-            @Override
+            
             public @NotNull ArmorItemRenderer getHumanoidArmorModel(LivingEntity livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot, HumanoidModel<?> original) {
                 if(this.inHandRenderer == null)
                     this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation, ArmorItem.this.glowEffectBuilders);
@@ -218,7 +212,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
                 return this.renderer;
             }
 
-            @Override
+            
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 if (this.inHandRenderer == null) {
                     this.inHandRenderer = new ArmorInHandRenderer(ArmorItem.this.modelResourceLocation, ArmorItem.this.glowEffectBuilders);
@@ -228,7 +222,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         });
     }
 
-    @Override
+    
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
     }
@@ -244,7 +238,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         return this.repairMaterial.test(pRepair) || super.isValidRepairItem(pToRepair, pRepair);
     }
 
-    @Override
+    
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot pEquipmentSlot, ItemStack stack) {
         float defenseMod = DefenseFeature.getDefenseModifier(stack);
         int defenseAdd = DefenseFeature.getDefenseAdditive(stack);
@@ -275,7 +269,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
     }
 
-    @Override
+    
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
         for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR)) {
@@ -289,7 +283,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         }
     }
 
-    @Override
+    
     public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
         return 2;
     }
@@ -310,7 +304,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         return this.equipSound;
     }
 
-    @Override
+    
     public ItemStack getDefaultInstance() {
         ItemStack stack = super.getDefaultInstance();
         for(Supplier<AttachmentItem> attachmentSupplier : this.defaultAttachments)
@@ -427,7 +421,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
             this.repairItems = new ArrayList<>();
         }
 
-        @Override
+        
         public Builder withJsonObject(JsonObject obj) {
             this.withName(JsonUtil.getJsonString(obj, "name"))
                 .withScript(JsonUtil.getJsonScript(obj))
@@ -479,12 +473,12 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
             return this;
         }
 
-        @Override
+        
         public ArmorItem build() {
             return new ArmorItem(this, "pointblank");
         }
 
-        @Override
+        
         public String getName() {
             return this.name;
         }

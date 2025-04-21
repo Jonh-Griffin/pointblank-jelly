@@ -1,4 +1,3 @@
-import com.google.gson.JsonObject
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import com.mojang.datafixers.util.Pair
@@ -8,6 +7,7 @@ import com.vicmatskiv.pointblank.item.AmmoItem
 import com.vicmatskiv.pointblank.item.AnimationProvider
 import com.vicmatskiv.pointblank.item.FireModeInstance
 import com.vicmatskiv.pointblank.item.GunItem
+import com.vicmatskiv.pointblank.util.Conditions
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
@@ -18,11 +18,12 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
+import net.minecraft.world.level.Level
 import net.minecraft.world.phys.HitResult
 import software.bernie.geckolib.cache.object.BakedGeoModel
 
 import javax.annotation.Nullable
-import java.util.logging.Level
+import java.util.function.Predicate
 
 / ^^ Above are all the imports that would be needed for these methods! Useful if you aren't using Intellij /
 
@@ -93,10 +94,19 @@ boolean onEntitySwing(ItemStack itemStack, LivingEntity heldEntity) { return tru
 void interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {}
 /** Overrides the PhasedReload(s) added when the gun is built in code.
  *
- * @param gunObj
+ * @param builder Contains lots of information on what the gun is made with, including the original phased reloads as well as stuff like damage and rpm
  * @return <code>List(PhasedReload)</code>
  */
-List<GunItem.PhasedReload> overridePhasedReloads(JsonObject gunObj) { return List.of() }
+List<GunItem.PhasedReload> overrideReloads(GunItem.Builder builder) {
+    //Example usage
+    return [
+            new GunItem.PhasedReload(
+            GunItem.ReloadPhase.RELOADING,
+            1000,
+            "animation.model.name",
+            Conditions.hasAmmoCount(0).and { it.player().health > 10 } )
+    ]
+}
 
 / -Feature Methods- /
 
@@ -397,3 +407,38 @@ void inventoryTick$A(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
  * @param pEntity
  */
 void armorTick$A(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
+
+/Tips and tricks/
+/** Conditions ->
+ *
+ */
+private void exampleConditions() {
+    //Conditions are applicable anywhere where "Predicate<ConditionContext>" is asked as a parameter
+    Predicate<ConditionContext> examplePredicate = Conditions.hasAttachment("attachment")
+    //Predicates can also have multiple conditions using either ".and / &" or ".or / |" (.or is recommended as it supplies autocorrect)
+    Predicate<ConditionContext> examplePredicateOr = examplePredicate.or { it.player().health > 10 }
+    Predicate<ConditionContext> examplePredicateAnd = examplePredicate.and { it.player().health > 10 }
+
+    /** Clarification, ".and {} \ .or {}" is only used if you are using the "it" method,
+     *  and not "Conditions", if you use Conditions.something() you should use something like
+     *  examplePredicate.and(Conditions.something()) with "()" not "{}"
+     */
+
+    //Example simple predicate, this predicate applies if the player has more than 0 ammo and has a specified attachment
+    Predicate<ConditionContext> examplePredicateAmmo = Conditions.hasAmmoCount(0).and(Conditions.hasAttachment("attachment"))
+
+    //Predicates can also be made very flexible by simply returning a boolean
+    //Example usage of a predicate that would only apply when the player is aiming and has no ammo
+    Predicate<ConditionContext> examplePredicateAim = new Predicate<ConditionContext>() {
+        boolean test(ConditionContext ctx) {
+            return GunItem.isAiming(ctx.currentItemStack()) && GunItem.getAmmo(ctx.currentItemStack(), GunItem.getFireModeInstance(ctx.currentItemStack())) == 0
+        }
+    }
+    //Advanced predicates can also use "Conditions.something()" to apply predefined conditions, you just need to add .test(ctx) with ctx being the ConditionContext parameter
+    Predicate<ConditionContext> examplePredicateAdvanced = new Predicate<ConditionContext>() {
+        boolean test(ConditionContext ctx) {
+            return GunItem.isAiming(ctx.currentItemStack()) && Conditions.onNonEmptyReload().test(ctx)
+        }
+    }
+}
+

@@ -2,6 +2,7 @@
   "name": "gpnvg",
   "type": "Attachment",
   "category": "nvg",
+  "script": "pointblank-ext:night_vision",
   "groups": [
     "nvg"
   ],

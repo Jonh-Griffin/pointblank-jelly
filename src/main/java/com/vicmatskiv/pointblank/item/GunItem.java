@@ -224,7 +224,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    private final ResourceLocation scopeOverlay;
    private final ResourceLocation targetLockOverlay;
    private final ResourceLocation modelResourceLocation;
-   private final List<PhasedReload> phasedReloads;
+   private List<PhasedReload> phasedReloads;
    private AnimationProvider drawAnimationProvider;
    private AnimationProvider inspectAnimationProvider;
    private AnimationProvider idleAnimationProvider;
@@ -347,10 +347,18 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       this.inaccuracySprinting = builder.inaccuracySprinting;
       this.reloadCooldownTime = builder.reloadCooldownTime;
       this.reloadAnimation = builder.reloadAnimation;
-      if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
-         this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
-      } else {
+
+      if(hasFunction("overrideReloads")) {
+         this.phasedReloads = (List<PhasedReload>) invokeFunction("overrideReloads", builder);
+         System.out.println("reloads = " + phasedReloads);
          this.requiresPhasedReload = true;
+      }
+      if(!requiresPhasedReload) {
+         if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
+            this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
+         } else {
+            this.requiresPhasedReload = true;
+         }
       }
 
       this.compatibleAttachmentSuppliers = Collections.unmodifiableList(builder.compatibleAttachments);
@@ -425,6 +433,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       if (!this.glowEffectBuilders.isEmpty() && !features.containsKey(GlowFeature.class)) {
          features.put(GlowFeature.class, new GlowFeature());
       }
+
+
 
       this.features = Collections.unmodifiableMap(features);
       SingletonGeoAnimatable.registerSyncedAnimatable(this);
@@ -1741,7 +1751,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on start reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
 
                public void onCompleteReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
@@ -1749,7 +1758,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on complete reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
 
                public void onPrepareReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
@@ -1757,7 +1765,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on prepare reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
             };
             reloadAnimationController.setSoundKeyframeHandler((event) -> {
@@ -1770,7 +1777,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      player.playSound(soundEvent, 1.0F, 1.0F);
                   }
                }
-
             });
             reloadAnimationControllers.add(reloadAnimationController);
          }
@@ -2187,6 +2193,10 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 
       public PhasedReload(ReloadPhase phase, long cooldownTime, String animationName) {
          this(phase, (ctx) -> true, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
+      }
+
+      public PhasedReload(ReloadPhase phase, long cooldownTime, String animationName, Predicate<ConditionContext> predicate) {
+         this(phase, predicate, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
       }
 
       public ReloadPhase phase() {

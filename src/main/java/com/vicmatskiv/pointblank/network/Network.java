@@ -9,9 +9,9 @@ public class Network {
    public static final String PROTOCOL_VERSION = "1";
 
    public static void setupNetworkChannel() {
-      networkChannel = ChannelBuilder.named(new ResourceLocation("pointblank", "pointblank")).networkProtocolVersion(() -> {
-         return "1";
-      }).clientAcceptedVersions("1"::equals).serverAcceptedVersions("1"::equals).simpleChannel();
+      networkChannel =
+              ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath("pointblank", "pointblank")).networkProtocolVersion(() -> PROTOCOL_VERSION)
+              .clientAcceptedVersions(PROTOCOL_VERSION::equals).serverAcceptedVersions(PROTOCOL_VERSION::equals).simpleChannel();
       networkChannel.registerMessage(1, MainHeldSimplifiedStateSyncRequest.class, GunStateRequestPacket::encode, MainHeldSimplifiedStateSyncRequest::decode, GunStateRequestPacket::handle);
       networkChannel.registerMessage(2, MainHeldSimplifiedStateBroadcastPacket.class, MainHeldSimplifiedStateBroadcastPacket::encode, MainHeldSimplifiedStateBroadcastPacket::decode, MainHeldSimplifiedStateBroadcastPacket::handle);
       networkChannel.registerMessage(3, HitScanFireRequestPacket.class, GunStateRequestPacket::encode, HitScanFireRequestPacket::decode, GunStateRequestPacket::handle);
@@ -32,5 +32,7 @@ public class Network {
       networkChannel.registerMessage(19, ClientBoundPlayerDataSyncPacket.class, ClientBoundPlayerDataSyncPacket::encode, ClientBoundPlayerDataSyncPacket::decode, ClientBoundPlayerDataSyncPacket::handle);
       networkChannel.registerMessage(20, EffectBroadcastPacket.class, EffectBroadcastPacket::encode, EffectBroadcastPacket::decode, EffectBroadcastPacket::handle);
       networkChannel.registerMessage(21, ThrowProjectileRequestPacket.class, ThrowProjectileRequestPacket::encode, ThrowProjectileRequestPacket::decode, ThrowProjectileRequestPacket::handle);
+      networkChannel.registerMessage(22, ServerBoundScriptInvoker.class, ServerBoundScriptInvoker::encode, ServerBoundScriptInvoker::decode, ServerBoundScriptInvoker::handle);
+      networkChannel.registerMessage(23, ClientBoundScriptInvoker.class, ClientBoundScriptInvoker::encode, ClientBoundScriptInvoker::decode, ClientBoundScriptInvoker::handle);
    }
 }

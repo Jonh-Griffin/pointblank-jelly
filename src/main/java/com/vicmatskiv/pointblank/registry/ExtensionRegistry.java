@@ -70,11 +70,16 @@ public class ExtensionRegistry {
          consumer.accept(ExtensionRegistry.this.extensionsPack);
       }
    };
+   private List<Script> staticScripts = new ArrayList<>();
 
    public ExtensionRegistry() {
    }
 
-   public List<Extension> getExtensions() {
+   public List<Script> getStaticScripts() {
+      return this.staticScripts;
+   }
+
+    public List<Extension> getExtensions() {
       return Collections.unmodifiableList(this.extensions);
    }
 
@@ -333,9 +338,17 @@ public class ExtensionRegistry {
                   if(Files.exists(scriptsPath) && Files.isDirectory(scriptsPath)) {
                      try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
                         for(Path scriptFile : scriptFiles) {
-                           String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
-                           ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName));
-                           PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
+                           if(scriptFile.getFileName().toString().endsWith(".static.groovy")) {
+                              String scriptName = scriptFile.getFileName().toString().replace(".static.groovy", "");
+                              PointBlankJelly.instance.extensionRegistry.getStaticScripts().add(
+                                 ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName))
+                              );
+                              PointBlankJelly.LOGGER.debug("Loaded static script: {} from extension: {}", scriptName, extension.name);
+                           } else {
+                              String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
+                              ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName));
+                              PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
+                           }
                         }
                      }
                   }

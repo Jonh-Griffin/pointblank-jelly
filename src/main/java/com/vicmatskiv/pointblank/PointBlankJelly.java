@@ -27,11 +27,8 @@ import com.vicmatskiv.pointblank.registry.ParticleRegistry;
 import com.vicmatskiv.pointblank.registry.RecipeTypeRegistry;
 import com.vicmatskiv.pointblank.registry.SoundRegistry;
 import com.vicmatskiv.pointblank.registry.VillagerRegistry;
-import com.vicmatskiv.pointblank.util.InventoryUtils;
-import com.vicmatskiv.pointblank.util.MiscUtil;
-import com.vicmatskiv.pointblank.util.ServerTaskScheduler;
-import com.vicmatskiv.pointblank.util.SimpleHitResult;
-import com.vicmatskiv.pointblank.util.Tradeable;
+import com.vicmatskiv.pointblank.util.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,6 +84,7 @@ import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openjdk.nashorn.api.scripting.ScriptUtils;
 import software.bernie.geckolib.GeckoLib;
 
 @Mod("pointblank")
@@ -121,6 +119,8 @@ public class PointBlankJelly {
       RecipeTypeRegistry.RECIPE_TYPES.register(modEventBus);
       RecipeTypeRegistry.RECIPE_SERIALIZERS.register(modEventBus);
       ItemRegistry.ITEMS.complete();
+
+      ScriptParser.registerStaticScripts(modEventBus);
       modEventBus.addListener(this::commonSetup);
       modEventBus.addListener(this::clientSetup);
       modEventBus.addListener(this::loadComplete);

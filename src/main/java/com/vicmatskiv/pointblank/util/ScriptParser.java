@@ -1,8 +1,11 @@
 package com.vicmatskiv.pointblank.util;
 
+import com.vicmatskiv.pointblank.PointBlankJelly;
+import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
@@ -31,29 +34,38 @@ public final class ScriptParser {
         return shell.parse(reader);
     }
 
-    public static void cacheScript(Path toScript, ResourceLocation scriptId) {
+    public static Script cacheScript(Path toScript, ResourceLocation scriptId) {
         if (SCRIPTCACHE.containsKey(scriptId)) {
-            return;
+            return SCRIPTCACHE.get(scriptId);
         }
         try {
             Script script = shell.parse(FMLPaths.GAMEDIR.get().resolve(toScript).toUri());
             SCRIPTCACHE.put(scriptId, script);
+            return script;
         } catch (IOException e) {
             LOGGER.severe("Failed to parse script: " + toScript);
             throw new RuntimeException(e);
         }
     }
 
-    public static void cacheScript(Reader scriptReader, ResourceLocation scriptId) {
+    public static Script cacheScript(Reader scriptReader, ResourceLocation scriptId) {
         if (SCRIPTCACHE.containsKey(scriptId)) {
-            return;
+            return SCRIPTCACHE.get(scriptId);
         }
         try {
             Script script = shell.parse(scriptReader);
             SCRIPTCACHE.put(scriptId, script);
+            return script;
         } catch (Exception e) {
             LOGGER.severe("Failed to parse script from zip: " + scriptId);
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void registerStaticScripts(IEventBus modEventBus) {
+        for (Script staticScript : PointBlankJelly.instance.extensionRegistry.getStaticScripts()) {
+            staticScript.run();
+            staticScript.invokeMethod("init", modEventBus);
         }
     }
 }

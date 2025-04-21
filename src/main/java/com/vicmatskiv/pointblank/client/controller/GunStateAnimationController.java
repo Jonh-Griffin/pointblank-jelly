@@ -84,6 +84,7 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
             if (player != null && isMainHand && itemStack != null && itemStack.getItem() instanceof GunItem) {
                gunClientState = GunClientState.getState(player, itemStack, -1, false);
                boolean shouldAnimate = false;
+
                if (gunClientState != null && (shouldAnimate = controller.shouldAnimate.test(new ConditionContext(player, itemStack, gunClientState, perspective)))) {
                   return this.setPlayState(PlayState.CONTINUE, controller);
                }
@@ -139,5 +140,9 @@ public class GunStateAnimationController extends AnimationController<GunItem> im
 
    private interface Action {
       void execute(AnimationState<GunItem> var1);
+   }
+
+   public enum DefaultControllers {
+
    }
 }

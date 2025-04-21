@@ -122,6 +122,7 @@ dependencies {
     compileOnly(fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2"))
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))
     runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
+    implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
 
     //Groovy
     implementation 'org.codehaus.groovy:groovy-all:3.0.24'

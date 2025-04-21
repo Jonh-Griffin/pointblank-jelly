@@ -2,6 +2,7 @@
   "name": "cmg_helmet",
   "type": "armor",
   "armorType": "helmet",
+  "script": "pointblank-ext:night_vision",
   "durability": 200,
   "toughness": 1.5,
   "defense": 3,
