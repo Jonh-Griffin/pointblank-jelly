@@ -1,0 +1,132 @@
+{
+  "name": "aughbar",
+  "type": "Gun",
+  "maxAmmoCapacity": 60,
+  "compatibleAmmo": ["ammocreative", "ammo556"],
+  "damage": 5.0,
+  "rpm": 750,
+  "fireModes": ["SINGLE", "AUTOMATIC"],
+  "fireSound": "aug",
+  "animationType": "rifle",
+  "defaultAttachments": [],
+  "compatibleAttachments": [
+    "cantedrail"
+  ],
+  "compatibleAttachmentGroups": [
+    "ar_sightsandscopes",
+    "underbarrel",
+    "ar_muzzle",
+    "aughbar_skins"
+  ],
+  "gunRecoilInitialAmplitude": 0.8,
+  "shakeRecoilAmplitude": 0.35,
+  "shakeRecoilSpeed": 2.0,
+  "viewRecoilAmplitude": 1.7,
+  "drawAnimations": [
+    {
+      "name": "animation.model.draw",
+      "duration": 600
+    }
+  ],
+  "inspectAnimations": [
+    {
+      "name": "animation.model.inspect",
+      "duration": 3700
+    }
+  ],
+  "phasedReloads": [
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": true }
+        ]
+      },
+      "duration": 2970,
+      "animation": "animation.model.reloadempty"
+    },
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": false }
+        ]
+      },
+      "duration": 2570,
+      "animation": "animation.model.reload"
+    }
+  ],
+  "effects": [
+    {
+      "phase": "hit_scan_acquired",
+      "name": "tracer"
+    }
+  ],
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "effects": [
+        { "phase": "firing", "name": "muzzle_flash" }
+      ],
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachmentGroup": "ar_suppressors" }
+        ]
+      }
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.25,
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachmentInCategory": "scope" }
+        ]
+      }
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "ironsights",
+          "visible": false,
+          "condition": {
+            "allOf": [
+              { "hasAttachmentGroup": "m16_sightsandscopes" }
+            ]
+          }
+        },
+        {
+          "name": "aug_grip2",
+          "visible": true,
+          "condition": {
+            "allOf": [
+              { "hasAttachmentGroup": "underbarrel" }
+            ]
+          }
+        },
+        {
+          "name": "aug_grip",
+          "visible": false,
+          "condition": {
+            "allOf": [
+              { "hasAttachmentGroup": "underbarrel" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "fireSound": "aug_silenced",
+      "fireSoundVolume": 1,
+      "condition": {
+        "allOf": [
+          { "hasAttachmentGroup": "ar_suppressors" }
+        ]
+      }
+    }
+  ],
+  "glowingParts": [
+    { "name": "glowy" }
+  ]
+}

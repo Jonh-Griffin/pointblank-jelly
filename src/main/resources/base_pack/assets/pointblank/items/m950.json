@@ -1,0 +1,125 @@
+{
+    "name": "m950",
+    "type": "Gun",
+    "maxAmmoCapacity": 50,
+    "compatibleAmmo": ["ammocreative", "ammo9mm"],
+    "damage": 5.0,
+    "rpm": 750,
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "m950",
+    "animationType": "rifle",
+    "defaultAttachments": [],
+    "compatibleAttachments": [
+      "cantedrail"
+    ],
+    "compatibleAttachmentGroups": [
+      "ar_sightsandscopes",
+      "underbarrel",
+      "smg_muzzle",
+      "m950_skins"
+    ],
+    "gunRecoilInitialAmplitude": 0.8,
+    "shakeRecoilAmplitude": 0.35,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 1.1,
+    "drawAnimations": [
+      { "name": "animation.model.draw",    "duration": 550 }
+    ],
+    "inspectAnimations": [
+      { "name": "animation.model.inspect", "duration": 3700 }
+    ],
+    "phasedReloads": [
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": true }
+          ]
+        },
+        "duration": 2750,
+        "animation": "animation.model.reloadempty"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": false }
+          ]
+        },
+        "duration": 2200,
+        "animation": "animation.model.reload"
+      }
+    ],
+    "effects": [
+      { "phase": "hit_scan_acquired", "name": "tracer" }
+    ],
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [
+          { "phase": "firing", "name": "muzzle_flash" }
+        ],
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachment": "smg_suppressor" }
+          ]
+        }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.25,
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+          ]
+        }
+      },
+      {
+        "type": "PartVisibility",
+        "parts": [
+          {
+            "name": "scopemount",
+            "visible": true,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "m16_sightsandscopes" }
+              ]
+            }
+          },
+          {
+            "name": "trairail",
+            "visible": true,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          },
+          {
+            "name": "handguard",
+            "visible": false,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "Sound",
+        "fireSound": "m950_silenced",
+        "fireSoundVolume": 1,
+        "condition": {
+          "allOf": [
+            { "hasAttachment": "smg_suppressor" }
+          ]
+        }
+      }
+    ],
+    "glowingParts": [
+      { "name": "glowy" },
+      { "name": "glowy2" }
+    ]
+  }
+  

@@ -1,0 +1,111 @@
+{
+    "name": "mp5",
+    "type": "Gun",
+    "maxAmmoCapacity": 30,
+    "compatibleAmmo": ["ammocreative", "ammo9mm"],
+    "damage": 3.5,
+    "rpm": 800,
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "mp5",
+  
+    "compatibleAttachments": [
+      "cantedrail",
+      "m203launcher"
+    ],
+    "compatibleAttachmentGroups": [
+      "ar_sightsandscopes",
+      "underbarrel",
+      "smg_muzzle",
+      "mp5_skins"
+    ],
+  
+    "gunRecoilInitialAmplitude": 0.5,
+    "gunRecoilInitialAngularFrequency": 1.5,
+    "shakeRecoilAmplitude": 0.35,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 1.2,
+  
+    "drawAnimations": [
+      { "name": "animation.model.draw",    "duration": 480 }
+    ],
+    "inspectAnimations": [
+      { "name": "animation.model.inspect", "duration": 4880 }
+    ],
+  
+    "phasedReloads": [
+      {
+        "phase": "RELOADING",
+        "condition": { "allOf":[ { "onEmptyReload": true }, { "unselectedFireMode":"grenade_launcher" } ] },
+        "duration": 2780,
+        "animation": "animation.model.reloadempty"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": { "allOf":[ { "onEmptyReload": false }, { "unselectedFireMode":"grenade_launcher" } ] },
+        "duration": 1780,
+        "animation": "animation.model.reload"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": { "allOf":[ { "onEmptyReload": true }, { "selectedFireMode":"grenade_launcher" } ] },
+        "duration": 1870,
+        "animation": "animation.model.launcherreload"
+      }
+    ],
+  
+    "effects": [
+      { "phase": "hit_scan_acquired", "name": "tracer" }
+    ],
+  
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [ { "phase": "firing", "name": "muzzle_flash" } ],
+        "condition": { "allOf":[ { "doesNotHaveAttachment":"smg_suppressor" } ] }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.25,
+        "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"ar_sightsandscopes" } ] }
+      },
+      {
+        "type": "PartVisibility",
+        "parts": [
+          {
+            "name": "rail",
+            "visible": true,
+            "condition": { "allOf":[ { "hasAttachmentGroup":"m16_sightsandscopes" } ] }
+          },
+          {
+            "name": "underrail",
+            "visible": true,
+            "condition": { "allOf":[ { "hasAttachmentGroup":"underbarrel_extra" } ] }
+          },
+          {
+            "name": "mp5sd",
+            "visible": true,
+            "condition": { "allOf":[ { "hasAttachment":"smg_suppressor" } ] }
+          },
+          {
+            "name": "launcher",
+            "visible": true,
+            "condition": { "allOf":[ { "hasAttachment":"m203launcher" }, { "isGunInHands": true } ] }
+          },
+          {
+            "name": "handguard",
+            "visible": false,
+            "condition": { "allOf":[ { "hasAttachment":"smg_suppressor" } ] }
+          }
+        ]
+      },
+      {
+        "type": "Sound",
+        "fireSound": "mp5_silenced",
+        "fireSoundVolume": 1,
+        "condition": { "allOf":[ { "hasAttachment":"smg_suppressor" } ] }
+      }
+    ],
+  
+    "glowingParts": []
+  }
+  

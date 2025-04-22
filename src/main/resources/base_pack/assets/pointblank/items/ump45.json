@@ -1,0 +1,105 @@
+{
+    "name": "ump45",
+    "type": "Gun",
+    "maxAmmoCapacity": 30,
+    "compatibleAmmo": ["ammocreative", "ammo45acp"],
+    "damage": 4.0,
+    "rpm": 700,
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "ump45_unsilenced",
+    "animationType": "rifle",
+    "defaultAttachments": [
+      "holographic",
+      "smg_suppressor",
+      "foregrip"
+    ],
+    "compatibleAttachments": [
+      "cantedrail"
+    ],
+    "compatibleAttachmentGroups": [
+      "ar_sightsandscopes",
+      "underbarrel",
+      "smg_muzzle",
+      "ump45_skins"
+    ],
+    "gunRecoilInitialAmplitude": 0.5,
+    "shakeRecoilAmplitude": 0.35,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 1.3,
+    "drawAnimations": [
+      {
+        "name": "animation.model.draw",
+        "duration": 480
+      }
+    ],
+    "inspectAnimations": [
+      {
+        "name": "animation.model.inspect",
+        "duration": 4880
+      }
+    ],
+    "phasedReloads": [
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": true }
+          ]
+        },
+        "duration": 2780,
+        "animation": "animation.model.reloadempty"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": false }
+          ]
+        },
+        "duration": 1830,
+        "animation": "animation.model.reload"
+      }
+    ],
+    "effects": [
+      {
+        "phase": "hit_scan_acquired",
+        "name": "tracer"
+      }
+    ],
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [
+          { "phase": "firing", "name": "muzzle_flash" }
+        ],
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachment": "smg_suppressor" }
+          ]
+        }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.25,
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachmentGroup": "ar_sightsandscopes" }
+          ]
+        }
+      },
+      {
+        "type": "Sound",
+        "fireSound": "ump45",
+        "fireSoundVolume": 1,
+        "condition": {
+          "allOf": [
+            { "hasAttachment": "smg_suppressor" }
+          ]
+        }
+      }
+    ],
+    "glowingParts": [
+      { "name": "glowy" }
+    ]
+  }
+  

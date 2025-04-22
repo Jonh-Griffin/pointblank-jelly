@@ -1,0 +1,144 @@
+{
+    "name": "p90",
+    "type": "Gun",
+    "maxAmmoCapacity": 50,
+    "compatibleAmmo": ["ammocreative", "ammo57"],
+    "damage": 3.5,
+    "rpm": 950,
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "p90",
+    "animationType": "rifle",
+    "defaultAttachments": ["srs"],
+    "compatibleAttachments": [
+      "cantedrail"
+    ],
+    "compatibleAttachmentGroups": [
+      "ar_sightsandscopes",
+      "underbarrel",
+      "smg_muzzle",
+      "p90_skins"
+    ],
+    "gunRecoilInitialAmplitude": 0.5,
+    "shakeRecoilAmplitude": 0.35,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 0.9,
+    "drawAnimations": [
+      {
+        "name": "animation.model.draw",
+        "duration": 500
+      }
+    ],
+    "inspectAnimations": [
+      {
+        "name": "animation.model.inspect",
+        "duration": 4880
+      }
+    ],
+    "phasedReloads": [
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": true }
+          ]
+        },
+        "duration": 2070,
+        "animation": "animation.model.reloadempty"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": false }
+          ]
+        },
+        "duration": 1820,
+        "animation": "animation.model.reload"
+      }
+    ],
+    "effects": [
+      { "phase": "hit_scan_acquired", "name": "tracer" }
+    ],
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [ { "phase": "firing", "name": "muzzle_flash" } ],
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachment": "smg_suppressor" }
+          ]
+        }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.3,
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+          ]
+        }
+      },
+      {
+        "type": "Reticle",
+        "texture": "textures/item/reticledot.png",
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+          ]
+        }
+      },
+      {
+        "type": "PartVisibility",
+        "parts": [
+          {
+            "name": "upperrail",
+            "visible": true,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "m16_sightsandscopes" }
+              ]
+            }
+          },
+          {
+            "name": "underrail",
+            "visible": true,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          },
+          {
+            "name": "reddotsight",
+            "visible": false,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "m16_sightsandscopes" }
+              ]
+            }
+          },
+          {
+            "name": "p90grip",
+            "visible": false,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "Sound",
+        "fireSound": "p90_silenced",
+        "fireSoundVolume": 1,
+        "condition": {
+          "allOf": [
+            { "hasAttachment": "smg_suppressor" }
+          ]
+        }
+      }
+    ],
+    "glowingParts": []
+  }
+  
