@@ -1,0 +1,93 @@
+{
+    "name": "xm3",
+    "type": "Gun",
+    "maxAmmoCapacity": 5,
+    "maxAmmoPerReloadIteration": 1,
+    "compatibleAmmo": ["ammocreative", "ammo762x51"],
+    "damage": 25.0,
+    "rpm": 77,
+    "fireModes": ["SINGLE"],
+    "fireSound": "xm3",
+    "animationType": "rifle",
+    "defaultAttachments": ["drake_scope"],
+    "compatibleAttachments": ["cantedrail"],
+    "compatibleAttachmentGroups": ["snipers_sights", "rf_muzzle", "xm3_skins"],
+    "gunRecoilInitialAmplitude": 0.6,
+    "gunRecoilPitchMultiplier": 1.5,
+    "shakeRecoilAmplitude": 0.65,
+    "shakeRecoilSpeed": 3.5,
+    "viewRecoilAmplitude": 7.0,
+    "drawAnimations": [
+      { "name": "animation.model.draw",    "duration": 800 }
+    ],
+    "inspectAnimations": [
+      { "name": "animation.model.inspect", "duration": 5420 }
+    ],
+    "phasedReloads": [
+      {
+        "phase": "PREPARING",
+        "condition": "reloadIterationIndex == -1",
+        "duration": 820,
+        "animation": "animation.model.prepareempty"
+      },
+      {
+        "phase": "PREPARING",
+        "condition": "reloadIterationIndex >= 0",
+        "duration": 820,
+        "animation": "animation.model.prepare"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": "reloadIterationIndex == 0",
+        "duration": 670,
+        "animation": "animation.model.loadfirst"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": "reloadIterationIndex > 0",
+        "duration": 670,
+        "animation": "animation.model.load"
+      },
+      {
+        "phase": "COMPLETETING",
+        "condition": "reloadIterationIndex >= 0",
+        "duration": 1180,
+        "animation": "animation.model.finish"
+      }
+    ],
+    "effects": [
+      { "phase": "hit_scan_acquired", "name": "tracer" }
+    ],
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [
+          { "phase": "firing", "name": "muzzle_flash_big_ex" }
+        ],
+        "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"rf_suppressors" } ] }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.25,
+        "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"snipers_sights" } ] }
+      },
+      {
+        "type": "PartVisibility",
+        "parts": [
+          {
+            "name": "ironsights",
+            "visible": false,
+            "condition": { "allOf":[ { "hasAttachmentGroup":"snipers_sights" } ] }
+          }
+        ]
+      },
+      {
+        "type": "Sound",
+        "fireSound": "c14",
+        "fireSoundVolume": 1,
+        "condition": { "allOf":[ { "hasAttachmentGroup":"rf_suppressors" } ] }
+      }
+    ],
+    "glowingParts": []
+  }
+  

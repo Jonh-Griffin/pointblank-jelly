@@ -1,0 +1,129 @@
+{
+    "name": "mp7",
+    "type": "Gun",
+    "maxAmmoCapacity": 40,
+    "compatibleAmmo": ["ammocreative", "ammo46"],
+    "damage": 4.0,
+    "rpm": 950,
+    "fireModes": ["SINGLE", "AUTOMATIC"],
+    "fireSound": "mp7",
+    "animationType": "rifle",
+    "defaultAttachments": [],
+    "compatibleAttachments": [
+      "cantedrail"
+    ],
+    "compatibleAttachmentGroups": [
+      "ar_sightsandscopes",
+      "underbarrel",
+      "smg_muzzle",
+      "mp7_skins"
+    ],
+    "gunRecoilInitialAmplitude": 0.6,
+    "shakeRecoilAmplitude": 0.35,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 1.3,
+    "drawAnimations": [
+      {
+        "name": "animation.model.draw",
+        "duration": 480
+      }
+    ],
+    "inspectAnimations": [
+      {
+        "name": "animation.model.inspect",
+        "duration": 4880
+      }
+    ],
+    "phasedReloads": [
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": true }
+          ]
+        },
+        "duration": 2130,
+        "animation": "animation.model.reloadempty"
+      },
+      {
+        "phase": "RELOADING",
+        "condition": {
+          "allOf": [
+            { "onEmptyReload": false }
+          ]
+        },
+        "duration": 1780,
+        "animation": "animation.model.reload"
+      }
+    ],
+    "effects": [
+      {
+        "phase": "hit_scan_acquired",
+        "name": "tracer"
+      }
+    ],
+    "features": [
+      {
+        "type": "MuzzleFlash",
+        "effects": [
+          {
+            "phase": "firing",
+            "name": "muzzle_flash"
+          }
+        ],
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachment": "smg_suppressor" }
+          ]
+        }
+      },
+      {
+        "type": "Aiming",
+        "zoom": 0.25,
+        "condition": {
+          "allOf": [
+            { "doesNotHaveAttachmentGroup": "ar_sightsandscopes" }
+          ]
+        }
+      },
+      {
+        "type": "PartVisibility",
+        "parts": [
+          {
+            "name": "trirail",
+            "visible": true,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          },
+          {
+            "name": "mp7grip",
+            "visible": false,
+            "condition": {
+              "allOf": [
+                { "hasAttachmentGroup": "underbarrel" }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "type": "Sound",
+        "fireSound": "mp7a2devgru",
+        "fireSoundVolume": 1,
+        "condition": {
+          "allOf": [
+            { "hasAttachment": "smg_suppressor" }
+          ]
+        }
+      }
+    ],
+    "glowingParts": [
+      {
+        "name": "glowy"
+      }
+    ]
+  }
+  
