@@ -341,7 +341,7 @@ public class ExtensionRegistry {
                            if(scriptFile.getFileName().toString().endsWith(".static.groovy")) {
                               String scriptName = scriptFile.getFileName().toString().replace(".static.groovy", "");
                               PointBlankJelly.instance.extensionRegistry.getStaticScripts().add(
-                                 ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName))
+                                 ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath("_static", scriptName))
                               );
                               PointBlankJelly.LOGGER.debug("Loaded static script: {} from extension: {}", scriptName, extension.name);
                            } else {

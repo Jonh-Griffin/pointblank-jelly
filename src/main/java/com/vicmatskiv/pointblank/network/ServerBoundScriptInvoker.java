@@ -1,39 +1,43 @@
 package com.vicmatskiv.pointblank.network;
 
-import com.vicmatskiv.pointblank.item.ScriptHolder;
+import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.util.ScriptParser;
+import com.vicmatskiv.pointblank.util.Scripts;
+import groovy.lang.Script;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public class ServerBoundScriptInvoker {
-   private String function;
-   private ItemStack stack;
+   private Scripts.PacketContext context;
 
-   public ServerBoundScriptInvoker(String function, ItemStack stack) {
-      this.function = function;
-      this.stack = stack;
+   public ServerBoundScriptInvoker(Scripts.PacketContext function) {
+      this.context = function;
    }
 
    public ServerBoundScriptInvoker() {}
 
    public static void encode(ServerBoundScriptInvoker packet, FriendlyByteBuf buf) {
-      buf.writeUtf(packet.function);
-      buf.writeItemStack(packet.stack, false);
+      buf.writeUtf(packet.context.serialize().toString(), Integer.MAX_VALUE);
    }
 
    public static ServerBoundScriptInvoker decode(FriendlyByteBuf buf) {
-      return new ServerBoundScriptInvoker(buf.readUtf(), buf.readItem());
+      return new ServerBoundScriptInvoker(Scripts.PacketContext.deserialize(Scripts.PacketContext.gson.fromJson(buf.readUtf(), JsonObject.class)));
    }
 
    public static void handle(ServerBoundScriptInvoker packet, Supplier<NetworkEvent.Context> context) {
       context.get().enqueueWork(() -> {
-         ServerPlayer player = context.get().getSender();
-         if(packet.stack.getItem() instanceof ScriptHolder scriptHolder)
-            scriptHolder.invokeFunction(packet.function, player, packet.stack);
-
+         String scriptName = packet.context.staticMethod().split(":")[0];
+         String methodName = packet.context.staticMethod().split(":")[1];
+         Script script = ScriptParser.SCRIPTCACHE.get(
+                 ResourceLocation.fromNamespaceAndPath(
+                         "_static", scriptName));
+         final Object[] finalArgs = Arrays.copyOf(packet.context.MethodArgs(), packet.context.MethodArgs().length + 1);
+         finalArgs[finalArgs.length - 1] = context.get();
+         script.invokeMethod(methodName, finalArgs);
       });
       context.get().setPacketHandled(true);
    }
