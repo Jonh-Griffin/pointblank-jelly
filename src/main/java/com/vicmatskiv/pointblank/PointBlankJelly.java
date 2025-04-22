@@ -94,8 +94,11 @@ public class PointBlankJelly {
    private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
    public static PointBlankJelly instance;
+   public static IEventBus modEventBus;
    public PointBlankJelly() {
       instance = this;
+
+      modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();
@@ -104,7 +107,6 @@ public class PointBlankJelly {
       this.extensionRegistry = new ExtensionRegistry();
       Dist side = FMLLoader.getDist();
       this.extensionRegistry.discoverExtensions(side.isClient() ? PackType.CLIENT_RESOURCES : PackType.SERVER_DATA);
-      IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
       ExtensionRegistry.registerItemsFromExtensions(this.extensionRegistry, modEventBus);
       ParticleRegistry.PARTICLES.register(modEventBus);
       SoundRegistry.SOUNDS.register(modEventBus);

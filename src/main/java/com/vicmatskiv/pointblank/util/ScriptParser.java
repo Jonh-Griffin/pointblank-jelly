@@ -1,16 +1,21 @@
 package com.vicmatskiv.pointblank.util;
 
 import com.vicmatskiv.pointblank.PointBlankJelly;
+import com.vicmatskiv.pointblank.client.gui.CustomButton;
 import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import groovy.lang.GroovyShell;
+import groovy.lang.MetaMethod;
 import groovy.lang.Script;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -65,7 +70,17 @@ public final class ScriptParser {
     public static void registerStaticScripts(IEventBus modEventBus) {
         for (Script staticScript : PointBlankJelly.instance.extensionRegistry.getStaticScripts()) {
             staticScript.run();
-            staticScript.invokeMethod("init", modEventBus);
+            if(staticScript.getMetaClass().getMethods().stream().anyMatch(method -> method.getName().equals("init")))
+                staticScript.invokeMethod("init", modEventBus);
+        }
+    }
+    public static class ScriptEventInvoker<T extends Event> {
+        final MetaMethod method;
+        public ScriptEventInvoker(MetaMethod method) {
+            this.method = method;
+        }
+        public void invoke(T event) {
+            method.invoke(null, new Object[]{event});
         }
     }
 }
