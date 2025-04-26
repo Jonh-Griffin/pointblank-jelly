@@ -22,7 +22,6 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.phys.HitResult
 import software.bernie.geckolib.cache.object.BakedGeoModel
 
-import javax.annotation.Nullable
 import java.util.function.Predicate
 
 / ^^ Above are all the imports that would be needed for these methods! Useful if you aren't using Intellij /
@@ -57,7 +56,7 @@ boolean preFire(GunClientState.GunClientStateContext context, GunClientState sta
  * @param tooltip The list of tooltip components to add to
  * @param flag The tooltip flag
  */
-void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {}
+void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag flag) {}
 /** Runs on the <code>Client</code> every tick
  * @param plr
  * @param itemStack

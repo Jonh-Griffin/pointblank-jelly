@@ -6,7 +6,6 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.LivingEntity;

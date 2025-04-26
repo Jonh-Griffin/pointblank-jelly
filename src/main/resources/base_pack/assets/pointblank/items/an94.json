@@ -80,6 +80,25 @@
     ],
     "features": [
       {
+        "type": "FireMode",
+        "fireModes": [
+          {
+            "name": "burst",
+            "displayName": "BURST",
+            "type": "BURST",
+            "rpm": 1200,
+            "count": 2,
+            "damage": 6.0,
+            "fireAnimations": [
+              {
+                "name": "animation.model.fire",
+                "duration": 1500
+              }
+            ]
+          }
+        ]
+      },
+      {
         "type": "MuzzleFlash",
         "effects": [
           { "phase": "firing", "name": "muzzle_flash" }

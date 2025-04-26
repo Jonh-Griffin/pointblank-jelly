@@ -56,14 +56,25 @@ public final class Scripts {
                     switch (methodArg.getClass().getSimpleName().toLowerCase()) {
                         case "itemstack" -> ItemStack.CODEC.encodeStart(JsonOps.INSTANCE, (ItemStack) methodArg).result().orElse(null);
                         case "integer" -> Codec.INT.encodeStart(JsonOps.INSTANCE, (int) methodArg).result().orElse(null);
+                        case "long" -> Codec.LONG.encodeStart(JsonOps.INSTANCE, (long) methodArg).result().orElse(null);
                         case "float" -> Codec.FLOAT.encodeStart(JsonOps.INSTANCE, (float) methodArg).result().orElse(null);
                         case "double" -> Codec.DOUBLE.encodeStart(JsonOps.INSTANCE, (double) methodArg).result().orElse(null);
                         case "boolean" -> Codec.BOOL.encodeStart(JsonOps.INSTANCE, (boolean) methodArg).result().orElse(null);
                         case "compoundtag" -> CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, (CompoundTag) methodArg).result().orElse(null);
+                        case "jsonobject" -> (JsonObject) methodArg;
+                        case "jsonelement" -> (JsonElement) methodArg;
+                        case "jsonarray" -> (JsonArray) methodArg;
+                        case "jsonprimitive" -> (JsonPrimitive) methodArg;
+                        case "jsonnull" -> (JsonNull) methodArg;
                         default -> null;
                     };
+                    if(value == null && methodArg.getClass().getSimpleName().equalsIgnoreCase("player") || methodArg.getClass().getSimpleName().equalsIgnoreCase("localplayer")) {
+                        var oj = new JsonObject();
+                        oj.addProperty("type", "player");
+                        args.add(oj);
+                    }
                     if(value != null) {
-                        JsonObject argObj = new JsonObject();
+                        var argObj = new JsonObject();
                         argObj.addProperty("type", methodArg.getClass().getSimpleName());
                         argObj.add("value", value);
                         args.add(argObj);
@@ -109,6 +120,7 @@ public final class Scripts {
             ITEMSTACK(ItemStack.CODEC),
             BOOLEAN(Codec.BOOL),
             INTEGER(Codec.INT),
+            LONG(Codec.LONG),
             FLOAT(Codec.FLOAT),
             DOUBLE(Codec.DOUBLE),
             COMPOUNDTAG(CompoundTag.CODEC);

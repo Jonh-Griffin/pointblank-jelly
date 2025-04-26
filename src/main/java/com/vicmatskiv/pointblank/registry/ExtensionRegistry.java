@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;

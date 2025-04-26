@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin({LivingEntity.class})
+@Mixin(value = {LivingEntity.class}, remap = false)
 public class LivingEntityMixin {
    @Unique
    private final ThreadLocal<DamageSource> hurtDamageSource = new ThreadLocal<>();

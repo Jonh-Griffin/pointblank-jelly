@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin({PostPass.class})
+@Mixin(value = {PostPass.class}, remap = false)
 public class PostPassMixin {
    private static String EFFECT_NAME_PREFIX = "pointblank:";
 

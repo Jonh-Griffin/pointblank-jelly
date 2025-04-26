@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;

@@ -1,16 +1,13 @@
 package com.vicmatskiv.pointblank.registry;
 
-import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.feature.ActiveMuzzleFeature;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.FireModeFeature;
 import com.vicmatskiv.pointblank.feature.MuzzleFlashFeature;
 import com.vicmatskiv.pointblank.feature.PartVisibilityFeature;
 import com.vicmatskiv.pointblank.feature.PipFeature;
-import com.vicmatskiv.pointblank.feature.ReticleFeature;
 import com.vicmatskiv.pointblank.feature.SoundFeature;
 import com.vicmatskiv.pointblank.item.AnimationProvider;
-import com.vicmatskiv.pointblank.item.ConditionalAnimationProvider;
 import com.vicmatskiv.pointblank.item.FireMode;
 import com.vicmatskiv.pointblank.item.FireModeInstance;
 import com.vicmatskiv.pointblank.item.GunItem;

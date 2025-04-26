@@ -84,14 +84,13 @@ import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openjdk.nashorn.api.scripting.ScriptUtils;
 import software.bernie.geckolib.GeckoLib;
 
 @Mod("pointblank")
 public class PointBlankJelly {
    public static final Logger LOGGER = LogManager.getLogger("pointblank");
    public ExtensionRegistry extensionRegistry;
-   private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
+   private static final ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
    public static PointBlankJelly instance;
    public static IEventBus modEventBus;
@@ -130,6 +129,7 @@ public class PointBlankJelly {
       modEventBus.addListener(this::onGatherData);
       MinecraftForge.EVENT_BUS.register(this);
       Network.setupNetworkChannel();
+
    }
 
    public static ServerTaskScheduler getTaskScheduler() {

@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.client.effect;
 
 import com.google.gson.JsonObject;
-import com.vicmatskiv.pointblank.client.effect.Effect.BlendMode;
 import com.vicmatskiv.pointblank.client.uv.LoopingSpriteUVProvider;
 import com.vicmatskiv.pointblank.client.uv.PlayOnceSpriteUVProvider;
 import com.vicmatskiv.pointblank.client.uv.RandomSpriteUVProvider;

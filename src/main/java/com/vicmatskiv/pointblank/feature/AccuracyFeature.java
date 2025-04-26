@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.feature;
 
 import com.google.gson.JsonObject;
-import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import java.util.List;

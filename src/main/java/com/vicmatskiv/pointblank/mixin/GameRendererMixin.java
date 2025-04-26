@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin({GameRenderer.class})
+@Mixin(value = {GameRenderer.class}, remap = false)
 public class GameRendererMixin {
    public GameRendererMixin() {
    }

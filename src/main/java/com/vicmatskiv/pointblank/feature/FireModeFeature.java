@@ -12,10 +12,8 @@ import com.vicmatskiv.pointblank.registry.EffectRegistry;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import com.vicmatskiv.pointblank.util.ScriptParser;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

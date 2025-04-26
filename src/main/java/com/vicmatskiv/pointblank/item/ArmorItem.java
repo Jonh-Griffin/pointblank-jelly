@@ -40,6 +40,7 @@ import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoItem;
+import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
@@ -110,6 +111,8 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         }
 
         this.defaultModifiers = attrbuilder.build();
+
+        SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 
     

@@ -1,21 +1,17 @@
 package com.vicmatskiv.pointblank.util;
 
 import com.vicmatskiv.pointblank.PointBlankJelly;
-import com.vicmatskiv.pointblank.client.gui.CustomButton;
-import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
 import groovy.lang.GroovyShell;
 import groovy.lang.MetaMethod;
 import groovy.lang.Script;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Logger;
 

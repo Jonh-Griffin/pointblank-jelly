@@ -46,6 +46,8 @@ import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public final class AttachmentItem extends Item implements ScriptHolder, GeoItem, Attachment, AttachmentHost, FeatureProvider, Craftable, Tradeable {
@@ -85,6 +87,7 @@ public final class AttachmentItem extends Item implements ScriptHolder, GeoItem,
    }
 
    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+      controllers.add(new AnimationController<>(this, "scriptAnimator", state -> PlayState.CONTINUE));
    }
 
    public AnimatableInstanceCache getAnimatableInstanceCache() {

@@ -2,29 +2,21 @@ package com.vicmatskiv.pointblank.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
-import com.vicmatskiv.pointblank.client.render.layer.AttachmentLayer;
-import com.vicmatskiv.pointblank.client.render.layer.GlowingItemLayer;
 import com.vicmatskiv.pointblank.feature.*;
 import com.vicmatskiv.pointblank.item.ArmorItem;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Quaternionf;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
-import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.core.object.Color;
 import software.bernie.geckolib.model.DefaultedItemGeoModel;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
-import software.bernie.geckolib.util.RenderUtils;
 
 import java.util.Collection;
-import java.util.List;
 
 public class ArmorItemRenderer extends GeoArmorRenderer<ArmorItem> implements RenderPassGeoRenderer<ArmorItem> {
 public ArmorInHandRenderer internal;

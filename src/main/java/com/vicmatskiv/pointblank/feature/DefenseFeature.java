@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import groovy.lang.Script;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +57,7 @@ public class DefenseFeature extends ConditionalFeature {
             if(defenseFeature.hasScript() && defenseFeature.hasFunction("getToughness"))
                 toughness += (float) defenseFeature.invokeFunction("getToughness", itemStack, defenseFeature);
             else
-                toughness += defenseFeature.getTougnessAdditive();
+                toughness += defenseFeature.getToughnessAdditive();
         }
 
         return toughness;
@@ -95,6 +97,26 @@ public class DefenseFeature extends ConditionalFeature {
         return defenseModifier;
     }
 
+    @Override
+    public Component getDescription() {
+        return this.defenseModifier < (double)1.0F ? Component.translatable("description.pointblank.reducesDefense").append(getDefenseComponent()).append(getToughnessComponent()) : Component.translatable("description.pointblank.increasesDefense").append(getDefenseComponent());
+    }
+
+    private MutableComponent getToughnessComponent() {
+        MutableComponent start = this.toughnessModifier < 1.0f ? Component.translatable("description.pointblank.reducesToughness") : Component.translatable("description.pointblank.increasesToughness");
+        start.append(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.toughnessModifier)))
+                .append("\n")
+                .append(Component.literal("description.pointblank.toughness").append(" +%s".formatted(this.toughness)));
+        return start;
+    }
+
+    public MutableComponent getDefenseComponent() {
+        return Component.literal(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.defenseModifier)))
+                .append("\n")
+                .append(Component.literal("description.pointblank.defense").append(" +%s".formatted(this.defense)))
+                .append("\n");
+    }
+
     public float getDefenseModifier() {
         return defenseModifier;
     }
@@ -107,7 +129,7 @@ public class DefenseFeature extends ConditionalFeature {
         return toughnessModifier;
     }
 
-    public float getTougnessAdditive() {
+    public float getToughnessAdditive() {
         return toughness;
     }
 
