@@ -13,26 +13,6 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ItemBuilder;
 import com.vicmatskiv.pointblank.util.ScriptParser;
 import cpw.mods.jarhandling.SecureJar;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
 import groovy.lang.Script;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
@@ -41,9 +21,9 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.Pack.Position;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.repository.RepositorySource;
-import net.minecraft.server.packs.repository.Pack.Position;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.CreativeModeTab;
@@ -59,6 +39,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class ExtensionRegistry {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
@@ -69,16 +60,11 @@ public class ExtensionRegistry {
          consumer.accept(ExtensionRegistry.this.extensionsPack);
       }
    };
-   private List<Script> staticScripts = new ArrayList<>();
 
    public ExtensionRegistry() {
    }
 
-   public List<Script> getStaticScripts() {
-      return this.staticScripts;
-   }
-
-    public List<Extension> getExtensions() {
+   public List<Extension> getExtensions() {
       return Collections.unmodifiableList(this.extensions);
    }
 
@@ -282,6 +268,7 @@ public class ExtensionRegistry {
       private List<PlayerAnimationBuilder> playerAnimationBuilders;
       private Set<String> sounds;
       private Map<String, Supplier<SoundEvent>> registeredExtSounds;
+      public Map<String, Path> clientScripts;
 
       public Extension(String name, Path path, String creativeTabIconItem) {
          this.name = name;
@@ -324,6 +311,7 @@ public class ExtensionRegistry {
                Extension var27;
                try (BufferedReader reader = Files.newBufferedReader(extDescriptorPath)) {
                   Extension extension = (new Gson()).fromJson(reader, Extension.class);
+                  extension.clientScripts = new HashMap<>();
                   extension.path = extPath;
                   extension.itemBuilders = new ArrayList<>();
                   extension.effectBuilders = new ArrayList<>();
@@ -333,21 +321,26 @@ public class ExtensionRegistry {
                   Path namespacePath = extPath.resolve("assets").resolve("pointblank");
                   Path itemsPath = namespacePath.resolve("items");
                   Path scriptsPath = namespacePath.resolve("scripts");
+                  Path clientScriptsPath = scriptsPath.resolve("client");
 
                   if(Files.exists(scriptsPath) && Files.isDirectory(scriptsPath)) {
                      try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
                         for(Path scriptFile : scriptFiles) {
-                           if(scriptFile.getFileName().toString().endsWith(".static.groovy")) {
-                              String scriptName = scriptFile.getFileName().toString().replace(".static.groovy", "");
-                              PointBlankJelly.instance.extensionRegistry.getStaticScripts().add(
-                                 ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath("_static", scriptName))
-                              );
-                              PointBlankJelly.LOGGER.debug("Loaded static script: {} from extension: {}", scriptName, extension.name);
-                           } else {
+                           if(scriptFile.getParent().endsWith("scripts")) {
                               String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
                               ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName));
                               PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
                            }
+                        }
+                     }
+                  }
+
+                  if(Files.exists(clientScriptsPath) && Files.isDirectory(clientScriptsPath)) {
+                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(clientScriptsPath, "*.groovy")) {
+                        for(Path scriptFile : scriptFiles) {
+                           String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
+                           extension.clientScripts.put(scriptName, scriptFile);
+                           PointBlankJelly.LOGGER.debug("Loaded client script: {} from extension: {}", scriptName, extension.name);
                         }
                      }
                   }

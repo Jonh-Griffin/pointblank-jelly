@@ -1,3 +1,5 @@
+package base_pack.assets.pointblank
+
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import com.mojang.datafixers.util.Pair
@@ -412,7 +414,7 @@ void armorTick$A(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
  *
  */
 private void exampleConditions() {
-    //Conditions are applicable anywhere where "Predicate<ConditionContext>" is asked as a parameter
+    //Conditions are applicable anywhere where Predicate<ConditionContext> is asked as a parameter
     Predicate<ConditionContext> examplePredicate = Conditions.hasAttachment("attachment")
     //Predicates can also have multiple conditions using either ".and / &" or ".or / |" (.or is recommended as it supplies autocorrect)
     Predicate<ConditionContext> examplePredicateOr = examplePredicate.or { it.player().health > 10 }
@@ -433,7 +435,7 @@ private void exampleConditions() {
             return GunItem.isAiming(ctx.currentItemStack()) && GunItem.getAmmo(ctx.currentItemStack(), GunItem.getFireModeInstance(ctx.currentItemStack())) == 0
         }
     }
-    //Advanced predicates can also use "Conditions.something()" to apply predefined conditions, you just need to add .test(ctx) with ctx being the ConditionContext parameter
+    //Advanced predicates can also use Conditions.something() to apply predefined conditions, you just need to add .test(ctx) with ctx being the ConditionContext parameter
     Predicate<ConditionContext> examplePredicateAdvanced = new Predicate<ConditionContext>() {
         boolean test(ConditionContext ctx) {
             return GunItem.isAiming(ctx.currentItemStack()) && Conditions.onNonEmptyReload().test(ctx)

@@ -13,28 +13,8 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ThrowableItem;
 import com.vicmatskiv.pointblank.network.ClientBoundPlayerDataSyncPacket;
 import com.vicmatskiv.pointblank.network.Network;
-import com.vicmatskiv.pointblank.registry.AmmoRegistry;
-import com.vicmatskiv.pointblank.registry.BlockEntityRegistry;
-import com.vicmatskiv.pointblank.registry.BlockRegistry;
-import com.vicmatskiv.pointblank.registry.EffectRegistry;
-import com.vicmatskiv.pointblank.registry.EntityRegistry;
-import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
-import com.vicmatskiv.pointblank.registry.FeatureTypeRegistry;
-import com.vicmatskiv.pointblank.registry.ItemRegistry;
-import com.vicmatskiv.pointblank.registry.MenuRegistry;
-import com.vicmatskiv.pointblank.registry.MiscItemRegistry;
-import com.vicmatskiv.pointblank.registry.ParticleRegistry;
-import com.vicmatskiv.pointblank.registry.RecipeTypeRegistry;
-import com.vicmatskiv.pointblank.registry.SoundRegistry;
-import com.vicmatskiv.pointblank.registry.VillagerRegistry;
+import com.vicmatskiv.pointblank.registry.*;
 import com.vicmatskiv.pointblank.util.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.DataGenerator;
@@ -86,6 +66,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 @Mod("pointblank")
 public class PointBlankJelly {
    public static final Logger LOGGER = LogManager.getLogger("pointblank");
@@ -121,7 +108,7 @@ public class PointBlankJelly {
       RecipeTypeRegistry.RECIPE_SERIALIZERS.register(modEventBus);
       ItemRegistry.ITEMS.complete();
 
-      ScriptParser.registerStaticScripts(modEventBus);
+      ScriptParser.runScripts(modEventBus);
       modEventBus.addListener(this::commonSetup);
       modEventBus.addListener(this::clientSetup);
       modEventBus.addListener(this::loadComplete);

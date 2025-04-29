@@ -6,24 +6,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Either;
 import com.mojang.math.Axis;
 import com.vicmatskiv.pointblank.Config;
-import com.vicmatskiv.pointblank.Enableable;
-import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.Config.AutoReload;
 import com.vicmatskiv.pointblank.Config.CrosshairType;
-import com.vicmatskiv.pointblank.attachment.Attachment;
-import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
-import com.vicmatskiv.pointblank.attachment.AttachmentHost;
-import com.vicmatskiv.pointblank.attachment.AttachmentModelInfo;
-import com.vicmatskiv.pointblank.attachment.Attachments;
-import com.vicmatskiv.pointblank.client.controller.AbstractProceduralAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunJumpAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunRandomizingAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunRecoilAnimationController;
-import com.vicmatskiv.pointblank.client.controller.InertiaController;
-import com.vicmatskiv.pointblank.client.controller.PostPassEffectController;
-import com.vicmatskiv.pointblank.client.controller.PryAnimationController;
-import com.vicmatskiv.pointblank.client.controller.TimerController;
-import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController2;
+import com.vicmatskiv.pointblank.Enableable;
+import com.vicmatskiv.pointblank.Nameable;
+import com.vicmatskiv.pointblank.PointBlankJelly;
+import com.vicmatskiv.pointblank.attachment.*;
+import com.vicmatskiv.pointblank.client.controller.*;
 import com.vicmatskiv.pointblank.client.gui.AttachmentManagerScreen;
 import com.vicmatskiv.pointblank.client.gui.CraftingScreen;
 import com.vicmatskiv.pointblank.client.gui.GunItemOverlay;
@@ -42,22 +31,9 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ThrowableItem;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
 import com.vicmatskiv.pointblank.network.Network;
-import com.vicmatskiv.pointblank.registry.BlockEntityRegistry;
-import com.vicmatskiv.pointblank.registry.BlockModelRegistry;
-import com.vicmatskiv.pointblank.registry.EntityRegistry;
-import com.vicmatskiv.pointblank.registry.MenuRegistry;
-import com.vicmatskiv.pointblank.registry.ParticleRegistry;
-import com.vicmatskiv.pointblank.registry.ThirdPersonAnimationRegistry;
-import com.vicmatskiv.pointblank.util.ClientUtil;
-import com.vicmatskiv.pointblank.util.HitScan;
-import com.vicmatskiv.pointblank.util.MiscUtil;
-import com.vicmatskiv.pointblank.util.UpDownCounter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
+import com.vicmatskiv.pointblank.registry.*;
+import com.vicmatskiv.pointblank.util.*;
+import groovy.lang.GroovyShell;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
@@ -68,8 +44,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.HumanoidModel.ArmPose;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.network.chat.Component;
@@ -90,16 +66,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import net.minecraftforge.client.event.RenderGuiEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.event.RenderLivingEvent;
-import net.minecraftforge.client.event.RenderTooltipEvent;
-import net.minecraftforge.client.event.ViewportEvent;
+import net.minecraftforge.client.event.*;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.common.util.Lazy;
 import net.minecraftforge.common.util.LazyOptional;
@@ -123,6 +90,15 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.util.ClientUtils;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientEventHandler {
@@ -1229,6 +1205,16 @@ public class ClientEventHandler {
          MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
          PlayerAnimatorCompat.getInstance().registerAnimationTypes();
          ThirdPersonAnimationRegistry.init();
+         GroovyShell clientShell = new GroovyShell();
+         for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
+            for (Map.Entry<String, Path> entry: extension.clientScripts.entrySet()) {
+                try {
+                    clientShell.parse(entry.getValue().toFile()).run();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+         }
       }
    }
 }

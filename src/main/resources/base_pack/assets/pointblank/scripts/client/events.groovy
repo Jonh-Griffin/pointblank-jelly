@@ -1,3 +1,5 @@
+package base_pack.assets.pointblank.scripts.client
+
 import com.vicmatskiv.pointblank.PointBlankJelly
 import com.vicmatskiv.pointblank.feature.ConditionContext
 import com.vicmatskiv.pointblank.util.Conditions
@@ -7,15 +9,12 @@ import groovy.transform.Field
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.effect.MobEffectInstance
-import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.network.NetworkEvent.Context
 import org.lwjgl.glfw.GLFW
-import software.bernie.geckolib.animatable.GeoItem
 
 @Field //@Field is required for static (static means you can call it from outside scripts in this case)
 // other scripts can call this with {script_name}.keyMapping, main usage is keyMapping.consumeClick()
@@ -27,7 +26,6 @@ static final KeyMapping keyMapping = new KeyMapping
         )
 
 Scripts.registerForgeEvent({clientTickEvent(it)}, TickEvent.ClientTickEvent.class)
-Scripts.registerForgeEvent({playerTickEvent(it)}, TickEvent.PlayerTickEvent.class)
 Scripts.registerModEvent({registerKeys(it)}, RegisterKeyMappingsEvent.class)
 
 static def clientTickEvent(TickEvent.ClientTickEvent event) {
@@ -54,15 +52,4 @@ static def toggleNightVision(ItemStack itemStack) {
         itemStack.getOrCreateTag().putBoolean("nvg", !itemStack.getOrCreateTag().getBoolean("nvg"))
     else
         itemStack.getOrCreateTag().putBoolean("nvg", true)
-}
-
-static def playerTickEvent(TickEvent.PlayerTickEvent playerTickEvent) {
-    def itemStack = playerTickEvent.player.getItemBySlot(EquipmentSlot.HEAD)
-    if(itemStack.getOrCreateTag().getBoolean("nvg")) {
-        playerTickEvent.player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 1000, 0, true, false, false))
-        (itemStack.getItem() as GeoItem).triggerAnim(playerTickEvent.player,GeoItem.getId(itemStack), null, "animation.model.nvgupidle")
-    } else if (Conditions.hasAttachment("gpnvg").test(new ConditionContext(itemStack))) {
-        playerTickEvent.player.removeEffect(MobEffects.NIGHT_VISION)
-        (itemStack.getItem() as GeoItem).triggerAnim(playerTickEvent.player,GeoItem.getId(itemStack), null, "animation.model.nvgdownidle")
-    }
 }
