@@ -43,7 +43,6 @@ public class SkinFeature extends ConditionalFeature {
                GunClientState gunState = GunClientState.getMainHeldState(ClientUtils.getClientPlayer());
                ConditionContext testCondition = new ConditionContext(itemStack, gunState);
                if (gunState != null && itemStack.getItem().toString().equals(entry.getKey()) && !entry.getValue().getSecond().test(testCondition)) {
-                  System.out.println("TEST CONDITION FAILED!!!");
                   return null;
                } else if (gunState != null && itemStack.getItem().toString().equals(entry.getKey())) {
                   if(feature.hasFunction("getSkinTexture"))
