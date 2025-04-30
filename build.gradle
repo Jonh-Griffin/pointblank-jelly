@@ -5,7 +5,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-        classpath 'org.codehaus.groovy:groovy-all:3.0.24'
+        //classpath 'org.apache.groovy:groovy:4.0.19'
     }
 }
 
@@ -14,12 +14,10 @@ plugins {
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    //id 'org.groovymc.modsdotgroovy' version '1.4.1'
     id 'groovy'
 }
-jarJar {
-    enable()
 
-}
 apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
@@ -93,7 +91,11 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     mavenCentral()
     maven {
-        url 'https://cursemaven.com/'
+        url "https://www.cursemaven.com"
+    }
+    maven {
+        name = 'Modding Inquisition Releases'
+        url = 'https://maven.moddinginquisition.org/releases'
     }
     maven {
         name = 'GeckoLib'
@@ -122,9 +124,17 @@ dependencies {
     compileOnly(fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2"))
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))
     runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
+    implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
 
     //Groovy
-    implementation 'org.codehaus.groovy:groovy-all:3.0.24'
+
+    compileOnly 'org.groovymc.gml:gml:4.0.0'
+    runtimeOnly('org.groovymc.gml:gml:4.0.0:all') {
+        exclude module: 'transform'
+    }
+
+    // CommonGroovyLibrary (bundled with GML)
+    //compileOnly 'org.groovymc.cgl:cgl-1.20-forge:0.3.7'
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }

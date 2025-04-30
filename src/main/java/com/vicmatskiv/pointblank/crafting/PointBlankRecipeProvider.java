@@ -29,6 +29,9 @@ public class PointBlankRecipeProvider extends RecipeProvider {
          } else if (item instanceof AmmoItem) {
             quantity = 30;
             sampleBuilder.requires(PointBlankIngredient.of(Items.INGOTS_COPPER, 1)).requires(PointBlankIngredient.of(Items.INGOTS_IRON, 1)).requires(PointBlankIngredient.of(Items.GUNPOWDER, 1));
+         } else {
+            quantity = 5;
+            sampleBuilder.requires(PointBlankIngredient.of(Items.INGOTS_COPPER, 1)).requires(PointBlankIngredient.of(Items.INGOTS_IRON, 1)).requires(PointBlankIngredient.of(Items.GUNPOWDER, 1));
          }
 
          if (quantity > 0) {

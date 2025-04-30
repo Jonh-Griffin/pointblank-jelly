@@ -7,63 +7,26 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.vicmatskiv.pointblank.Config;
 import com.vicmatskiv.pointblank.Nameable;
-import com.vicmatskiv.pointblank.PointBlankJelly;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
 import com.vicmatskiv.pointblank.attachment.AttachmentHost;
 import com.vicmatskiv.pointblank.attachment.Attachments;
-import com.vicmatskiv.pointblank.client.BiDirectionalInterpolator;
-import com.vicmatskiv.pointblank.client.DynamicGeoListener;
-import com.vicmatskiv.pointblank.client.GunClientState;
-import com.vicmatskiv.pointblank.client.GunStatePoseProvider;
-import com.vicmatskiv.pointblank.client.LockableTarget;
+import com.vicmatskiv.pointblank.client.*;
 import com.vicmatskiv.pointblank.client.GunClientState.FireState;
 import com.vicmatskiv.pointblank.client.GunStatePoseProvider.PoseContext;
-import com.vicmatskiv.pointblank.client.controller.AbstractProceduralAnimationController;
-import com.vicmatskiv.pointblank.client.controller.BlendingAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GlowAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunRandomizingAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunRecoilAnimationController;
-import com.vicmatskiv.pointblank.client.controller.GunStateAnimationController;
-import com.vicmatskiv.pointblank.client.controller.PlayerRecoilController;
-import com.vicmatskiv.pointblank.client.controller.RotationAnimationController;
-import com.vicmatskiv.pointblank.client.controller.TimerController;
-import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController;
-import com.vicmatskiv.pointblank.client.controller.ViewShakeAnimationController2;
-import com.vicmatskiv.pointblank.client.effect.AbstractEffect;
+import com.vicmatskiv.pointblank.client.controller.*;
+import com.vicmatskiv.pointblank.client.effect.AbstractEffect.SpriteAnimationType;
 import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
 import com.vicmatskiv.pointblank.client.effect.EffectLauncher;
 import com.vicmatskiv.pointblank.client.effect.MuzzleFlashEffect;
-import com.vicmatskiv.pointblank.client.effect.AbstractEffect.SpriteAnimationType;
 import com.vicmatskiv.pointblank.client.render.GunItemRenderer;
 import com.vicmatskiv.pointblank.crafting.Craftable;
+import com.vicmatskiv.pointblank.entity.ProjectileBulletEntity;
 import com.vicmatskiv.pointblank.entity.ProjectileLike;
 import com.vicmatskiv.pointblank.feature.*;
-import com.vicmatskiv.pointblank.network.FireModeRequestPacket;
-import com.vicmatskiv.pointblank.network.FireModeResponsePacket;
-import com.vicmatskiv.pointblank.network.HitScanFireRequestPacket;
-import com.vicmatskiv.pointblank.network.HitScanFireResponsePacket;
-import com.vicmatskiv.pointblank.network.Network;
-import com.vicmatskiv.pointblank.network.ProjectileFireRequestPacket;
-import com.vicmatskiv.pointblank.network.ReloadRequestPacket;
-import com.vicmatskiv.pointblank.network.ReloadResponsePacket;
+import com.vicmatskiv.pointblank.network.*;
 import com.vicmatskiv.pointblank.registry.*;
-import com.vicmatskiv.pointblank.util.ClientUtil;
-import com.vicmatskiv.pointblank.util.Conditions;
-import com.vicmatskiv.pointblank.util.HitScan;
-import com.vicmatskiv.pointblank.util.JsonUtil;
-import com.vicmatskiv.pointblank.util.MiscUtil;
-import com.vicmatskiv.pointblank.util.SimpleHitResult;
-import com.vicmatskiv.pointblank.util.TimeUnit;
-import com.vicmatskiv.pointblank.util.Tradeable;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
-
+import com.vicmatskiv.pointblank.util.*;
 import groovy.lang.Script;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -95,17 +58,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.AbstractGlassBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BushBlock;
-import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.StainedGlassPaneBlock;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
@@ -115,6 +73,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
@@ -126,6 +85,13 @@ import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.GeckoLibUtil;
+
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class GunItem extends HurtingItem implements ScriptHolder, Craftable, AttachmentHost, Nameable, GeoItem, LockableTarget.TargetLocker, Tradeable {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
@@ -225,7 +191,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    private final ResourceLocation scopeOverlay;
    private final ResourceLocation targetLockOverlay;
    private final ResourceLocation modelResourceLocation;
-   private final List<PhasedReload> phasedReloads;
+   private List<PhasedReload> phasedReloads;
    private AnimationProvider drawAnimationProvider;
    private AnimationProvider inspectAnimationProvider;
    private AnimationProvider idleAnimationProvider;
@@ -239,9 +205,9 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    private final List<GlowAnimationController.Builder> glowEffectBuilders;
    private final List<RotationAnimationController.Builder> rotationEffectBuilders;
    private final EffectLauncher effectLauncher;
-   private final float hitScanSpeed;
-   private final float hitScanAcceleration;
+   private final BulletData bulletData;
    private final float modelScale;
+   private final boolean hitscan;
    private final List<Supplier<Attachment>> compatibleAttachmentSuppliers;
    private final List<String> compatibleAttachmentGroups;
    private Set<Attachment> compatibleAttachments;
@@ -253,6 +219,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    private final String thirdPersonFallbackAnimations;
    @Nullable
    private Script script = null;
+
    private GunItem(Builder builder, String namespace) {
       super(new Properties(), builder);
       this.name = builder.name;
@@ -266,6 +233,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       this.modelScale = builder.modelScale;
       this.tradePrice = builder.tradePrice;
       this.tradeLevel = builder.tradeLevel;
+      this.hitscan = builder.hitscan;
       this.tradeBundleQuantity = builder.tradeBundleQuantity;
       this.script = builder.mainScript;
       this.maxAmmoCapacity = builder.maxAmmoCapacity;
@@ -273,8 +241,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       this.isAimingEnabled = builder.isAimingEnabled;
       this.compatibleBullets = builder.compatibleAmmo != null && !builder.compatibleAmmo.isEmpty() ? builder.compatibleAmmo : Collections.emptySet();
       this.targetLockTimeTicks = builder.targetLockTimeTicks;
-      this.hitScanSpeed = builder.hitScanSpeed;
-      this.hitScanAcceleration = builder.hitScanAcceleration;
+      this.bulletData = builder.bulletData;
       this.viewRecoilAmplitude = builder.viewRecoilAmplitude;
       this.shakeRecoilAmplitude = builder.shakeRecoilAmplitude;
       this.viewRecoilMaxPitch = builder.viewRecoilMaxPitch;
@@ -347,10 +314,18 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       this.inaccuracySprinting = builder.inaccuracySprinting;
       this.reloadCooldownTime = builder.reloadCooldownTime;
       this.reloadAnimation = builder.reloadAnimation;
-      if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
-         this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
-      } else {
+
+      if(hasFunction("overrideReloads")) {
+         this.phasedReloads = (List<PhasedReload>) invokeFunction("overrideReloads", builder);
+         System.out.println("reloads = " + phasedReloads);
          this.requiresPhasedReload = true;
+      }
+      if(!requiresPhasedReload) {
+         if (this.phasedReloads.isEmpty() && this.reloadAnimation != null) {
+            this.phasedReloads.add(new PhasedReload(ReloadPhase.RELOADING, this.reloadCooldownTime, this.reloadAnimation));
+         } else {
+            this.requiresPhasedReload = true;
+         }
       }
 
       this.compatibleAttachmentSuppliers = Collections.unmodifiableList(builder.compatibleAttachments);
@@ -425,6 +400,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       if (!this.glowEffectBuilders.isEmpty() && !features.containsKey(GlowFeature.class)) {
          features.put(GlowFeature.class, new GlowFeature());
       }
+
+
 
       this.features = Collections.unmodifiableMap(features);
       SingletonGeoAnimatable.registerSyncedAnimatable(this);
@@ -1137,6 +1114,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       int shotCount = pcs.getFirst() > 0 ? pcs.getFirst() : 1;
       long requestSeed = random.nextLong();
       FireModeInstance fireModeInstance = getFireModeInstance(itemStack);
+      if(fireModeInstance.getType() == FireMode.MELEE) return;
       AmmoItem projectileItem = this.getFirstCompatibleProjectile(itemStack, fireModeInstance);
 
          if (projectileItem != null) {
@@ -1437,7 +1415,19 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                ServerLevel level = (ServerLevel) MiscUtil.getLevel(player);
                double maxHitScanDistance = this.getMaxServerShootingDistance(itemStack, isAiming, level);
                List<BlockPos> blockPosToDestroy = new ArrayList<>();
-               hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
+               if(this.hitscan)
+                  hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
+               else {
+                  for (int i = 0; i < shotCount; i++) {
+                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (this.bulletData.velocity() + 1f), 0, this.bulletData.maxSpeedOffset());
+                     ProjectileBulletEntity bullet;
+                     float damage = fireModeInstance.getDamage();
+                     bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
+                     bullet.setOwner(player);
+                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
+                     player.level().addFreshEntity(bullet);
+                  }
+               }
                LOGGER.debug("{} obtained hit results", System.currentTimeMillis() % 100000L);
 
                for (HitResult hitResult : hitResults) {
@@ -1744,7 +1734,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on start reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
 
                public void onCompleteReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
@@ -1752,7 +1741,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on complete reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
 
                public void onPrepareReloading(LivingEntity player, GunClientState state, ItemStack itemStack) {
@@ -1760,7 +1748,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      GunItem.LOGGER.debug("Reset {} on prepare reloading. Iter: {}", this.getName(), state.getReloadIterationIndex());
                      this.scheduleReset(player, state, itemStack);
                   }
-
                }
             };
             reloadAnimationController.setSoundKeyframeHandler((event) -> {
@@ -1773,7 +1760,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      player.playSound(soundEvent, 1.0F, 1.0F);
                   }
                }
-
             });
             reloadAnimationControllers.add(reloadAnimationController);
          }
@@ -2192,6 +2178,10 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
          this(phase, (ctx) -> true, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
       }
 
+      public PhasedReload(ReloadPhase phase, long cooldownTime, String animationName, Predicate<ConditionContext> predicate) {
+         this(phase, predicate, cooldownTime, TimeUnit.MILLISECOND, new ReloadAnimation(animationName));
+      }
+
       public ReloadPhase phase() {
          return this.phase;
       }
@@ -2213,7 +2203,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       }
    }
 
-   public static class Builder extends HurtingItem.Builder<Builder> implements Nameable {
+   public static class Builder extends HurtingItem.Builder<Builder> implements Nameable, ScriptHolder {
       private static final float DEFAULT_PRICE = Float.NaN;
       private static final int DEFAULT_TRADE_LEVEL = 0;
       private static final int DEFAULT_TRADE_BUNDLE_QUANTITY = 1;
@@ -2265,6 +2255,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       private static final float DEFAULT_BOBBING = 1.0F;
       private static final float DEFAULT_BOBBING_ON_AIM = 0.3F;
       private static final float DEFAULT_BOBBING_ROLL_MULTIPLIER = 1.0F;
+      public boolean hitscan = false;
+      public BulletData bulletData;
       private long targetLockTimeTicks;
       private double viewRecoilAmplitude = 1.0F;
       private double shakeRecoilAmplitude = 0.5F;
@@ -2332,8 +2324,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       private final List<GlowAnimationController.Builder> glowEffectBuilders = new ArrayList<>();
       private final List<RotationAnimationController.Builder> rotationEffectBuilders = new ArrayList<>();
       private final Map<FirePhase, List<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>>> effectBuilders = new HashMap<>();
-      private float hitScanSpeed = 800.0F;
-      private float hitScanAcceleration = 0.0F;
       private float bobbing = 1.0F;
       private float bobbingOnAim = 0.3F;
       private float bobbingRollMultiplier = 1.0F;
@@ -2368,6 +2358,11 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 
       public Builder withName(String name) {
          this.name = name;
+         return this;
+      }
+
+      public Builder withHitscan(boolean hitscan) {
+         this.hitscan = hitscan;
          return this;
       }
 
@@ -2858,13 +2853,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
          return this;
       }
 
-      public Builder withHitScanSpeed(float hitScanSpeed) {
-         this.hitScanSpeed = hitScanSpeed;
-         return this;
-      }
-
-      public Builder withHitScanAcceleration(float hitScanAcceleration) {
-         this.hitScanAcceleration = hitScanAcceleration;
+      public Builder withBulletData(BulletData bulletData) {
+         this.bulletData = bulletData;
          return this;
       }
 
@@ -2899,6 +2889,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       public Builder withJsonObject(JsonObject obj) {
          super.withJsonObject(obj);
          Builder builder = this;
+         this.withScript(JsonUtil.getJsonScript(obj));
          this.withName(obj.getAsJsonPrimitive("name").getAsString());
          this.withAnimationType((AnimationType)JsonUtil.getEnum(obj, "animationType", AnimationType.class, AnimationType.RIFLE, true));
          this.withFirstPersonFallbackAnimations(JsonUtil.getJsonString(obj, "firstPersonFallbackAnimations", null));
@@ -2915,6 +2906,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
          this.withCraftingDuration(JsonUtil.getJsonInt(obj, "craftingDuration", 1000), TimeUnit.MILLISECOND);
          this.withMaxAmmoPerReloadIteration(JsonUtil.getJsonInt(obj, "maxAmmoPerReloadIteration", Integer.MAX_VALUE));
          this.withAimingEnabled(JsonUtil.getJsonBoolean(obj, "aimingEnabled", true));
+         this.withHitscan(JsonUtil.getJsonBoolean(obj, "hitscan", false));
          this.withTargetLock(JsonUtil.getJsonInt(obj, "minTargetLockTime", 0), TimeUnit.MILLISECOND);
          this.withRpm(JsonUtil.getJsonInt(obj, "rpm", 600));
          this.withPrepareIdleCooldownDuration(JsonUtil.getJsonInt(obj, "prepareIdleCooldownDuration", 0), TimeUnit.MILLISECOND);
@@ -2971,24 +2963,31 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
          }
 
          List<String> fireModeNames = JsonUtil.getStrings(obj, "fireModes");
-         this.withFireModes(fireModeNames.stream().map((n) -> FireMode.valueOf(n.toUpperCase(Locale.ROOT))).toArray((x$0) -> new FireMode[x$0]));
-         this.withHitScanSpeed(JsonUtil.getJsonFloat(obj, "hitScanSpeed", 800.0F));
-         this.withHitScanAcceleration(JsonUtil.getJsonFloat(obj, "hitScanAcceleration", 0.0F));
+         this.withFireModes(fireModeNames.stream().map((n) -> FireMode.valueOf(n.toUpperCase(Locale.ROOT))).toArray(FireMode[]::new));
+         this.withBulletData(BulletData.fromJson(obj));
 
          for(JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(obj, "reloadShakeEffects")) {
             builder.withReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsInt(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01));
          }
 
-         for(JsonObject jsPhasedReload : JsonUtil.getJsonObjects(obj, "phasedReloads")) {
-            List<ReloadShakeEffect> shakeEffects = new ArrayList<>();
+         if(hasFunction("overridePhasedReloads")) {
+            List<PhasedReload> reloads = (List<PhasedReload>) invokeFunction("overridePhasedReloads", obj);
+            for(PhasedReload reload : reloads)
+               builder.withPhasedReload(reload);
+         } else {
+            for(JsonObject jsPhasedReload : JsonUtil.getJsonObjects(obj, "phasedReloads")) {
+               List<ReloadShakeEffect> shakeEffects = new ArrayList<>();
 
-            for(JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects")) {
-               shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01)));
+               for (JsonObject jsReloadShakeEffect : JsonUtil.getJsonObjects(jsPhasedReload, "shakeEffects")) {
+                  shakeEffects.add(new ReloadShakeEffect(jsReloadShakeEffect.getAsJsonPrimitive("start").getAsLong(), jsReloadShakeEffect.getAsJsonPrimitive("duration").getAsLong(), TimeUnit.MILLISECOND, JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAmplitude", 0.15), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfAmplitudeDecay", 0.3), JsonUtil.getJsonDouble(jsReloadShakeEffect, "initialAngularFrequency", 1.0F), JsonUtil.getJsonDouble(jsReloadShakeEffect, "rateOfFrequencyIncrease", 0.01)));
+               }
+
+               Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
+               builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
             }
-
-            Predicate<ConditionContext> condition = jsPhasedReload.has("condition") ? Conditions.fromJson(jsPhasedReload.get("condition")) : (ctx) -> true;
-            builder.withPhasedReload(new PhasedReload(ReloadPhase.valueOf(jsPhasedReload.getAsJsonPrimitive("phase").getAsString()), condition, jsPhasedReload.getAsJsonPrimitive("duration").getAsInt(), TimeUnit.MILLISECOND, new ReloadAnimation(jsPhasedReload.getAsJsonPrimitive("animation").getAsString(), shakeEffects)));
          }
+
+         this.withFeature(new AimingFeature.Builder().withZoom(0.1f).withAimMatrix(new Matrix4f().rotateXYZ(0f, 0f, -25f).translate(-1, 0, 0)));
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
          String reloadAnimation = reloadAnimationElem != null ? reloadAnimationElem.getAsString() : null;
@@ -3113,9 +3112,12 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
             builder.withFireAnimation(JsonUtil.getJsonString(jsFireAnimation, "name", "animation.model.inspect"), condition, 0, TimeUnit.MILLISECOND);
          }
 
-         builder.withScript(JsonUtil.getJsonScript(obj));
-
          return this;
+      }
+
+      @Override
+      public @org.jetbrains.annotations.Nullable Script getScript() {
+         return mainScript;
       }
    }
 }

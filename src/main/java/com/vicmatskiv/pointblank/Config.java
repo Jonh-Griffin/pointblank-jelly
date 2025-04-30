@@ -1,12 +1,7 @@
 package com.vicmatskiv.pointblank;
 
-import com.google.gson.JsonObject;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
-import net.minecraftforge.common.ForgeConfigSpec.Builder;
-import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
-import net.minecraftforge.common.ForgeConfigSpec.DoubleValue;
-import net.minecraftforge.common.ForgeConfigSpec.IntValue;
+import net.minecraftforge.common.ForgeConfigSpec.*;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -44,6 +39,8 @@ public class Config {
    public static final BooleanValue ADVANCE_IRIS_INTEGRATION_ENABLED;
    public static final BooleanValue FIRST_PERSON_ANIMATIONS_ENABLED;
    public static final BooleanValue THIRD_PERSON_ANIMATIONS_ENABLED;
+   public static final BooleanValue PLAYERHEADSHOTS;
+   public static final BooleanValue MOBHEADSHOTS;
    static final ForgeConfigSpec SPEC;
    public static AutoReload autoReload;
    public static double scopeAimingMouseSensitivity;
@@ -71,6 +68,8 @@ public class Config {
    public static boolean advancedIrisIntegrationEnabled;
    public static boolean firstPersonAnimationsEnabled;
    public static boolean thirdPersonAnimationsEnabled;
+   public static boolean playerHeadshots;
+   public static boolean mobHeadshots;
 
    @SubscribeEvent
    static void onLoad(ModConfigEvent event) {
@@ -100,6 +99,8 @@ public class Config {
       advancedIrisIntegrationEnabled = ADVANCE_IRIS_INTEGRATION_ENABLED.get();
       firstPersonAnimationsEnabled = FIRST_PERSON_ANIMATIONS_ENABLED.get();
       thirdPersonAnimationsEnabled = THIRD_PERSON_ANIMATIONS_ENABLED.get();
+      playerHeadshots = PLAYERHEADSHOTS.get();
+      mobHeadshots = MOBHEADSHOTS.get();
    }
 
    static {
@@ -129,6 +130,8 @@ public class Config {
       ADVANCE_IRIS_INTEGRATION_ENABLED = BUILDER.comment("Enables advanced integraiton with Iris shaders").define("advancedIrisIntegrationEnabled", true);
       FIRST_PERSON_ANIMATIONS_ENABLED = BUILDER.comment("Enables advanced first person animations").define("firstPersonAnimationsEnabled", true);
       THIRD_PERSON_ANIMATIONS_ENABLED = BUILDER.comment("Enables advanced third person animations").define("thirdPersonAnimationsEnabled", true);
+      PLAYERHEADSHOTS = BUILDER.comment("Enables player headshots, recommended to disable if using FirstAid").define("playerHeadshots", true);
+      MOBHEADSHOTS = BUILDER.comment("Enables mob headshots").define("playerHeadshots", true);
       SPEC = BUILDER.build();
    }
 

@@ -1,17 +1,14 @@
 package com.vicmatskiv.pointblank.registry;
 
 import com.vicmatskiv.pointblank.entity.EntityBuilder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Supplier;
+import com.vicmatskiv.pointblank.entity.ProjectileBulletEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
+import java.util.*;
+import java.util.function.Supplier;
 
 public final class EntityRegistry {
    public static final DeferredRegister<EntityType<?>> ENTITIES;
@@ -55,6 +52,7 @@ public final class EntityRegistry {
       entityBuildersByNameType = new HashMap<>();
       typesByName = new HashMap<>();
       itemEntityBuilders = new HashMap<>();
+      ENTITIES.register("bullet", () -> ProjectileBulletEntity.TYPE);
    }
 
    private record EntityKey(String name, EntityBuilder.EntityTypeExt type) {

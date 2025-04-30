@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
-@Mixin({MouseHandler.class})
+@Mixin(value = {MouseHandler.class}, remap = false)
 public class MouseHandlerMixin {
    @ModifyConstant(
       method = {"turnPlayer()V"},

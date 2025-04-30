@@ -159,6 +159,9 @@ public class Features {
          case "SKIN" -> {
             return (new SkinFeature.Builder()).withJsonObject(obj);
          }
+         case "DEFENSE" -> {
+            return (new DefenseFeature.Builder()).withJsonObject(obj);
+         }
          default -> throw new IllegalArgumentException("Invalid feature type: " + featureType);
       }
    }

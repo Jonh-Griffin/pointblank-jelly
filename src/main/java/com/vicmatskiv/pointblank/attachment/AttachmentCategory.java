@@ -19,27 +19,19 @@ import java.util.function.Predicate;
 
 public class AttachmentCategory implements Comparable<AttachmentCategory>, Nameable {
    private static final SortedMap<String, AttachmentCategory> categories = new TreeMap<>();
-   public static final AttachmentCategory SCOPE = fromString("scope", (c) -> {
-      return c == AimingFeature.class || c == ReticleFeature.class || c == PipFeature.class;
-   });
-   public static final AttachmentCategory MUZZLE = fromString("muzzle", (c) -> {
-      return false;
-   }).withDefaultFeatures(List.of((new ActiveMuzzleFeature.Builder()).withCondition(Conditions.isUsingDefaultMuzzle())));
-   public static final AttachmentCategory RAIL = fromString("rail", (c) -> {
-      return false;
-   });
-   public static final AttachmentCategory UNDERBARREL = fromString("underbarrel", (c) -> {
-      return false;
-   });
-   public static final AttachmentCategory SKIN = fromString("skin", (c) -> {
-      return false;
-   });
-   public static final AttachmentCategory STOCK = fromString("stock", (c) -> {
-      return false;
-   });
-   public static final AttachmentCategory MAGAZINE = fromString("magazine", (c) -> {
-      return false;
-   });
+   //Gun Attachments
+   public static final AttachmentCategory SCOPE = fromString("scope", (c) -> c == AimingFeature.class || c == ReticleFeature.class || c == PipFeature.class);
+   public static final AttachmentCategory MUZZLE = fromString("muzzle", (c) -> false).withDefaultFeatures(List.of((new ActiveMuzzleFeature.Builder()).withCondition(Conditions.isUsingDefaultMuzzle())));
+   public static final AttachmentCategory RAIL = fromString("rail", (c) -> false);
+   public static final AttachmentCategory UNDERBARREL = fromString("underbarrel", (c) -> false);
+   public static final AttachmentCategory SKIN = fromString("skin", (c) -> false);
+   public static final AttachmentCategory STOCK = fromString("stock", (c) -> false);
+   public static final AttachmentCategory MAGAZINE = fromString("magazine", (c) -> false);
+   //Armor Attachments
+   public static final AttachmentCategory PLATE = fromString("plate", (c) -> false);
+   public static final AttachmentCategory POUCH = fromString("pouch", (c) -> false);
+   public static final AttachmentCategory ACCESSORY = fromString("accessory", (c) -> false);
+
    private final String name;
    private final Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate;
    private final List<FeatureBuilder<?, ?>> defaultFeatures;
@@ -49,15 +41,11 @@ public class AttachmentCategory implements Comparable<AttachmentCategory>, Namea
    }
 
    public static AttachmentCategory fromString(String categoryName) {
-      return fromString(categoryName, (c) -> {
-         return false;
-      });
+      return fromString(categoryName, (c) -> false);
    }
 
    private static AttachmentCategory fromString(String categoryName, Predicate<Class<? extends Feature>> isActiveAttachmentRequiredPredicate) {
-       return categories.computeIfAbsent(categoryName.toLowerCase(), (n) -> {
-          return new AttachmentCategory(n, isActiveAttachmentRequiredPredicate);
-       });
+       return categories.computeIfAbsent(categoryName.toLowerCase(), (n) -> new AttachmentCategory(n, isActiveAttachmentRequiredPredicate));
    }
 
    public static AttachmentCategory fromOrdinal(int ordinal) {

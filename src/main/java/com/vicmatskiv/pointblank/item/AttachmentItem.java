@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import groovy.lang.Script;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.nbt.CompoundTag;
@@ -44,9 +46,11 @@ import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public final class AttachmentItem extends Item implements GeoItem, Attachment, AttachmentHost, FeatureProvider, Craftable, Tradeable {
+public final class AttachmentItem extends Item implements ScriptHolder, GeoItem, Attachment, AttachmentHost, FeatureProvider, Craftable, Tradeable {
    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
    private String name;
    private AttachmentCategory category;
@@ -61,6 +65,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
    private int tradeLevel;
    private List<Component> descriptionLines;
    public List<Supplier<Attachment>> defaultAttachmentSuppliers;
+   private @org.jetbrains.annotations.Nullable Script script;
 
    public AttachmentItem() {
       super(new Item.Properties());
@@ -82,6 +87,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
    }
 
    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+      controllers.add(new AnimationController<>(this, "scriptAnimator", state -> PlayState.CONTINUE));
    }
 
    public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -187,6 +193,11 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
    }
 
+   @Override
+   public @org.jetbrains.annotations.Nullable Script getScript() {
+      return script;
+   }
+
    public static class Builder extends ItemBuilder<Builder> {
       private static final int DEFAULT_CRAFTING_DURATION = 750;
       private static final float DEFAULT_PRICE = Float.NaN;
@@ -204,6 +215,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
       private int tradeLevel = 0;
       private final List<Component> descriptionLines = new ArrayList<>();
       private final List<Supplier<Attachment>> defaultAttachments = new ArrayList<>();
+      private @org.jetbrains.annotations.Nullable Script script;
 
       public Builder(ExtensionRegistry.Extension extension) {
          this.extension = extension;
@@ -215,6 +227,11 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
 
       public Builder withName(String name) {
          this.name = name;
+         return this;
+      }
+
+      public Builder withScript(Script script) {
+         this.script = script;
          return this;
       }
 
@@ -299,6 +316,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
          this.withCategory(JsonUtil.getJsonString(obj, "category"));
          this.withTradePrice(JsonUtil.getJsonFloat(obj, "tradePrice", Float.NaN), JsonUtil.getJsonInt(obj, "tradeLevel", 0));
          this.withCraftingDuration(JsonUtil.getJsonInt(obj, "craftingDuration", 750), TimeUnit.MILLISECOND);
+         this.withScript(JsonUtil.getJsonScript(obj));
          List<String> groups = JsonUtil.getStrings(obj, "groups");
          this.groups.addAll(groups);
 
@@ -340,6 +358,7 @@ public final class AttachmentItem extends Item implements GeoItem, Attachment, A
             attachment.compatibleAttachmentSuppliers = Collections.unmodifiableList(this.compatibleAttachmentSuppliers);
             attachment.compatibleAttachmentGroups = Collections.unmodifiableList(this.compatibleAttachmentGroups);
             attachment.groups = Collections.unmodifiableSet(this.groups);
+            attachment.script = this.script;
             Map<Class<? extends Feature>, Feature> features = new HashMap<>();
 
             for(FeatureBuilder<?, ?> featureBuilder : this.category.getDefaultFeatures()) {

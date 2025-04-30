@@ -2,7 +2,6 @@ package com.vicmatskiv.pointblank.client;
 
 import com.mojang.blaze3d.vertex.PoseStack.Pose;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;

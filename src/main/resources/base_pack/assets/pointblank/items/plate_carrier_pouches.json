@@ -1,0 +1,14 @@
+{
+  "name": "plate_carrier_pouches",
+  "type": "Attachment",
+  "category": "pouches",
+  "groups": [
+      "pouches"
+  ],
+  "features": [
+    {
+      "type": "defense",
+      "defenseAdditive": 1
+    }
+  ]
+}

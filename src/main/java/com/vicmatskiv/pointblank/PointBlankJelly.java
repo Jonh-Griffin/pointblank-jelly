@@ -13,31 +13,8 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ThrowableItem;
 import com.vicmatskiv.pointblank.network.ClientBoundPlayerDataSyncPacket;
 import com.vicmatskiv.pointblank.network.Network;
-import com.vicmatskiv.pointblank.registry.AmmoRegistry;
-import com.vicmatskiv.pointblank.registry.BlockEntityRegistry;
-import com.vicmatskiv.pointblank.registry.BlockRegistry;
-import com.vicmatskiv.pointblank.registry.EffectRegistry;
-import com.vicmatskiv.pointblank.registry.EntityRegistry;
-import com.vicmatskiv.pointblank.registry.ExtensionRegistry;
-import com.vicmatskiv.pointblank.registry.FeatureTypeRegistry;
-import com.vicmatskiv.pointblank.registry.ItemRegistry;
-import com.vicmatskiv.pointblank.registry.MenuRegistry;
-import com.vicmatskiv.pointblank.registry.MiscItemRegistry;
-import com.vicmatskiv.pointblank.registry.ParticleRegistry;
-import com.vicmatskiv.pointblank.registry.RecipeTypeRegistry;
-import com.vicmatskiv.pointblank.registry.SoundRegistry;
-import com.vicmatskiv.pointblank.registry.VillagerRegistry;
-import com.vicmatskiv.pointblank.util.InventoryUtils;
-import com.vicmatskiv.pointblank.util.MiscUtil;
-import com.vicmatskiv.pointblank.util.ServerTaskScheduler;
-import com.vicmatskiv.pointblank.util.SimpleHitResult;
-import com.vicmatskiv.pointblank.util.Tradeable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import com.vicmatskiv.pointblank.registry.*;
+import com.vicmatskiv.pointblank.util.*;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.DataGenerator;
@@ -89,15 +66,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 @Mod("pointblank")
 public class PointBlankJelly {
    public static final Logger LOGGER = LogManager.getLogger("pointblank");
    public ExtensionRegistry extensionRegistry;
-   private static ServerTaskScheduler scheduler = new ServerTaskScheduler();
+   private static final ServerTaskScheduler scheduler = new ServerTaskScheduler();
    private final Random random = new Random();
    public static PointBlankJelly instance;
+   public static IEventBus modEventBus;
    public PointBlankJelly() {
       instance = this;
+
+      modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();
@@ -106,7 +93,6 @@ public class PointBlankJelly {
       this.extensionRegistry = new ExtensionRegistry();
       Dist side = FMLLoader.getDist();
       this.extensionRegistry.discoverExtensions(side.isClient() ? PackType.CLIENT_RESOURCES : PackType.SERVER_DATA);
-      IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
       ExtensionRegistry.registerItemsFromExtensions(this.extensionRegistry, modEventBus);
       ParticleRegistry.PARTICLES.register(modEventBus);
       SoundRegistry.SOUNDS.register(modEventBus);
@@ -121,6 +107,8 @@ public class PointBlankJelly {
       RecipeTypeRegistry.RECIPE_TYPES.register(modEventBus);
       RecipeTypeRegistry.RECIPE_SERIALIZERS.register(modEventBus);
       ItemRegistry.ITEMS.complete();
+
+      ScriptParser.runScripts(modEventBus);
       modEventBus.addListener(this::commonSetup);
       modEventBus.addListener(this::clientSetup);
       modEventBus.addListener(this::loadComplete);
@@ -128,6 +116,7 @@ public class PointBlankJelly {
       modEventBus.addListener(this::onGatherData);
       MinecraftForge.EVENT_BUS.register(this);
       Network.setupNetworkChannel();
+
    }
 
    public static ServerTaskScheduler getTaskScheduler() {

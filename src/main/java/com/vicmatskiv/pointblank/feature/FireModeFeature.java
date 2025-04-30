@@ -12,10 +12,8 @@ import com.vicmatskiv.pointblank.registry.EffectRegistry;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import com.vicmatskiv.pointblank.util.ScriptParser;
 import com.vicmatskiv.pointblank.util.TimeUnit;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -266,7 +264,7 @@ public class FireModeFeature extends ConditionalFeature {
 
    public record FireModeDescriptor(String name, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, Script script) {
 
-       public String name() {
+      public String name() {
          return this.name;
       }
 

@@ -1,0 +1,13 @@
+{
+  "name": "black_plate_carrier",
+  "type": "armor",
+  "armorType": "chestplate",
+  "durability": 200,
+  "toughness": 1.5,
+  "defense": 3,
+  "compatibleAttachments": [
+  ],
+  "compatibleAttachmentGroups": [
+    "pouches"
+  ]
+}

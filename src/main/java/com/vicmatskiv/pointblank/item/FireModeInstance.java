@@ -223,6 +223,10 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
       return script;
    }
 
+   public boolean getMelee() {
+      return this.type == FireMode.MELEE;
+   }
+
    public record ViewShakeDescriptor(long duration, double amplitude, double speed) {
 
        public long duration() {
