@@ -19,9 +19,11 @@ import com.vicmatskiv.pointblank.client.gui.GunItemOverlay;
 import com.vicmatskiv.pointblank.client.particle.EffectParticles;
 import com.vicmatskiv.pointblank.client.render.BaseModelBlockRenderer;
 import com.vicmatskiv.pointblank.client.render.CrosshairRenderer;
+import com.vicmatskiv.pointblank.client.render.DefaultProjectileRenderer;
 import com.vicmatskiv.pointblank.client.render.RenderUtil;
 import com.vicmatskiv.pointblank.compat.playeranimator.PlayerAnimatorCompat;
 import com.vicmatskiv.pointblank.entity.EntityBuilder;
+import com.vicmatskiv.pointblank.entity.ProjectileBulletEntity;
 import com.vicmatskiv.pointblank.explosion.ExplosionEvent;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
@@ -1182,6 +1184,7 @@ public class ClientEventHandler {
       public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
          event.registerBlockEntityRenderer(BlockEntityRegistry.WORKSTATION_BLOCK_ENTITY.get(), (context) -> new BaseModelBlockRenderer<>(BlockModelRegistry.WORKSTATION_BLOCK_MODEL.get()));
          event.registerBlockEntityRenderer(BlockEntityRegistry.PRINTER_BLOCK_ENTITY.get(), (context) -> new BaseModelBlockRenderer<>(BlockModelRegistry.PRINTER_BLOCK_MODEL.get()));
+         event.registerEntityRenderer(ProjectileBulletEntity.TYPE, DefaultProjectileRenderer::new);
 
          for(Map.Entry<RegistryObject<EntityType<?>>, Supplier<EntityBuilder<?, ?>>> e : EntityRegistry.getItemEntityBuilders().entrySet()) {
             Supplier<EntityBuilder<?, ?>> supplier = e.getValue();

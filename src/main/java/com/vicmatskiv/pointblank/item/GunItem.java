@@ -1415,11 +1415,11 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                   hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
                else {
                   for (int i = 0; i < shotCount; i++) {
-                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / this.bulletData.velocity(), 0, this.bulletData.maxSpeedOffset());
-
+                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (this.bulletData.velocity() + 1f), 0, this.bulletData.maxSpeedOffset());
                      ProjectileBulletEntity bullet;
                      float damage = fireModeInstance.getDamage();
                      bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
+                     bullet.setOwner(player);
                      bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }
