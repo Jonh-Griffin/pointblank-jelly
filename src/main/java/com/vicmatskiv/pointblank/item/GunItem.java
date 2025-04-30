@@ -561,6 +561,10 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       FireModeFeature mainFireModeFeature = this.getFeature(FireModeFeature.class);
       if (mainFireModeFeature.getFireModes().contains(fireModeInstance)) {
          int ammoCapacity;
+         if (fireModeInstance.getMaxAmmoCapacity() == Integer.MAX_VALUE) {
+            ammoCapacity = Integer.MAX_VALUE;
+            return AmmoCapacityFeature.modifyAmmoCapacity(itemStack, ammoCapacity);
+         }
          if (fireModeInstance.getAmmo() == AmmoRegistry.DEFAULT_AMMO_POOL.get()) {
             ammoCapacity = this.maxAmmoCapacity;
          } else {
