@@ -33,6 +33,11 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     public float maxDistance = 1000f;
     public float headshotMultiplier = 1.0f;
     public static TagKey<Block> PASSABLE = BlockTags.create(new ResourceLocation("pointblank", "passable"));
+    private float bulletGravity = 0.03f;
+
+    public void setBulletGravity(float gravity) {
+        this.bulletGravity = gravity;
+    }
 
     public ProjectileBulletEntity(EntityType<ProjectileBulletEntity> entityType, Level world) {
         super(entityType, world);
@@ -94,6 +99,9 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
             if(passThrough)
                 this.checkInsideBlocks();
             Vec3 vec3 = this.getDeltaMovement();
+
+            vec3 = vec3.add(0, -bulletGravity, 0);
+
             double d0 = this.getX() + vec3.x;
             double d1 = this.getY() + vec3.y;
             double d2 = this.getZ() + vec3.z;
