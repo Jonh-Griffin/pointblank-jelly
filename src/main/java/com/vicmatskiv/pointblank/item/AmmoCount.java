@@ -23,9 +23,6 @@ public class AmmoCount {
    }
 
    public int getAmmoCount(FireModeInstance fireMode) {
-       if (fireMode.getMaxAmmoCapacity() == Integer.MAX_VALUE) { //This is a hacky work around in my opinion, though it does seem to work without much issue.
-          return Integer.MAX_VALUE;
-       }
        return this.get(fireMode).get();
    }
 }
