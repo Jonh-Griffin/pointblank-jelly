@@ -1420,6 +1420,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      float damage = fireModeInstance.getDamage();
                      bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
                      bullet.setOwner(player);
+                     bullet.setBulletGravity(this.bulletData.gravity()); // (￣o￣) . z Z
                      bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }

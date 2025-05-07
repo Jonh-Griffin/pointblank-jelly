@@ -15,6 +15,13 @@
     "shakeRecoilAmplitude": 2.0,
     "shakeRecoilSpeed": 2.0,
     "viewRecoilAmplitude": 8.0,
+    "bulletData": {
+      "velocity": 3.5,
+      "speedOffset": 4.0,
+      "maxSpeedOffset": 5.0,
+      "inaccuracy": 20.0,
+      "gravity": 0.2
+    },
     "drawAnimations": [
       { "name": "animation.model.draw",    "duration": 800 }
     ],
