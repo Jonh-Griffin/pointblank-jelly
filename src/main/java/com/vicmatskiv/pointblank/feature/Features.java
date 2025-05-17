@@ -9,18 +9,14 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.registry.FeatureTypeRegistry;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.LRUCache;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class Features {
    private static final LRUCache<Pair<Tag, Class<? extends Feature>>, List<EnabledFeature>> selectedItemFeatureCache = new LRUCache<>(200);
@@ -67,7 +63,7 @@ public class Features {
    public static boolean hasFeature(ItemStack itemStack, Feature feature) {
       Item var3 = itemStack.getItem();
       if (var3 instanceof FeatureProvider fp) {
-         return fp.hasFeature(feature);
+         return fp.hasFeature(feature.getClass());
       } else {
          return false;
       }
@@ -161,6 +157,9 @@ public class Features {
          }
          case "DEFENSE" -> {
             return (new DefenseFeature.Builder()).withJsonObject(obj);
+         }
+         case "SLOT" -> {
+            return (new SlotFeature.Builder()).withJsonObject(obj);
          }
          default -> throw new IllegalArgumentException("Invalid feature type: " + featureType);
       }

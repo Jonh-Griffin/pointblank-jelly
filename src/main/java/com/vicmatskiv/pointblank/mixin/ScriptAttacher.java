@@ -25,4 +25,9 @@ public class ScriptAttacher implements Metadata {
     public boolean getClientStatus() {
         return this.clientOnly;
     }
+
+    @Unique
+    public void printTest() {
+        System.out.println("TestPrint");
+    }
 }

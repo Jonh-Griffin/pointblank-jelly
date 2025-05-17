@@ -1,7 +1,6 @@
 package com.vicmatskiv.pointblank.entity;
 
 import com.vicmatskiv.pointblank.Config;
-import com.vicmatskiv.pointblank.mixin.ProjectileAccessor;
 import com.vicmatskiv.pointblank.registry.SoundRegistry;
 import com.vicmatskiv.pointblank.util.HitboxHelper;
 import net.minecraft.core.BlockPos;
@@ -68,14 +67,13 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     public void tick() {
         Entity entity = this.getOwner();
         if (this.level().isClientSide || (entity == null || !entity.isRemoved()) && this.level().hasChunkAt(this.blockPosition())) {
-            ProjectileAccessor accessor = (ProjectileAccessor)this;
-            if (!accessor.hasBeenShot()) {
+            if (!this.hasBeenShot) {
                 this.gameEvent(GameEvent.PROJECTILE_SHOOT, this.getOwner());
-                accessor.setHasBeenShot(true);
+                this.hasBeenShot = true;
             }
 
-            if (!accessor.getOwner()) {
-                accessor.setOwner(this.checkLeftOwner());
+            if (!this.leftOwner) {
+                this.leftOwner = this.checkLeftOwner();
             }
 
             this.baseTick();

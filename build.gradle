@@ -80,7 +80,7 @@ minecraft {
 }
 
 mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
+    //add sourceSets.main, "${mod_id}.refmap.json"
 
     config "${mod_id}.mixins.json"
     config "${mod_id}.mixins.compat.iris.json"
@@ -133,8 +133,15 @@ dependencies {
         exclude module: 'transform'
     }
 
+    //jarJar('org.groovymc.gml:gml:4.0.0:all') {
+    //    jarJar.ranged(it, "[4.0.0,)")
+    //    exclude module: 'transform'
+    //}
+
     // CommonGroovyLibrary (bundled with GML)
-    //compileOnly 'org.groovymc.cgl:cgl-1.20-forge:0.3.7'
+    //jarJar('org.groovymc.cgl:cgl-1.20-forge:0.3.7') {
+    //    jarJar.ranged(it, "[0.3.7,)")
+    //}
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }

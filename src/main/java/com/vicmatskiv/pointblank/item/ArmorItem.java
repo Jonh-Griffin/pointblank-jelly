@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Either;
 import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
@@ -23,16 +24,31 @@ import net.minecraft.Util;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.entity.*;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.tooltip.BundleTooltip;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -48,6 +64,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -74,6 +91,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     private final long craftingDuration;
     private final SoundEvent equipSound;
     private final List<GlowAnimationController.Builder> glowEffectBuilders;
+    boolean equipped = false;
 
     public ArmorItem(Builder builder, String namespace) {
         super(ArmorMaterials.LEATHER,builder.armorType,new Properties().stacksTo(1).durability(builder.durability));
@@ -115,7 +133,232 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 
-    
+    public void equipArmor() {
+
+    }
+
+    public void unequipArmor() {
+
+    }
+
+    boolean hasSlots(ItemStack pStack) {
+        var addedSlots = 0;
+        var weight = 0;
+        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
+            var attachmentI = ((AttachmentItem) attachment.getItem());
+            if(attachmentI.hasFeature(SlotFeature.class)) {
+                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
+                if (feature != null) {
+                    addedSlots += 1;
+                    weight += feature.weight;
+                }
+            }
+        }
+        return addedSlots > 0;
+    }
+
+    @Override
+    public boolean overrideOtherStackedOnMe(ItemStack pStack, ItemStack pOther, Slot pSlot, ClickAction pAction, Player pPlayer, SlotAccess pAccess) {
+        var weight = 0;
+        List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
+        if(this.hasFeature(SlotFeature.class)) {
+            SlotFeature selfFeature = this.getFeature(SlotFeature.class);
+            weight += selfFeature.weight;
+            if (selfFeature.whitelist != null) {
+                whitelist.addAll(selfFeature.whitelist);
+            }
+        }
+        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
+            if(((AttachmentItem) attachment.getItem()).hasFeature(SlotFeature.class)) {
+                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
+                weight += feature.weight;
+                if (feature.whitelist != null) {
+                    whitelist.addAll(feature.whitelist);
+                }
+            }
+        }
+        if(whitelist.isEmpty()) whitelist = null;
+        if(weight == 0) return super.overrideOtherStackedOnMe(pStack, pOther, pSlot, pAction, pPlayer, pAccess);
+
+        if (pStack.getCount() != 1) return false;
+        if (pAction == ClickAction.SECONDARY && pSlot.allowModification(pPlayer)) {
+            if (pOther.isEmpty()) {
+                removeOne(pStack).ifPresent((p_186347_) -> {
+                    this.playRemoveOneSound(pPlayer);
+                    pAccess.set(p_186347_);
+                });
+            } else {
+                int i = add(pStack, pOther, weight, whitelist);
+                if (i > 0) {
+                    this.playInsertSound(pPlayer);
+                    pOther.shrink(i);
+                }
+            }
+                return true;
+            } else {
+                return super.overrideOtherStackedOnMe(pStack, pOther, pSlot, pAction, pPlayer, pAccess);
+            }
+    }
+
+    //Bundle Code
+    private static final String TAG_ITEMS = "Items";
+    public static final int MAX_WEIGHT = 64;
+    private static final int BUNDLE_IN_BUNDLE_WEIGHT = 4;
+    private static final int BAR_COLOR = Mth.color(0.4F, 0.4F, 1.0F);
+
+    public boolean isBarVisible(ItemStack pStack) {
+        return false;
+    }
+
+    public int getBarWidth(ItemStack pStack) {
+        return 1;
+    }
+
+    public int getBarColor(ItemStack pStack) {
+        return BAR_COLOR;
+    }
+
+    private static int add(ItemStack pBundleStack, ItemStack pInsertedStack, int weight, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
+        if (!pInsertedStack.isEmpty() && pInsertedStack.getItem().canFitInsideContainerItems()) {
+            CompoundTag compoundtag = pBundleStack.getOrCreateTag();
+            if (!compoundtag.contains("Items")) {
+                compoundtag.put("Items", new ListTag());
+            }
+
+            int i = getContentWeight(pBundleStack, whitelist);
+            int j = SlotFeature.getWeight(pInsertedStack, whitelist);
+            int k = Math.min(pInsertedStack.getCount(), (weight - i) / j);
+            if (k == 0) {
+                return 0;
+            } else {
+                ListTag listtag = compoundtag.getList("Items", 10);
+                Optional<CompoundTag> optional = getMatchingItem(pInsertedStack, listtag);
+                if (optional.isPresent()) {
+                    CompoundTag compoundtag1 = optional.get();
+                    ItemStack itemstack = ItemStack.of(compoundtag1);
+                    itemstack.grow(k);
+                    itemstack.save(compoundtag1);
+                    listtag.remove(compoundtag1);
+                    listtag.add(0, (Tag)compoundtag1);
+                } else {
+                    ItemStack itemstack1 = pInsertedStack.copyWithCount(k);
+                    CompoundTag compoundtag2 = new CompoundTag();
+                    itemstack1.save(compoundtag2);
+                    listtag.add(0, (Tag)compoundtag2);
+                }
+
+                return k;
+            }
+        } else {
+            return 0;
+        }
+    }
+
+    private static Optional<CompoundTag> getMatchingItem(ItemStack pStack, ListTag pList) {
+        return pStack.is(Items.BUNDLE) ? Optional.empty() : pList.stream().filter(CompoundTag.class::isInstance).map(CompoundTag.class::cast).filter((p_186350_) -> {
+            return ItemStack.isSameItemSameTags(ItemStack.of(p_186350_), pStack) && ItemStack.of(p_186350_).getCount() + pStack.getCount() <= pStack.getMaxStackSize();
+        }).findFirst();
+    }
+
+    private static int getContentWeight(ItemStack pStack, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
+        return getContents(pStack).mapToInt((p_186356_) -> {
+            return SlotFeature.getWeight(p_186356_, whitelist) * p_186356_.getCount();
+        }).sum();
+    }
+
+        private static Optional<ItemStack> removeOne(ItemStack pStack) {
+        CompoundTag compoundtag = pStack.getOrCreateTag();
+        if (!compoundtag.contains("Items")) {
+            return Optional.empty();
+        } else {
+            ListTag listtag = compoundtag.getList("Items", 10);
+            if (listtag.isEmpty()) {
+                return Optional.empty();
+            } else {
+                int i = 0;
+                CompoundTag compoundtag1 = listtag.getCompound(0);
+                ItemStack itemstack = ItemStack.of(compoundtag1);
+                listtag.remove(0);
+                if (listtag.isEmpty()) {
+                    pStack.removeTagKey("Items");
+                }
+
+                return Optional.of(itemstack);
+            }
+        }
+    }
+
+    private static boolean dropContents(ItemStack pStack, Player pPlayer) {
+        CompoundTag compoundtag = pStack.getOrCreateTag();
+        if (!compoundtag.contains("Items")) {
+            return false;
+        } else {
+            if (pPlayer instanceof ServerPlayer) {
+                ListTag listtag = compoundtag.getList("Items", 10);
+
+                for(int i = 0; i < listtag.size(); ++i) {
+                    CompoundTag compoundtag1 = listtag.getCompound(i);
+                    ItemStack itemstack = ItemStack.of(compoundtag1);
+                    pPlayer.drop(itemstack, true);
+                }
+            }
+
+            pStack.removeTagKey("Items");
+            return true;
+        }
+    }
+
+    private static Stream<ItemStack> getContents(ItemStack pStack) {
+        CompoundTag compoundtag = pStack.getTag();
+        if (compoundtag == null) {
+            return Stream.empty();
+        } else {
+            ListTag listtag = compoundtag.getList("Items", 10);
+            return listtag.stream().map(CompoundTag.class::cast).map(ItemStack::of);
+        }
+    }
+
+    public Optional<TooltipComponent> getTooltipImage(ItemStack pStack) {
+        NonNullList<ItemStack> nonnulllist = NonNullList.create();
+        getContents(pStack).forEach(nonnulllist::add);
+        var weight = 0;
+        List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
+        if(this.hasFeature(SlotFeature.class)) {
+            SlotFeature selfFeature = this.getFeature(SlotFeature.class);
+            weight += selfFeature.weight;
+            if (selfFeature.whitelist != null) {
+                whitelist.addAll(selfFeature.whitelist);
+            }
+        }
+        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
+            if(((AttachmentItem) attachment.getItem()).hasFeature(SlotFeature.class)) {
+                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
+                weight += feature.weight;
+                if (feature.whitelist != null) {
+                    whitelist.addAll(feature.whitelist);
+                }
+            }
+        }
+        if(weight == 0) return Optional.empty();
+        return Optional.of(new BundleTooltip(nonnulllist, getContentWeight(pStack, whitelist)));
+    }
+
+    public void onDestroyed(ItemEntity pItemEntity) {
+        ItemUtils.onContainerDestroyed(pItemEntity, getContents(pItemEntity.getItem()));
+    }
+
+    private void playRemoveOneSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_REMOVE_ONE, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
+    private void playInsertSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_INSERT, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
+    private void playDropContentsSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_DROP_CONTENTS, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
     public void inventoryTick(ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
         if (pEntity instanceof LivingEntity entity) {
             invokeFunction("inventoryTick", pStack, pLevel, entity);
@@ -125,13 +368,14 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     }
 
     public void onArmorTick(ItemStack stack, Level level, Player player) {
+        if(!equipped) { equipped = true; equipArmor(); }
+
         invokeFunction("armorTick", stack, level, player);
         for (ItemStack attachment : Attachments.getAttachments(stack))
             ((AttachmentItem)attachment.getItem()).invokeFunction("armorTick$A", stack, level, player);
 
     }
 
-    
     public Collection<Attachment> getCompatibleAttachments() {
         if (this.compatibleAttachments == null) {
             Set<AttachmentCategory> attachmentCategories = new HashSet<>();
@@ -199,7 +443,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
       //  controllerRegistrar.add(new AnimationController<>(this, "idle",0, (state)-> PlayState.CONTINUE));
     }
 
-    
+
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             private ArmorItemRenderer renderer = null;

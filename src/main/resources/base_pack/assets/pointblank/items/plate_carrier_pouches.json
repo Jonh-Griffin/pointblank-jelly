@@ -9,6 +9,10 @@
     {
       "type": "defense",
       "defenseAdditive": 1
+    },
+    {
+      "type": "slot",
+      "weight": 200
     }
   ]
 }
