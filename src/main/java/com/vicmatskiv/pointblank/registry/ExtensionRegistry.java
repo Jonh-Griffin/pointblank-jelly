@@ -268,7 +268,7 @@ public class ExtensionRegistry {
       private List<PlayerAnimationBuilder> playerAnimationBuilders;
       private Set<String> sounds;
       private Map<String, Supplier<SoundEvent>> registeredExtSounds;
-      public Map<String, Path> clientScripts;
+      public Map<String, Supplier<Script>> clientScripts = new HashMap<>();
 
       public Extension(String name, Path path, String creativeTabIconItem) {
          this.name = name;
@@ -339,7 +339,7 @@ public class ExtensionRegistry {
                      try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(clientScriptsPath, "*.groovy")) {
                         for(Path scriptFile : scriptFiles) {
                            String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
-                           extension.clientScripts.put(scriptName, scriptFile);
+                           extension.clientScripts.put(scriptName, ()-> ScriptParser.getScript(scriptFile));
                            PointBlankJelly.LOGGER.debug("Loaded client script: {} from extension: {}", scriptName, extension.name);
                         }
                      }
@@ -403,6 +403,7 @@ public class ExtensionRegistry {
                try (BufferedReader reader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(extDescriptorEntry)))) {
                   Extension extension = (new Gson()).fromJson(reader, Extension.class);
                   extension.path = zipPath;
+                  extension.clientScripts = new HashMap<>();
                   extension.itemBuilders = new ArrayList<>();
                   extension.effectBuilders = new ArrayList<>();
                   extension.entityBuilders = new ArrayList<>();
@@ -416,10 +417,16 @@ public class ExtensionRegistry {
                   while(entries.hasMoreElements()) {
                      ZipEntry entry = entries.nextElement();
                      if(entry.getName().startsWith("assets/pointblank/scripts/") && entry.getName().endsWith(".groovy")) {
-                        try(BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
+                        try (BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
                            //extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
                            ScriptParser.cacheScript(scriptreader, ResourceLocation.fromNamespaceAndPath(extension.name, entry.getName().replace("assets/pointblank/scripts/", "")));
                         }
+                     } else if(entry.getName().startsWith("assets/pointblank/scripts/client/") && entry.getName().endsWith(".groovy")) {
+                           try(BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
+                              //extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
+                              //ScriptParser.cacheScript(scriptreader, ResourceLocation.fromNamespaceAndPath(extension.name, entry.getName().replace("assets/pointblank/scripts/client/", "")));
+                              extension.clientScripts.put(entry.getName().replace("assets/pointblank/scripts/client/", ""), () -> ScriptParser.getScript(scriptreader));
+                           }
                      } else if (entry.getName().startsWith("assets/pointblank/items/") && entry.getName().endsWith(".json")) {
                         extension.itemBuilders.add(ItemBuilder.fromZipEntry(zipFile, entry, extension));
                      } else if (entry.getName().startsWith("assets/pointblank/effects/") && entry.getName().endsWith(".json")) {
