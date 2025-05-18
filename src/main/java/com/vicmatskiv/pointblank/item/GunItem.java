@@ -1432,15 +1432,28 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                List<BlockPos> blockPosToDestroy = new ArrayList<>();
                if(this.hitscan)
                   hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
-               else {
+               else { //bullet
+                  BulletData modifiedBulletData = this.bulletData;
+                  List<Features.EnabledFeature> modifiers = Features.getEnabledFeatures(itemStack, BulletModifierFeature.class);
+                  for (Features.EnabledFeature feature : modifiers) {
+                     BulletModifierFeature mod = (BulletModifierFeature) feature.feature();
+                     modifiedBulletData = new BulletData(
+                             modifiedBulletData.velocity() + mod.getVelocityModifier(),
+                             modifiedBulletData.speedOffset() + mod.getSpeedOffsetModifier(),
+                             modifiedBulletData.maxSpeedOffset() + mod.getMaxSpeedOffsetModifier(),
+                             modifiedBulletData.inaccuracy() + mod.getInaccuracyModifier(),
+                             modifiedBulletData.gravity() + mod.getGravityModifier()
+                     );
+                  }
+
                   for (int i = 0; i < shotCount; i++) {
-                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (this.bulletData.velocity() + 1f), 0, this.bulletData.maxSpeedOffset());
+                     float speed = modifiedBulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (modifiedBulletData.velocity() + 1f), 0, modifiedBulletData.maxSpeedOffset());
                      ProjectileBulletEntity bullet;
                      float damage = fireModeInstance.getDamage();
                      bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
                      bullet.setOwner(player);
-                     bullet.setBulletGravity(this.bulletData.gravity()); // (￣o￣) . z Z
-                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
+                     bullet.setBulletGravity(modifiedBulletData.gravity());
+                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * modifiedBulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }
                }

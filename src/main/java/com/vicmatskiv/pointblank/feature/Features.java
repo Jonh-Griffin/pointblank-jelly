@@ -158,6 +158,9 @@ public class Features {
          case "DEFENSE" -> {
             return (new DefenseFeature.Builder()).withJsonObject(obj);
          }
+         case "BULLETMODIFIER" -> {
+            return new BulletModifierFeature.Builder().withJsonObject(obj);
+         }
          case "SLOT" -> {
             return (new SlotFeature.Builder()).withJsonObject(obj);
          }
