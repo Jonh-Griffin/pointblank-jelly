@@ -33,6 +33,12 @@ public interface FeatureProvider {
          if (featureDescription.getContents() != ComponentContents.EMPTY) {
             tooltipLines.add(featureDescription);
          }
+         for(Component component : feature.getDescriptions()) {
+            MutableComponent desc = component.copy().withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC);
+            if (desc.getContents() != ComponentContents.EMPTY) {
+               tooltipLines.add(desc);
+            }
+         }
       }
 
       return tooltipLines;

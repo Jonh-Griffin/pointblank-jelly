@@ -66,7 +66,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem {
+public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem, SlotFeature.SlotHolder {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final String name;
     public ResourceLocation modelResourceLocation;
@@ -159,188 +159,22 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
 
     @Override
     public boolean overrideOtherStackedOnMe(ItemStack pStack, ItemStack pOther, Slot pSlot, ClickAction pAction, Player pPlayer, SlotAccess pAccess) {
-        var weight = 0;
-        List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
-        if(this.hasFeature(SlotFeature.class)) {
-            SlotFeature selfFeature = this.getFeature(SlotFeature.class);
-            weight += selfFeature.weight;
-            if (selfFeature.whitelist != null) {
-                whitelist.addAll(selfFeature.whitelist);
-            }
-        }
-        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
-            if(((AttachmentItem) attachment.getItem()).hasFeature(SlotFeature.class)) {
-                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
-                weight += feature.weight;
-                if (feature.whitelist != null) {
-                    whitelist.addAll(feature.whitelist);
-                }
-            }
-        }
-        if(whitelist.isEmpty()) whitelist = null;
-        if(weight == 0) return super.overrideOtherStackedOnMe(pStack, pOther, pSlot, pAction, pPlayer, pAccess);
-
-        if (pStack.getCount() != 1) return false;
-        if (pAction == ClickAction.SECONDARY && pSlot.allowModification(pPlayer)) {
-            if (pOther.isEmpty()) {
-                removeOne(pStack).ifPresent((p_186347_) -> {
-                    this.playRemoveOneSound(pPlayer);
-                    pAccess.set(p_186347_);
-                });
-            } else {
-                int i = add(pStack, pOther, weight, whitelist);
-                if (i > 0) {
-                    this.playInsertSound(pPlayer);
-                    pOther.shrink(i);
-                }
-            }
-                return true;
-            } else {
-                return super.overrideOtherStackedOnMe(pStack, pOther, pSlot, pAction, pPlayer, pAccess);
-            }
+        return stack(pStack, pOther, pAction, pPlayer, pAccess);
     }
 
     //Bundle Code
-    private static final String TAG_ITEMS = "Items";
-    public static final int MAX_WEIGHT = 64;
-    private static final int BUNDLE_IN_BUNDLE_WEIGHT = 4;
     private static final int BAR_COLOR = Mth.color(0.4F, 0.4F, 1.0F);
 
     public boolean isBarVisible(ItemStack pStack) {
         return false;
     }
 
-    public int getBarWidth(ItemStack pStack) {
-        return 1;
-    }
-
-    public int getBarColor(ItemStack pStack) {
-        return BAR_COLOR;
-    }
-
-    private static int add(ItemStack pBundleStack, ItemStack pInsertedStack, int weight, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
-        if (!pInsertedStack.isEmpty() && pInsertedStack.getItem().canFitInsideContainerItems()) {
-            CompoundTag compoundtag = pBundleStack.getOrCreateTag();
-            if (!compoundtag.contains("Items")) {
-                compoundtag.put("Items", new ListTag());
-            }
-
-            int i = getContentWeight(pBundleStack, whitelist);
-            int j = SlotFeature.getWeight(pInsertedStack, whitelist);
-            int k = Math.min(pInsertedStack.getCount(), (weight - i) / j);
-            if (k == 0) {
-                return 0;
-            } else {
-                ListTag listtag = compoundtag.getList("Items", 10);
-                Optional<CompoundTag> optional = getMatchingItem(pInsertedStack, listtag);
-                if (optional.isPresent()) {
-                    CompoundTag compoundtag1 = optional.get();
-                    ItemStack itemstack = ItemStack.of(compoundtag1);
-                    itemstack.grow(k);
-                    itemstack.save(compoundtag1);
-                    listtag.remove(compoundtag1);
-                    listtag.add(0, (Tag)compoundtag1);
-                } else {
-                    ItemStack itemstack1 = pInsertedStack.copyWithCount(k);
-                    CompoundTag compoundtag2 = new CompoundTag();
-                    itemstack1.save(compoundtag2);
-                    listtag.add(0, (Tag)compoundtag2);
-                }
-
-                return k;
-            }
-        } else {
-            return 0;
-        }
-    }
-
-    private static Optional<CompoundTag> getMatchingItem(ItemStack pStack, ListTag pList) {
-        return pStack.is(Items.BUNDLE) ? Optional.empty() : pList.stream().filter(CompoundTag.class::isInstance).map(CompoundTag.class::cast).filter((p_186350_) -> {
-            return ItemStack.isSameItemSameTags(ItemStack.of(p_186350_), pStack) && ItemStack.of(p_186350_).getCount() + pStack.getCount() <= pStack.getMaxStackSize();
-        }).findFirst();
-    }
-
-    private static int getContentWeight(ItemStack pStack, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
-        return getContents(pStack).mapToInt((p_186356_) -> {
-            return SlotFeature.getWeight(p_186356_, whitelist) * p_186356_.getCount();
-        }).sum();
-    }
-
-        private static Optional<ItemStack> removeOne(ItemStack pStack) {
-        CompoundTag compoundtag = pStack.getOrCreateTag();
-        if (!compoundtag.contains("Items")) {
-            return Optional.empty();
-        } else {
-            ListTag listtag = compoundtag.getList("Items", 10);
-            if (listtag.isEmpty()) {
-                return Optional.empty();
-            } else {
-                int i = 0;
-                CompoundTag compoundtag1 = listtag.getCompound(0);
-                ItemStack itemstack = ItemStack.of(compoundtag1);
-                listtag.remove(0);
-                if (listtag.isEmpty()) {
-                    pStack.removeTagKey("Items");
-                }
-
-                return Optional.of(itemstack);
-            }
-        }
-    }
-
-    private static boolean dropContents(ItemStack pStack, Player pPlayer) {
-        CompoundTag compoundtag = pStack.getOrCreateTag();
-        if (!compoundtag.contains("Items")) {
-            return false;
-        } else {
-            if (pPlayer instanceof ServerPlayer) {
-                ListTag listtag = compoundtag.getList("Items", 10);
-
-                for(int i = 0; i < listtag.size(); ++i) {
-                    CompoundTag compoundtag1 = listtag.getCompound(i);
-                    ItemStack itemstack = ItemStack.of(compoundtag1);
-                    pPlayer.drop(itemstack, true);
-                }
-            }
-
-            pStack.removeTagKey("Items");
-            return true;
-        }
-    }
-
-    private static Stream<ItemStack> getContents(ItemStack pStack) {
-        CompoundTag compoundtag = pStack.getTag();
-        if (compoundtag == null) {
-            return Stream.empty();
-        } else {
-            ListTag listtag = compoundtag.getList("Items", 10);
-            return listtag.stream().map(CompoundTag.class::cast).map(ItemStack::of);
-        }
-    }
-
     public Optional<TooltipComponent> getTooltipImage(ItemStack pStack) {
         NonNullList<ItemStack> nonnulllist = NonNullList.create();
         getContents(pStack).forEach(nonnulllist::add);
-        var weight = 0;
-        List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
-        if(this.hasFeature(SlotFeature.class)) {
-            SlotFeature selfFeature = this.getFeature(SlotFeature.class);
-            weight += selfFeature.weight;
-            if (selfFeature.whitelist != null) {
-                whitelist.addAll(selfFeature.whitelist);
-            }
-        }
-        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
-            if(((AttachmentItem) attachment.getItem()).hasFeature(SlotFeature.class)) {
-                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
-                weight += feature.weight;
-                if (feature.whitelist != null) {
-                    whitelist.addAll(feature.whitelist);
-                }
-            }
-        }
-        if(weight == 0) return Optional.empty();
-        return Optional.of(new BundleTooltip(nonnulllist, getContentWeight(pStack, whitelist)));
+        var weight = getTotalWeight(pStack);
+        if(getMaxWeight(pStack) == 0) return Optional.empty();
+        return Optional.of(new BundleTooltip(nonnulllist, weight));
     }
 
     public void onDestroyed(ItemEntity pItemEntity) {

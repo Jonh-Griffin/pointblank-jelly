@@ -22,15 +22,6 @@
     {
       "type": "aiming",
       "zoom": 0.3
-    },
-    {
-      "type": "BulletModifier",
-      "gravity": 0.2
-    },
-    {
-      "type": "AmmoOverride",
-      "ammo": "ammo545",
-      "overrideOnly": true
     }
   ]
 }

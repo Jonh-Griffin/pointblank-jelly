@@ -98,23 +98,26 @@ public class DefenseFeature extends ConditionalFeature {
     }
 
     @Override
-    public Component getDescription() {
-        return this.defenseModifier < (double)1.0F ? Component.translatable("description.pointblank.reducesDefense").append(getDefenseComponent()).append(getToughnessComponent()) : Component.translatable("description.pointblank.increasesDefense").append(getDefenseComponent());
+    public List<Component> getDescriptions() {
+        return List.of(
+                this.defenseModifier < (double)1.0F ?
+                        Component.translatable("description.pointblank.reducesDefense").append(getDefenseComponent())
+                        :
+                        Component.translatable("description.pointblank.increasesDefense").append(getDefenseComponent()),
+                getToughnessComponent()
+        );
     }
 
     private MutableComponent getToughnessComponent() {
         MutableComponent start = this.toughnessModifier < 1.0f ? Component.translatable("description.pointblank.reducesToughness") : Component.translatable("description.pointblank.increasesToughness");
         start.append(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.toughnessModifier)))
-                .append("\n")
                 .append(Component.literal("description.pointblank.toughness").append(" +%s".formatted(this.toughness)));
         return start;
     }
 
     public MutableComponent getDefenseComponent() {
         return Component.literal(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.defenseModifier)))
-                .append("\n")
-                .append(Component.literal("description.pointblank.defense").append(" +%s".formatted(this.defense)))
-                .append("\n");
+                .append(Component.literal("description.pointblank.defense").append(" +%s".formatted(this.defense)));
     }
 
     public float getDefenseModifier() {
