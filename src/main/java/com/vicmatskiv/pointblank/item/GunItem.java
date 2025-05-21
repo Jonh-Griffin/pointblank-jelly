@@ -878,6 +878,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       controllers.add(enableFireModeAimationController);
    }
 
+   //reload and Compatible Ammo
    private static boolean isCompatibleBullet(Item ammoItem, ItemStack gunStack, FireModeInstance fireModeInstance) {
 
       boolean result = false;
@@ -886,6 +887,27 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 
          if(fireModeInstance.hasFunction("isCompatibleBullet"))
             return (boolean) fireModeInstance.invokeFunction("isCompatibleBullet", (AmmoItem) ammoItem, gunStack, fireModeInstance);
+
+         List<Features.EnabledFeature> overrides = Features.getEnabledFeatures(gunStack, AmmoOverrideFeature.class);
+         boolean hasOverrideOnly = false;
+
+         for (Features.EnabledFeature ef : overrides) {
+            AmmoOverrideFeature feature = (AmmoOverrideFeature) ef.feature();
+
+            if (feature.getOverrideAmmo() == ammoItem) {
+               return true; // Munição permitida via override
+            }
+
+            if (feature.isOverrideOnly()) {
+               hasOverrideOnly = true; // 🟠 Marcar que o override é exclusivo
+            }
+         }
+
+// Se tem overrideOnly e não bateu com o ammoItem, não pode usar nenhum outro
+         if (hasOverrideOnly) {
+            return false;
+         }
+
 
          List<FireModeInstance> firModeInstances = getFireModes(gunStack);
          if (!firModeInstances.contains(fireModeInstance)) {

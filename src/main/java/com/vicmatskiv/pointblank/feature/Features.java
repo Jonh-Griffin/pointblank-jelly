@@ -113,6 +113,7 @@ public class Features {
       return result;
    }
 
+
    public static FeatureBuilder<?, ?> fromJson(JsonObject obj) {
       String featureType = JsonUtil.getJsonString(obj, "type");
       switch (featureType.toUpperCase(Locale.ROOT)) {
@@ -160,6 +161,9 @@ public class Features {
          }
          case "BULLETMODIFIER" -> {
             return new BulletModifierFeature.Builder().withJsonObject(obj);
+         }
+         case "AMMOOVERRIDE" -> {
+            return new AmmoOverrideFeature.Builder().withJsonObject(obj);
          }
          case "SLOT" -> {
             return (new SlotFeature.Builder()).withJsonObject(obj);
