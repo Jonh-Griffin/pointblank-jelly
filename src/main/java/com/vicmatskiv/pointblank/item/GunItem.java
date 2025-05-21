@@ -878,6 +878,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       controllers.add(enableFireModeAimationController);
    }
 
+   //reload and Compatible Ammo
    private static boolean isCompatibleBullet(Item ammoItem, ItemStack gunStack, FireModeInstance fireModeInstance) {
 
       boolean result = false;
@@ -886,6 +887,27 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 
          if(fireModeInstance.hasFunction("isCompatibleBullet"))
             return (boolean) fireModeInstance.invokeFunction("isCompatibleBullet", (AmmoItem) ammoItem, gunStack, fireModeInstance);
+
+         List<Features.EnabledFeature> overrides = Features.getEnabledFeatures(gunStack, AmmoOverrideFeature.class);
+         boolean hasOverrideOnly = false;
+
+         for (Features.EnabledFeature ef : overrides) {
+            AmmoOverrideFeature feature = (AmmoOverrideFeature) ef.feature();
+
+            if (feature.getOverrideAmmo() == ammoItem) {
+               return true; // Munição permitida via override
+            }
+
+            if (feature.isOverrideOnly()) {
+               hasOverrideOnly = true; // 🟠 Marcar que o override é exclusivo
+            }
+         }
+
+// Se tem overrideOnly e não bateu com o ammoItem, não pode usar nenhum outro
+         if (hasOverrideOnly) {
+            return false;
+         }
+
 
          List<FireModeInstance> firModeInstances = getFireModes(gunStack);
          if (!firModeInstances.contains(fireModeInstance)) {
@@ -1432,15 +1454,28 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                List<BlockPos> blockPosToDestroy = new ArrayList<>();
                if(this.hitscan)
                   hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
-               else {
+               else { //bullet
+                  BulletData modifiedBulletData = this.bulletData;
+                  List<Features.EnabledFeature> modifiers = Features.getEnabledFeatures(itemStack, BulletModifierFeature.class);
+                  for (Features.EnabledFeature feature : modifiers) {
+                     BulletModifierFeature mod = (BulletModifierFeature) feature.feature();
+                     modifiedBulletData = new BulletData(
+                             modifiedBulletData.velocity() + mod.getVelocityModifier(),
+                             modifiedBulletData.speedOffset() + mod.getSpeedOffsetModifier(),
+                             modifiedBulletData.maxSpeedOffset() + mod.getMaxSpeedOffsetModifier(),
+                             modifiedBulletData.inaccuracy() + mod.getInaccuracyModifier(),
+                             modifiedBulletData.gravity() + mod.getGravityModifier()
+                     );
+                  }
+
                   for (int i = 0; i < shotCount; i++) {
-                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (this.bulletData.velocity() + 1f), 0, this.bulletData.maxSpeedOffset());
+                     float speed = modifiedBulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (modifiedBulletData.velocity() + 1f), 0, modifiedBulletData.maxSpeedOffset());
                      ProjectileBulletEntity bullet;
                      float damage = fireModeInstance.getDamage();
                      bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
                      bullet.setOwner(player);
-                     bullet.setBulletGravity(this.bulletData.gravity()); // (￣o￣) . z Z
-                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
+                     bullet.setBulletGravity(modifiedBulletData.gravity());
+                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * modifiedBulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }
                }
