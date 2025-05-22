@@ -1,0 +1,28 @@
+{
+  "name": "stahlhelm",
+  "type": "armor",
+  "armorType": "helmet",
+  "durability": 256,
+  "toughness": 1.5,
+  "defense": 3,
+  "compatibleAttachments": [
+    "stahlhelm_net"
+  ],
+  "compatibleAttachmentGroups": [
+    "net"
+  ],
+  "features": [
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "net",
+          "visible": true,
+          "condition": {
+            "allOf": [{"hasAttachmentGroup": "net"}]
+          }
+        }
+      ]
+    }
+  ]
+}

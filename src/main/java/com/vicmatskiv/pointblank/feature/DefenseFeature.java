@@ -10,6 +10,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -99,25 +100,64 @@ public class DefenseFeature extends ConditionalFeature {
 
     @Override
     public List<Component> getDescriptions() {
-        return List.of(
-                this.defenseModifier < (double)1.0F ?
-                        Component.translatable("description.pointblank.reducesDefense").append(getDefenseComponent())
-                        :
-                        Component.translatable("description.pointblank.increasesDefense").append(getDefenseComponent()),
-                getToughnessComponent()
-        );
+        List<Component> components = new ArrayList<>();
+        if(this.defense != 0)
+            components.add(
+                    MutableComponent.create(
+                            Component.translatable("description.pointblank.armor")
+                                    .getContents())
+                            .append(String.format(" %s", this.defense))
+            );
+        if(this.toughness != 0f)
+            components.add(
+                    MutableComponent.create(
+                                    Component.translatable("description.pointblank.toughness")
+                                            .getContents())
+                            .append(String.format(" %s", this.toughness))
+            );
+        if(this.defenseModifier > 1f)
+            components.add(
+                    MutableComponent.create(
+                                    Component.translatable("description.pointblank.increasesDefense")
+                                            .getContents())
+                            .append(String.format(" %sx", this.defenseModifier))
+            );
+        if(this.defenseModifier < 1f)
+            components.add(
+                    MutableComponent.create(
+                                    Component.translatable("description.pointblank.decreasesDefense")
+                                            .getContents())
+                            .append(String.format(" %sx", this.defenseModifier))
+            );
+        if(this.toughnessModifier > 1f)
+            components.add(
+                    MutableComponent.create(
+                                    Component.translatable("description.pointblank.increasesToughness")
+                                            .getContents())
+                            .append(String.format(" %sx", this.toughnessModifier))
+            );
+        if(this.toughnessModifier < 1f)
+            components.add(
+                    MutableComponent.create(
+                                    Component.translatable("description.pointblank.decreasesToughness")
+                                            .getContents())
+                            .append(String.format(" %sx", this.toughnessModifier))
+            );
+        return components;
     }
 
+    @Deprecated
     private MutableComponent getToughnessComponent() {
         MutableComponent start = this.toughnessModifier < 1.0f ? Component.translatable("description.pointblank.reducesToughness") : Component.translatable("description.pointblank.increasesToughness");
         start.append(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.toughnessModifier)))
-                .append(Component.literal("description.pointblank.toughness").append(" +%s".formatted(this.toughness)));
+                .append(Component.literal("description.pointblank.increasesToughness").append(" +%s".formatted(this.toughness)));
         return start;
     }
 
+    @Deprecated
     public MutableComponent getDefenseComponent() {
         return Component.literal(String.format(" %.0f%%", (double)100.0F * ((double)1.0F - this.defenseModifier)))
-                .append(Component.literal("description.pointblank.defense").append(" +%s".formatted(this.defense)));
+                .append(Component.literal("description.pointblank.increasesDefense").append(" +%s".formatted(this.defense)));
     }
 
     public float getDefenseModifier() {

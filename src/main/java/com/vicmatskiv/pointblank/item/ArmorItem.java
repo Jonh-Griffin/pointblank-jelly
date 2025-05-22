@@ -321,16 +321,28 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
 
     
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot pEquipmentSlot, ItemStack stack) {
+        Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
+
+        multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", getAdjustedDefense(stack), AttributeModifier.Operation.ADDITION));
+        multimap.get(Attributes.ARMOR_TOUGHNESS).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Toughness", getAdjustedToughness(stack), AttributeModifier.Operation.ADDITION));
+
+        return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
+    }
+
+    
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+
+    }
+
+    public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
+        return 2;
+    }
+
+    public int getAdjustedDefense(ItemStack stack) {
         float defenseMod = DefenseFeature.getDefenseModifier(stack);
         int defenseAdd = DefenseFeature.getDefenseAdditive(stack);
 
-        float toughnessMod = DefenseFeature.getToughnessModifier(stack);
-        float toughnessAdd = DefenseFeature.getToughnessAdditive(stack);
-
-        Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
-
         int defenseFinal = (int) ((float)this.defense * defenseMod) + defenseAdd;
-        float toughnessFinal = (this.toughness * toughnessMod) + toughnessAdd;
 
         if(hasFunction("addArmorDefense"))
             defenseFinal += (int) invokeFunction("addArmorDefense", stack);
@@ -338,35 +350,22 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         if(hasFunction("mulArmorDefense"))
             defenseFinal *= (int) invokeFunction("mulArmorDefense", stack);
 
+        return defenseFinal;
+    }
+
+    public float getAdjustedToughness(ItemStack stack) {
+        float toughnessMod = DefenseFeature.getToughnessModifier(stack);
+        float toughnessAdd = DefenseFeature.getToughnessAdditive(stack);
+
+        float toughnessFinal = (this.toughness * toughnessMod) + toughnessAdd;
+
         if(hasFunction("addArmorToughness"))
             toughnessFinal += (int) invokeFunction("addArmorToughness", stack);
 
         if(hasFunction("mulArmorToughness"))
             toughnessFinal *= (int) invokeFunction("mulArmorToughness", stack);
 
-        multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", defenseFinal, AttributeModifier.Operation.ADDITION));
-        multimap.get(Attributes.ARMOR_TOUGHNESS).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Toughness", toughnessFinal, AttributeModifier.Operation.ADDITION));
-
-        return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
-    }
-
-    
-    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
-        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR_TOUGHNESS)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.KNOCKBACK_RESISTANCE)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-    }
-
-    
-    public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
-        return 2;
+        return toughnessFinal;
     }
 
     public int getDefense() {

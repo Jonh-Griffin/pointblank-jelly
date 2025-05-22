@@ -27,10 +27,7 @@ import com.vicmatskiv.pointblank.entity.ProjectileBulletEntity;
 import com.vicmatskiv.pointblank.explosion.ExplosionEvent;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
-import com.vicmatskiv.pointblank.item.ExplosionDescriptor;
-import com.vicmatskiv.pointblank.item.FireMode;
-import com.vicmatskiv.pointblank.item.GunItem;
-import com.vicmatskiv.pointblank.item.ThrowableItem;
+import com.vicmatskiv.pointblank.item.*;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
 import com.vicmatskiv.pointblank.network.Network;
 import com.vicmatskiv.pointblank.registry.*;
@@ -56,6 +53,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -1102,8 +1100,18 @@ public class ClientEventHandler {
       ItemStack itemStack = event.getItemStack();
       Item item = itemStack.getItem();
       if (item instanceof FeatureProvider featureProvider) {
+
          List<Either<FormattedText, TooltipComponent>> elements = event.getTooltipElements();
          List<Component> components = new ArrayList<>();
+
+         if(item instanceof ArmorItem armor) {
+            components.add(MutableComponent.create(Component.translatable("description.pointblank.armor").getContents()).append(String.format(" %s", armor.getDefense())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+            if(armor.getToughness() > 0f)
+               components.add(MutableComponent.create(Component.translatable("description.pointblank.toughness").getContents()).append(String.format(" %s", armor.getToughness())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+            if(armor.getMaterial().getKnockbackResistance() > 0f)
+               components.add(MutableComponent.create(Component.translatable("description.pointblank.kbres").getContents()).append(String.format(" %s", armor.getMaterial().getKnockbackResistance())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+         }
+
          components.addAll(featureProvider.getDescriptionTooltipLines());
          components.addAll(featureProvider.getFeatureTooltipLines());
          if (item instanceof AttachmentHost attachmentHost) {
