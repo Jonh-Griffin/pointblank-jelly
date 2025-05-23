@@ -1,0 +1,20 @@
+{
+  "name": "moa_hg",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "hg_sights"
+  ],
+  "features": [
+    {
+      "type": "Reticle",
+      "texture": "textures/item/reticledot_new.png",
+      "parallaxEnabled": true,
+      "maxAngularOffset": 2.5
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.3
+    }
+  ]
+}

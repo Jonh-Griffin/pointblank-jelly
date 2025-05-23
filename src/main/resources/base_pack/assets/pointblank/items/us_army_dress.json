@@ -1,13 +1,18 @@
 {
-  "name": "black_plate_carrier",
+  "name": "us_army_dress",
   "type": "armor",
   "armorType": "chestplate",
   "durability": 200,
   "toughness": 1.5,
   "defense": 3,
   "compatibleAttachments": [
+    "us_chest_pouches"
+  ],
+  "defaultAttachments": [
+    "us_chest_pouches"
   ],
   "compatibleAttachmentGroups": [
-    "pouches"
+    "pouches",
+    "bandolier"
   ]
 }

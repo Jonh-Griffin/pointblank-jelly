@@ -1,0 +1,43 @@
+{
+  "name": "hamr",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "sights_group",
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "deagle_sights",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "compatibleAttachmentGroups": [
+    "sub_sight"
+  ],
+  "defaultAttachments": ["delta"],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/starscope_pip.png",
+      "parallaxEnabled": true,
+      "zoom": 0.8
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.45,
+      "viewBobbing": 0.5
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "shroud",
+          "visible": true,
+          "condition": {
+            "hasAttachment": "delta"
+          }
+        }
+      ]
+    }
+  ]
+}

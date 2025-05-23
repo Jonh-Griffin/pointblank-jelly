@@ -1,0 +1,79 @@
+{
+  "name": "gp25",
+  "type": "Attachment",
+  "category": "UNDERBARREL",
+  "features": [
+    {
+      "type": "FireMode",
+      "fireModes": [
+        {
+          "name": "grenade_launcher",
+          "type": "SINGLE",
+          "displayName": "label.pointblank.fireMode.grenade",
+          "ammo": "grenade40mm",
+          "maxAmmoCapacity": 1,
+          "rpm": 127,
+          "damage": 0.0,
+          "isUsingDefaultMuzzle": false,
+          "fireAnimations": [
+            {
+              "name": "animation.model.firegrenade",
+              "viewShake": {
+                "duration": 350,
+                "amplitude": 2.0,
+                "speed": 2.0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "condition": {
+        "selectedFireMode": "grenade_launcher"
+      },
+      "fireSound": "mgl_shoot",
+      "fireSoundVolume": 6.0
+    },
+    {
+      "type": "MuzzleFlash",
+      "condition": {
+        "not": {
+          "isUsingDefaultMuzzle": true
+        }
+      },
+      "effects": [
+        {
+          "phase": "firing",
+          "name": "launcher_muzzle"
+        }
+      ]
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "launchermain",
+          "visible": true,
+          "condition": {
+            "isGunOnGround": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "ActiveMuzzle",
+      "condition": {
+        "selectedFireMode": "grenade_launcher"
+      }
+    },
+    {
+      "type": "Recoil",
+      "condition": {
+        "selectedFireMode": "grenade_launcher"
+      },
+      "recoilModifier": 1.1
+    }
+  ]
+}

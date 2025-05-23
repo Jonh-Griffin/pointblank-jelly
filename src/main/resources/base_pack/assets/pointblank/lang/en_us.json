@@ -1,5 +1,5 @@
 {
-  "itemGroup.pointblank.items": "Point Blank",
+  "itemGroup.pointblank-ext.items": "Point Blank",
 
   "label.pointblank.fireMode": "Fire Mode",
   "label.pointblank.fireMode.single": "SINGLE",
@@ -154,6 +154,9 @@
   "item.pointblank.m4sopmodii_bartender": "(Skin) M4 SOPMOD II Bartender",
   "item.pointblank.m4a1_asiimov": "(Skin) M4A1 ASIIMOV",
   "item.pointblank.l96a1_hyperbeast": "(Skin) L96A1_HYPERBEAST",
+  "item.pointblank.cs2_skins": "(Skin) CS2 ASIIMOV / HYPERBEAST",
+  "item.pointblank.us_army_dress": "US Army Uniform",
+  "item.pointblank.us_chest_pouches": "US Army Bandolier Pouches",
   "item.pointblank.grenade": "Frag Grenade"
 
 }

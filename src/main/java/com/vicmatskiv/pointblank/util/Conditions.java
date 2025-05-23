@@ -206,6 +206,9 @@ public class Conditions {
             } else if (obj.has("isGunInHands")) {
                boolean isGunInHands = JsonUtil.getJsonBoolean(obj, "isGunInHands", true);
                return isGunInHands ? isGunInHands() : isGunOnGround();
+            } else if (obj.has("isGunOnGround")) {
+               boolean isGunOnGround = JsonUtil.getJsonBoolean(obj, "isGunOnGround", false);
+               return isGunOnGround ? isGunOnGround() : isGunInHands();
             } else if (obj.has("isUsingDefaultMuzzle")) {
                boolean isUsingDefaultMuzzle = JsonUtil.getJsonBoolean(obj, "isUsingDefaultMuzzle", true);
                return isUsingDefaultMuzzle ? isUsingDefaultMuzzle() : isUsingDefaultMuzzle().negate();

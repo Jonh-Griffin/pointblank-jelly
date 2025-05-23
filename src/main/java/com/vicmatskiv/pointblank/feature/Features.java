@@ -168,6 +168,9 @@ public class Features {
          case "SLOT" -> {
             return (new SlotFeature.Builder()).withJsonObject(obj);
          }
+         case "ACTIVEMUZZLE" -> {
+            return (new ActiveMuzzleFeature.Builder()).withJsonObject(obj);
+         }
          default -> throw new IllegalArgumentException("Invalid feature type: " + featureType);
       }
    }
