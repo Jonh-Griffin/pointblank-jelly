@@ -1,0 +1,56 @@
+{
+  "name": "m134minigun",
+  "type": "Gun",
+  "maxAmmoCapacity": 200,
+  "compatibleAmmo": ["ammocreative", "ammo556"],
+  "damage": 5.0,
+  "rpm": 2000,
+  "fireModes": ["AUTOMATIC"],
+  "fireSound": "m134minigun",
+  "animationType": "rifle",
+  "compatibleAttachments": [],
+  "compatibleAttachmentGroups": [],
+  "drawCooldownDuration": 1200,
+  "inspectCooldownDuration": 0,
+  "gunRecoilInitialAmplitude": 0.1,
+  "shakeRecoilAmplitude": 0.4,
+  "shakeRecoilSpeed": 3.0,
+  "viewRecoilAmplitude": 0.7,
+  "prepareFireCooldownDuration": 500,
+  "completeFireCooldownDuration": 500,
+  "rotation": {
+    "fire": {
+      "part": "spinny",
+      "x": 300.0,
+      "y": 3.0,
+      "z": 1.0
+    }
+  },
+  "shotsPerRecoil": 3,
+  "shotsPerTrace": 100,
+  "bobbing": 0.7,
+  "phasedReloads": [
+    {
+      "phase": "RELOADING",
+      "duration": 3300,
+      "animation": "animation.model.reload"
+    }
+  ],
+  "effects": [
+    {
+      "phase": "firing",
+      "name": "muzzle_flash_big"
+    },
+    {
+      "phase": "hit_scan_acquired",
+      "name": "tracer"
+    }
+  ],
+  "features": [
+    {
+      "type": "Aiming",
+      "zoom": 0.25,
+      "enabled": false
+    }
+  ]
+}

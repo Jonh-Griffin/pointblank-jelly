@@ -1,0 +1,66 @@
+{
+    "name": "javelin",
+    "type": "Gun",
+    "maxAmmoCapacity": 1,
+    "compatibleAmmo": ["ammocreative", "javelin_rocket"],
+    "damage": 5,
+    "rpm": 88,
+    "fireModes": ["SINGLE"],
+    "minTargetLockTime": 500,
+    "targetLockOverlay": "textures/gui/lockon.png",
+    "targetStartLockingSound": "locking",
+    "targetLockedSound": "locked",
+    "fireSound": "launcher",
+    "drawCooldownDuration": 1170,
+    "inspectCooldownDuration": 0,
+    "aimingZoom": 0.8,
+    "gunRecoilInitialAmplitude": 0.1,
+    "shakeRecoilAmplitude": 2.0,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 3.0,
+    "scopeOverlay": "textures/gui/javelinscope.png",
+    "modelScale": 0.25,
+    "bobbing": 0.25,
+    "bobbingOnAim": 0.25,
+    "jumpMultiplier": 0.25,
+    "features": [
+        {
+            "type": "Aiming",
+            "zoom": 0.8,
+            "condition": { "allOf": [{ "doesNotHaveAttachmentGroup": "ar_sightsandscopes" }] }
+        }
+    ],
+    "effects": [
+        {
+            "phase": "firing",
+            "name": "javelin_muzzle"
+        }
+    ],
+    "phasedReloads": [
+        {
+            "phase": "RELOADING",
+            "duration": 2770,
+            "animation": "animation.model.reload",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 2000,
+                    "initialAmplitude": 0.4,
+                    "rateOfAmplitudeDecay": 0.6
+                },
+                {
+                    "start": 2000,
+                    "duration": 1500,
+                    "initialAmplitude": 0.15,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 2400,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.5
+                }
+            ]
+        }
+    ]
+}

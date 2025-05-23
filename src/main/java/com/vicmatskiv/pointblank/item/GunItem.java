@@ -3073,7 +3073,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
             }
          }
 
-         this.withFeature(new AimingFeature.Builder().withZoom(0.1f).withAimMatrix(new Matrix4f().rotateXYZ(0f, 0f, -25f).translate(-1, 0, 0)));
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
          String reloadAnimation = reloadAnimationElem != null ? reloadAnimationElem.getAsString() : null;

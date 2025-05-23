@@ -1,0 +1,246 @@
+{
+    "name": "m32mgl",
+    "type": "Gun",
+    "maxAmmoCapacity": 6,
+    "maxAmmoPerReloadIteration": 1,
+    "compatibleAmmo": ["ammocreative", "grenade40mm"],
+    "damage": 5,
+    "rpm": 111,
+    "fireModes": ["SINGLE"],
+    "fireSound": "mgl_shoot",
+    "drawCooldownDuration": 930,
+    "inspectCooldownDuration": 3700,
+    "aimingZoom": 0.4,
+    "gunRecoilInitialAmplitude": 0.1,
+    "shakeRecoilAmplitude": 2.0,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 3.0,
+    "reticleOverlay": "textures/item/reticledot.png",
+    "modelScale": 0.25,
+    "bobbing": 0.25,
+    "bobbingOnAim": 0.1,
+    "jumpMultiplier": 0.25,
+    "gunRandomizationAmplitude": 0.0025,
+    "features": [
+        {
+            "type": "Aiming",
+            "zoom": 0.25,
+            "condition": { "allOf": [{ "doesNotHaveAttachmentGroup": "ar_sightsandscopes" }] }
+        }
+    ],
+    "effects": [
+        {
+            "phase": "firing",
+            "name": "launcher_muzzle"
+        }
+    ],
+    "phasedReloads": [
+        {
+            "phase": "PREPARING",
+            "duration": 1000,
+            "animation": "animation.model.prepare",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 430,
+                    "duration": 1000,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.5
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": {
+                "onEmptyReload": true
+            },
+            "duration": 970,
+            "animation": "animation.model.load1",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 1",
+
+            "duration": 970,
+            "animation": "animation.model.load2",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 2",
+
+            "duration": 970,
+            "animation": "animation.model.load3",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 3",
+
+            "duration": 970,
+            "animation": "animation.model.load4",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 4",
+
+            "duration": 970,
+            "animation": "animation.model.load5",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "RELOADING",
+            "condition": "reloadIterationIndex == 5",
+
+            "duration": 970,
+            "animation": "animation.model.load6",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 230,
+                    "duration": 600,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 670,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        },
+        {
+            "phase": "COMPLETETING",
+            "duration": 1100,
+            "animation": "animation.model.finish",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 1500,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.8
+                },
+                {
+                    "start": 270,
+                    "duration": 1000,
+                    "initialAmplitude": 0.1,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 700,
+                    "duration": 900,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.6
+                }
+            ]
+        }
+    ]
+}

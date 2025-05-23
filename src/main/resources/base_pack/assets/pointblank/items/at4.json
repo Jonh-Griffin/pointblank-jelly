@@ -1,0 +1,61 @@
+{
+    "name": "at4",
+    "type": "Gun",
+    "maxAmmoCapacity": 1,
+    "compatibleAmmo": ["ammocreative", "at4_rocket"],
+    "damage": 5,
+    "rpm": 88,
+    "fireModes": ["SINGLE"],
+    "fireSound": "at4",
+    "drawCooldownDuration": 1170,
+    "inspectCooldownDuration": 0,
+    "gunRecoilInitialAmplitude": 0.1,
+    "shakeRecoilAmplitude": 2.0,
+    "shakeRecoilSpeed": 2.0,
+    "viewRecoilAmplitude": 3.0,
+    "modelScale": 0.25,
+    "bobbing": 0.25,
+    "bobbingOnAim": 0.1,
+    "jumpMultiplier": 0.25,
+    "gunRandomizationAmplitude": 0.0025,
+    "features": [
+        {
+            "type": "Aiming",
+            "zoom": 0.2,
+            "condition": { "allOf": [{ "doesNotHaveAttachmentGroup": "ar_sightsandscopes" }] }
+        }
+    ],
+    "effects": [
+        {
+            "phase": "firing",
+            "name": "launcher_muzzle"
+        }
+    ],
+    "phasedReloads": [
+        {
+            "phase": "RELOADING",
+            "duration": 3130,
+            "animation": "animation.model.reload",
+            "shakeEffects": [
+                {
+                    "start": 0,
+                    "duration": 2000,
+                    "initialAmplitude": 0.4,
+                    "rateOfAmplitudeDecay": 0.6
+                },
+                {
+                    "start": 1900,
+                    "duration": 1500,
+                    "initialAmplitude": 0.15,
+                    "rateOfAmplitudeDecay": 0.5
+                },
+                {
+                    "start": 2770,
+                    "duration": 600,
+                    "initialAmplitude": 0.2,
+                    "rateOfAmplitudeDecay": 0.5
+                }
+            ]
+        }
+    ]
+}
