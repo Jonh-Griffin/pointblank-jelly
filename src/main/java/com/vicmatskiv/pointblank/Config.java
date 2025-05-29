@@ -18,7 +18,7 @@ public class Config {
    private static final BooleanValue RESET_AUTO_FIRE_PITCH_ENABLED;
    private static final DoubleValue KNOCKBACK;
    private static final BooleanValue PARTICLE_EFFECTS_ENABLED;
-   private static final BooleanValue OVERWRITE_DISABLED;
+   public static final BooleanValue OVERWRITE_DISABLED;
    private static final IntValue ARMS_DEALER_HOUSE_WEIGHT;
    private static final DoubleValue EMERALD_EXCHANGE_RATE;
    private static final BooleanValue THIRD_PERSON_ARM_POSE_ALWAYS_ON;

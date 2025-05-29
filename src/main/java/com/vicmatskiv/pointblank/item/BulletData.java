@@ -7,9 +7,9 @@ public record BulletData(float velocity, float speedOffset, float maxSpeedOffset
         if(obj.has("bulletData"))
             obj = obj.getAsJsonObject("bulletData");
 
-        float velocity = obj.has("velocity") ? obj.get("velocity").getAsFloat() : 2.5f;
-        float speedOffset = obj.has("speedOffset") ? obj.get("speedOffset").getAsFloat() : 4.0f;
-        float maxSpeedOffset = obj.has("maxSpeedOffset") ? obj.get("maxSpeedOffset").getAsFloat() : 5.0f;
+        float velocity = obj.has("velocity") ? obj.get("velocity").getAsFloat() : 2f;
+        float speedOffset = obj.has("speedOffset") ? obj.get("speedOffset").getAsFloat() : 3.0f;
+        float maxSpeedOffset = obj.has("maxSpeedOffset") ? obj.get("maxSpeedOffset").getAsFloat() : 6.0f;
         float inaccuracy = obj.has("inaccuracy") ? obj.get("inaccuracy").getAsFloat() : 20.0f;
         float gravity = obj.has("gravity") ? obj.get("gravity").getAsFloat() : 0.03f;
         return new BulletData(velocity, speedOffset, maxSpeedOffset, inaccuracy, gravity);

@@ -27,6 +27,7 @@ import software.bernie.geckolib.cache.object.BakedGeoModel
 import java.util.function.Predicate
 
 / ^^ Above are all the imports that would be needed for these methods! Useful if you aren't using Intellij /
+/ If you get a crash related to "Invalid Dist", you need to move all the client related methods in that script to a seperate script inside of a client folder /
 
 / GunItem \ Root Methods /
 /**
@@ -356,6 +357,14 @@ void inventoryTick(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
  * @param pEntity
  */
 void armorTick(ItemStack stack, Level pLevel, LivingEntity pEntity) {}
+/** Runs when added to the armor slot, use this to add custom armor effects
+ * @param stack
+ */
+void equipArmor(ItemStack stack) { }
+/** Runs when removed from the armor slot, use this to remove custom armor effects
+ * @param stack
+ */
+void unequipArmor(ItemStack stack) { }
 /** Adds the amount of armor to the item
  * @param stack
  * @return <code>int</code>

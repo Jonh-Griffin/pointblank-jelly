@@ -1,0 +1,92 @@
+{
+  "name": "m870",
+  "type": "Gun",
+  "maxAmmoCapacity": 6,
+  "maxAmmoPerReloadIteration": 1,
+  "pelletCount": 12,
+  "pelletSpread": 0.2,
+  "compatibleAmmo": ["ammocreative", "ammo12gauge"],
+  "damage": 1.9,
+  "rpm": 110,
+  "fireModes": ["SINGLE"],
+  "fireSound": "m870",
+  "reloadSound": "reload",
+  "animationType": "rifle",
+  "defaultAttachments": [],
+  "compatibleAttachments": ["cantedrail", "sg_suppressor"],
+  "compatibleAttachmentGroups": ["ar_sightsandscopes", "m870_skins"],
+  "gunRecoilInitialAmplitude": 1.3,
+  "shakeRecoilAmplitude": 2.0,
+  "shakeRecoilSpeed": 2.0,
+  "viewRecoilAmplitude": 10.0,
+  "drawAnimations": [
+    { "name": "animation.model.draw", "duration": 800 }
+  ],
+  "inspectAnimations": [
+    { "name": "animation.model.inspect", "duration": 4030 }
+  ],
+  "phasedReloads": [
+    {
+      "phase": "PREPARING",
+      "condition": "reloadIterationIndex == -1",
+      "duration": 320,
+      "animation": "animation.model.prepareempty"
+    },
+    {
+      "phase": "PREPARING",
+      "condition": "reloadIterationIndex >= 0",
+      "duration": 320,
+      "animation": "animation.model.prepare"
+    },
+    {
+      "phase": "RELOADING",
+      "condition": "reloadIterationIndex == -1",
+      "duration": 1230,
+      "animation": "animation.model.loadchamber"
+    },
+    {
+      "phase": "RELOADING",
+      "condition": "reloadIterationIndex >= 0",
+      "duration": 600,
+      "animation": "animation.model.load"
+    },
+    {
+      "phase": "COMPLETETING",
+      "condition": "reloadIterationIndex >= 0",
+      "duration": 570,
+      "animation": "animation.model.finish"
+    }
+  ],
+  "effects": [],
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "effects": [
+        { "phase": "firing", "name": "muzzle_flash_big_ex" }
+      ],
+      "condition": { "allOf": [{ "doesNotHaveAttachment": "sg_suppressor" }] }
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.25,
+      "condition": { "allOf": [{ "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }] }
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "ironsights",
+          "visible": false,
+          "condition": { "allOf": [{ "hasAttachmentGroup": "m16_sightsandscopes" }] }
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "fireSound": "spas12_silenced",
+      "fireSoundVolume": 1.0,
+      "condition": { "allOf": [{ "hasAttachment": "sg_suppressor" }] }
+    }
+  ],
+  "glowingParts": []
+}

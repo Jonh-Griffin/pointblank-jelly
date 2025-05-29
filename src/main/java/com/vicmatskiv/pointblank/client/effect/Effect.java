@@ -1,11 +1,12 @@
 package com.vicmatskiv.pointblank.client.effect;
 
 import com.vicmatskiv.pointblank.client.uv.SpriteUVProvider;
-import java.util.function.Supplier;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
+
+import java.util.function.Supplier;
 
 public interface Effect {
    String getName();
@@ -46,14 +47,9 @@ public interface Effect {
 
    SpriteUVProvider getSpriteUVProvider();
 
-   public static enum BlendMode {
+   enum BlendMode {
       NORMAL,
       ADDITIVE,
-      NONE;
-
-      // $FF: synthetic method
-      private static BlendMode[] $values() {
-         return new BlendMode[]{NORMAL, ADDITIVE, NONE};
-      }
+      NONE
    }
 }

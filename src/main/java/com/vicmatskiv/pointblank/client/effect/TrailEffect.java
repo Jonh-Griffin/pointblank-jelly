@@ -7,8 +7,6 @@ import com.vicmatskiv.pointblank.client.uv.SpriteUVProvider;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.GunItem.FirePhase;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.Collection;
-import java.util.Collections;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -16,6 +14,9 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
+
+import java.util.Collection;
+import java.util.Collections;
 
 public class TrailEffect extends AbstractEffect {
    private Vec3 previousPosition;
@@ -146,11 +147,11 @@ public class TrailEffect extends AbstractEffect {
       }
    }
 
-   private static class TrailRenderContext extends EffectRenderContext {
-      private Vec3 prevPos;
-      private Vec3 prevVelocity;
+   public static class TrailRenderContext extends EffectRenderContext {
+      public Vec3 prevPos;
+      public Vec3 prevVelocity;
 
-      private TrailRenderContext() {
+      public TrailRenderContext() {
       }
    }
 

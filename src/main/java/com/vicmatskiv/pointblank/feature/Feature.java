@@ -22,6 +22,10 @@ public interface Feature {
       return Component.empty();
    }
 
+   default List<Component> getDescriptions() {
+      return List.of(Component.empty());
+   }
+
    default boolean isEnabledForAttachment(ItemStack rootStack, ItemStack attachmentStack) {
       if (rootStack == null) {
          return false;
