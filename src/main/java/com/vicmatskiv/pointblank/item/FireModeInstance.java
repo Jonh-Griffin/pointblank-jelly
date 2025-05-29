@@ -223,7 +223,7 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
       return script;
    }
 
-   public boolean getMelee() {
+   public boolean isMelee() {
       return this.type == FireMode.MELEE;
    }
 

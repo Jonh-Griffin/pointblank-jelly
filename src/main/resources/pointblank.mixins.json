@@ -3,11 +3,10 @@
   "package": "com.vicmatskiv.pointblank.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
-  "refmap": "poinblank.refmap.json",
+  "refmap": "pointblank.refmap.json",
   "mixins": [
     "EntityMixin",
     "LivingEntityMixin",
-    "ProjectileAccessor",
     "ScriptAttacher",
     "SlotMixin",
     "StructureTemplatePoolMixin"

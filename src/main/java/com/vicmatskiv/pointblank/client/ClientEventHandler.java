@@ -27,15 +27,16 @@ import com.vicmatskiv.pointblank.entity.ProjectileBulletEntity;
 import com.vicmatskiv.pointblank.explosion.ExplosionEvent;
 import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
-import com.vicmatskiv.pointblank.item.ExplosionDescriptor;
-import com.vicmatskiv.pointblank.item.FireMode;
-import com.vicmatskiv.pointblank.item.GunItem;
-import com.vicmatskiv.pointblank.item.ThrowableItem;
+import com.vicmatskiv.pointblank.item.*;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
 import com.vicmatskiv.pointblank.network.Network;
 import com.vicmatskiv.pointblank.registry.*;
-import com.vicmatskiv.pointblank.util.*;
+import com.vicmatskiv.pointblank.util.ClientUtil;
+import com.vicmatskiv.pointblank.util.HitScan;
+import com.vicmatskiv.pointblank.util.MiscUtil;
+import com.vicmatskiv.pointblank.util.UpDownCounter;
 import groovy.lang.GroovyShell;
+import groovy.lang.Script;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
@@ -52,6 +53,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -93,8 +95,6 @@ import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.util.ClientUtils;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -1100,8 +1100,18 @@ public class ClientEventHandler {
       ItemStack itemStack = event.getItemStack();
       Item item = itemStack.getItem();
       if (item instanceof FeatureProvider featureProvider) {
+
          List<Either<FormattedText, TooltipComponent>> elements = event.getTooltipElements();
          List<Component> components = new ArrayList<>();
+
+         if(item instanceof ArmorItem armor) {
+            components.add(MutableComponent.create(Component.translatable("description.pointblank.armor").getContents()).append(String.format(" %s", armor.getDefense())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+            if(armor.getToughness() > 0f)
+               components.add(MutableComponent.create(Component.translatable("description.pointblank.toughness").getContents()).append(String.format(" %s", armor.getToughness())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+            if(armor.getMaterial().getKnockbackResistance() > 0f)
+               components.add(MutableComponent.create(Component.translatable("description.pointblank.kbres").getContents()).append(String.format(" %s", armor.getMaterial().getKnockbackResistance())).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.ITALIC));
+         }
+
          components.addAll(featureProvider.getDescriptionTooltipLines());
          components.addAll(featureProvider.getFeatureTooltipLines());
          if (item instanceof AttachmentHost attachmentHost) {
@@ -1210,12 +1220,8 @@ public class ClientEventHandler {
          ThirdPersonAnimationRegistry.init();
          GroovyShell clientShell = new GroovyShell();
          for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
-            for (Map.Entry<String, Path> entry: extension.clientScripts.entrySet()) {
-                try {
-                    clientShell.parse(entry.getValue().toFile()).run();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+            for (Map.Entry<String, Supplier<Script>> entry: extension.clientScripts.entrySet()) {
+                entry.getValue().get().run();
             }
          }
       }

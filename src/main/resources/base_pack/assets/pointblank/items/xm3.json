@@ -72,6 +72,15 @@
         "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"snipers_sights" } ] }
       },
       {
+        "type": "Slot",
+        "weight": 64,
+        "whitelist": [
+          "class:com.vicmatskiv.pointblank.item.AmmoItem",
+          "#pointblank:xm3ammo",
+          "pointblank:ammo762x51"
+        ]
+      },
+      {
         "type": "PartVisibility",
         "parts": [
           {

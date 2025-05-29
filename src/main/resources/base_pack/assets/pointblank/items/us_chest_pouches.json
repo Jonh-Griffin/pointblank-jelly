@@ -1,0 +1,17 @@
+{
+  "name": "us_chest_pouches",
+  "type": "Attachment",
+  "category": "bandolier",
+  "groups": [
+      "bandolier"
+  ],
+  "features": [
+    {
+      "type": "slot",
+      "weight": 128,
+      "whitelist": [
+        "class:com.vicmatskiv.pointblank.item.AmmoItem"
+      ]
+    }
+  ]
+}

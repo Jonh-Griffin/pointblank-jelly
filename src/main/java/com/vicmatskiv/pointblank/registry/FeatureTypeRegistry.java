@@ -1,22 +1,9 @@
 package com.vicmatskiv.pointblank.registry;
 
-import com.vicmatskiv.pointblank.Config;
+import com.electronwill.nightconfig.core.file.FileNotFoundAction;
+import com.electronwill.nightconfig.toml.TomlParser;
 import com.vicmatskiv.pointblank.PointBlankJelly;
-import com.vicmatskiv.pointblank.feature.AccuracyFeature;
-import com.vicmatskiv.pointblank.feature.ActiveMuzzleFeature;
-import com.vicmatskiv.pointblank.feature.AimingFeature;
-import com.vicmatskiv.pointblank.feature.AmmoCapacityFeature;
-import com.vicmatskiv.pointblank.feature.DamageFeature;
-import com.vicmatskiv.pointblank.feature.Feature;
-import com.vicmatskiv.pointblank.feature.FireModeFeature;
-import com.vicmatskiv.pointblank.feature.GlowFeature;
-import com.vicmatskiv.pointblank.feature.MuzzleFlashFeature;
-import com.vicmatskiv.pointblank.feature.PartVisibilityFeature;
-import com.vicmatskiv.pointblank.feature.PipFeature;
-import com.vicmatskiv.pointblank.feature.RecoilFeature;
-import com.vicmatskiv.pointblank.feature.ReticleFeature;
-import com.vicmatskiv.pointblank.feature.SkinFeature;
-import com.vicmatskiv.pointblank.feature.SoundFeature;
+import com.vicmatskiv.pointblank.feature.*;
 import com.vicmatskiv.pointblank.util.InternalFiles;
 import net.minecraftforge.fml.loading.FMLPaths;
 
@@ -73,7 +60,9 @@ public class FeatureTypeRegistry {
    }
 
    public static void init() {
-      if(!Config.overwriteDisabled) {
+      var cfg = new TomlParser().parse(FMLPaths.CONFIGDIR.get().resolve("pointblank-common.toml").toFile(), FileNotFoundAction.READ_NOTHING);
+      boolean allowBasePackOverwrite = cfg.get("allowBasePackOverwrite") != null && (boolean) cfg.get("allowBasePackOverwrite");
+      if(!allowBasePackOverwrite) {
           try {
               InternalFiles.copyFolder(PointBlankJelly.class.getResource("/base_pack").toURI(), FMLPaths.GAMEDIR.get().resolve("pointblank").resolve("base_pack"));
               PointBlankJelly.LOGGER.info("Writing base_pack...");

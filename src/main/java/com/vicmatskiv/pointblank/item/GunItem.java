@@ -34,6 +34,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -42,6 +43,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
@@ -50,12 +52,16 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.tooltip.BundleTooltip;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
+import net.minecraft.world.item.*;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -93,7 +99,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class GunItem extends HurtingItem implements ScriptHolder, Craftable, AttachmentHost, Nameable, GeoItem, LockableTarget.TargetLocker, Tradeable {
+public class GunItem extends HurtingItem implements ScriptHolder, Craftable, AttachmentHost, Nameable, GeoItem, LockableTarget.TargetLocker, Tradeable, SlotFeature.SlotHolder {
    private static final Logger LOGGER = LogManager.getLogger("pointblank");
    private static final String DEFAULT_ANIMATION_IDLE = "animation.model.idle";
    private static final String DEFAULT_ANIMATION_RELOAD = "animation.model.reload";
@@ -220,7 +226,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    @Nullable
    private Script script = null;
 
-   private GunItem(Builder builder, String namespace) {
+   public GunItem(Builder builder, String namespace) {
       super(new Properties(), builder);
       this.name = builder.name;
       this.nameSpace = builder.extension.getName();
@@ -867,6 +873,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
       controllers.add(enableFireModeAimationController);
    }
 
+   //reload and Compatible Ammo
    private static boolean isCompatibleBullet(Item ammoItem, ItemStack gunStack, FireModeInstance fireModeInstance) {
 
       boolean result = false;
@@ -875,6 +882,27 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 
          if(fireModeInstance.hasFunction("isCompatibleBullet"))
             return (boolean) fireModeInstance.invokeFunction("isCompatibleBullet", (AmmoItem) ammoItem, gunStack, fireModeInstance);
+
+         List<Features.EnabledFeature> overrides = Features.getEnabledFeatures(gunStack, AmmoOverrideFeature.class);
+         boolean hasOverrideOnly = false;
+
+         for (Features.EnabledFeature ef : overrides) {
+            AmmoOverrideFeature feature = (AmmoOverrideFeature) ef.feature();
+
+            if (feature.getOverrideAmmo() == ammoItem) {
+               return true; // Munição permitida via override
+            }
+
+            if (feature.isOverrideOnly()) {
+               hasOverrideOnly = true; // 🟠 Marcar que o override é exclusivo
+            }
+         }
+
+// Se tem overrideOnly e não bateu com o ammoItem, não pode usar nenhum outro
+         if (hasOverrideOnly) {
+            return false;
+         }
+
 
          List<FireModeInstance> firModeInstances = getFireModes(gunStack);
          if (!firModeInstances.contains(fireModeInstance)) {
@@ -1421,15 +1449,28 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                List<BlockPos> blockPosToDestroy = new ArrayList<>();
                if(this.hitscan)
                   hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
-               else {
+               else { //bullet
+                  BulletData modifiedBulletData = this.bulletData;
+                  List<Features.EnabledFeature> modifiers = Features.getEnabledFeatures(itemStack, BulletModifierFeature.class);
+                  for (Features.EnabledFeature feature : modifiers) {
+                     BulletModifierFeature mod = (BulletModifierFeature) feature.feature();
+                     modifiedBulletData = new BulletData(
+                             modifiedBulletData.velocity() + mod.getVelocityModifier(),
+                             modifiedBulletData.speedOffset() + mod.getSpeedOffsetModifier(),
+                             modifiedBulletData.maxSpeedOffset() + mod.getMaxSpeedOffsetModifier(),
+                             modifiedBulletData.inaccuracy() + mod.getInaccuracyModifier(),
+                             modifiedBulletData.gravity() + mod.getGravityModifier()
+                     );
+                  }
+
                   for (int i = 0; i < shotCount; i++) {
-                     float speed = this.bulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (this.bulletData.velocity() + 1f), 0, this.bulletData.maxSpeedOffset());
+                     float speed = modifiedBulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (modifiedBulletData.velocity() + 1f), 0, modifiedBulletData.maxSpeedOffset());
                      ProjectileBulletEntity bullet;
                      float damage = fireModeInstance.getDamage();
                      bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance());
                      bullet.setOwner(player);
-                     bullet.setBulletGravity(this.bulletData.gravity()); // (￣o￣) . z Z
-                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * this.bulletData.inaccuracy());
+                     bullet.setBulletGravity(modifiedBulletData.gravity());
+                     bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * modifiedBulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }
                }
@@ -2039,6 +2080,46 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
    public boolean hasScript() {
         return script != null;
    }
+
+   //Bundle Code BEGIN
+
+   @Override
+   public boolean overrideOtherStackedOnMe(ItemStack pStack, ItemStack pOther, Slot pSlot, ClickAction pAction, Player pPlayer, SlotAccess pAccess) {
+      return stack(pStack, pOther, pAction, pPlayer, pAccess);
+   }
+
+   //Bundle Code
+   private static final int BAR_COLOR = Mth.color(0.4F, 0.4F, 1.0F);
+
+   public boolean isBarVisible(ItemStack pStack) {
+      return false;
+   }
+
+   public Optional<TooltipComponent> getTooltipImage(ItemStack pStack) {
+      NonNullList<ItemStack> nonnulllist = NonNullList.create();
+      getContents(pStack).forEach(nonnulllist::add);
+      var weight = getTotalWeight(pStack);
+      if(getMaxWeight(pStack) == 0) return Optional.empty();
+      return Optional.of(new BundleTooltip(nonnulllist, weight));
+   }
+
+   public void onDestroyed(ItemEntity pItemEntity) {
+      ItemUtils.onContainerDestroyed(pItemEntity, getContents(pItemEntity.getItem()));
+   }
+
+   private void playRemoveOneSound(Entity pEntity) {
+      pEntity.playSound(SoundEvents.BUNDLE_REMOVE_ONE, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+   }
+
+   private void playInsertSound(Entity pEntity) {
+      pEntity.playSound(SoundEvents.BUNDLE_INSERT, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+   }
+
+   private void playDropContentsSound(Entity pEntity) {
+      pEntity.playSound(SoundEvents.BUNDLE_DROP_CONTENTS, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+   }
+
+   //Bundle Code END
 
     public enum AnimationType {
       RIFLE("__DEFAULT_RIFLE_ANIMATIONS__", GunItem.FALLBACK_COMMON_ANIMATIONS),
@@ -2992,7 +3073,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
             }
          }
 
-         this.withFeature(new AimingFeature.Builder().withZoom(0.1f).withAimMatrix(new Matrix4f().rotateXYZ(0f, 0f, -25f).translate(-1, 0, 0)));
 
          JsonElement reloadAnimationElem = obj.get("reloadAnimation");
          String reloadAnimation = reloadAnimationElem != null ? reloadAnimationElem.getAsString() : null;

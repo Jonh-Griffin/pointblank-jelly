@@ -158,8 +158,8 @@
           }
         },
         {
-          "name": "reciever",
-          "visible": true,
+          "name": "receiver",
+          "visible": false,
           "condition": {
             "allOf": [{"hasAttachment": "star15mod3receiver"}]
           }

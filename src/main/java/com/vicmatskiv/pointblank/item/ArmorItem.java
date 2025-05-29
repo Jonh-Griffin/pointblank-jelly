@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Either;
 import com.vicmatskiv.pointblank.Nameable;
 import com.vicmatskiv.pointblank.attachment.Attachment;
 import com.vicmatskiv.pointblank.attachment.AttachmentCategory;
@@ -23,16 +24,31 @@ import net.minecraft.Util;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.entity.*;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.tooltip.BundleTooltip;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -48,8 +64,9 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem {
+public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equipable, Nameable, ScriptHolder, Craftable, AttachmentHost, GeoItem, SlotFeature.SlotHolder {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final String name;
     public ResourceLocation modelResourceLocation;
@@ -74,6 +91,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     private final long craftingDuration;
     private final SoundEvent equipSound;
     private final List<GlowAnimationController.Builder> glowEffectBuilders;
+    boolean equipped = false;
 
     public ArmorItem(Builder builder, String namespace) {
         super(ArmorMaterials.LEATHER,builder.armorType,new Properties().stacksTo(1).durability(builder.durability));
@@ -115,7 +133,66 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         SingletonGeoAnimatable.registerSyncedAnimatable(this);
     }
 
-    
+    public void equipArmor() {
+
+    }
+
+    public void unequipArmor() {
+
+    }
+
+    boolean hasSlots(ItemStack pStack) {
+        var addedSlots = 0;
+        var weight = 0;
+        for(ItemStack attachment : Attachments.getAttachments(pStack)) {
+            var attachmentI = ((AttachmentItem) attachment.getItem());
+            if(attachmentI.hasFeature(SlotFeature.class)) {
+                var feature = ((AttachmentItem) attachment.getItem()).getFeature(SlotFeature.class);
+                if (feature != null) {
+                    addedSlots += 1;
+                    weight += feature.weight;
+                }
+            }
+        }
+        return addedSlots > 0;
+    }
+
+    @Override
+    public boolean overrideOtherStackedOnMe(ItemStack pStack, ItemStack pOther, Slot pSlot, ClickAction pAction, Player pPlayer, SlotAccess pAccess) {
+        return stack(pStack, pOther, pAction, pPlayer, pAccess);
+    }
+
+    //Bundle Code
+    private static final int BAR_COLOR = Mth.color(0.4F, 0.4F, 1.0F);
+
+    public boolean isBarVisible(ItemStack pStack) {
+        return false;
+    }
+
+    public Optional<TooltipComponent> getTooltipImage(ItemStack pStack) {
+        NonNullList<ItemStack> nonnulllist = NonNullList.create();
+        getContents(pStack).forEach(nonnulllist::add);
+        var weight = getTotalWeight(pStack);
+        if(getMaxWeight(pStack) == 0) return Optional.empty();
+        return Optional.of(new BundleTooltip(nonnulllist, weight));
+    }
+
+    public void onDestroyed(ItemEntity pItemEntity) {
+        ItemUtils.onContainerDestroyed(pItemEntity, getContents(pItemEntity.getItem()));
+    }
+
+    private void playRemoveOneSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_REMOVE_ONE, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
+    private void playInsertSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_INSERT, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
+    private void playDropContentsSound(Entity pEntity) {
+        pEntity.playSound(SoundEvents.BUNDLE_DROP_CONTENTS, 0.8F, 0.8F + pEntity.level().getRandom().nextFloat() * 0.4F);
+    }
+
     public void inventoryTick(ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
         if (pEntity instanceof LivingEntity entity) {
             invokeFunction("inventoryTick", pStack, pLevel, entity);
@@ -125,13 +202,14 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
     }
 
     public void onArmorTick(ItemStack stack, Level level, Player player) {
+        if(!equipped) { equipped = true; equipArmor(); }
+
         invokeFunction("armorTick", stack, level, player);
         for (ItemStack attachment : Attachments.getAttachments(stack))
             ((AttachmentItem)attachment.getItem()).invokeFunction("armorTick$A", stack, level, player);
 
     }
 
-    
     public Collection<Attachment> getCompatibleAttachments() {
         if (this.compatibleAttachments == null) {
             Set<AttachmentCategory> attachmentCategories = new HashSet<>();
@@ -199,7 +277,7 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
       //  controllerRegistrar.add(new AnimationController<>(this, "idle",0, (state)-> PlayState.CONTINUE));
     }
 
-    
+
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             private ArmorItemRenderer renderer = null;
@@ -243,16 +321,28 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
 
     
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot pEquipmentSlot, ItemStack stack) {
+        Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
+
+        multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", getAdjustedDefense(stack), AttributeModifier.Operation.ADDITION));
+        multimap.get(Attributes.ARMOR_TOUGHNESS).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Toughness", getAdjustedToughness(stack), AttributeModifier.Operation.ADDITION));
+
+        return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
+    }
+
+    
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+
+    }
+
+    public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
+        return 2;
+    }
+
+    public int getAdjustedDefense(ItemStack stack) {
         float defenseMod = DefenseFeature.getDefenseModifier(stack);
         int defenseAdd = DefenseFeature.getDefenseAdditive(stack);
 
-        float toughnessMod = DefenseFeature.getToughnessModifier(stack);
-        float toughnessAdd = DefenseFeature.getToughnessAdditive(stack);
-
-        Multimap<Attribute, AttributeModifier> multimap = LinkedListMultimap.create(this.defaultModifiers);
-
         int defenseFinal = (int) ((float)this.defense * defenseMod) + defenseAdd;
-        float toughnessFinal = (this.toughness * toughnessMod) + toughnessAdd;
 
         if(hasFunction("addArmorDefense"))
             defenseFinal += (int) invokeFunction("addArmorDefense", stack);
@@ -260,35 +350,22 @@ public class ArmorItem extends net.minecraft.world.item.ArmorItem implements Equ
         if(hasFunction("mulArmorDefense"))
             defenseFinal *= (int) invokeFunction("mulArmorDefense", stack);
 
+        return defenseFinal;
+    }
+
+    public float getAdjustedToughness(ItemStack stack) {
+        float toughnessMod = DefenseFeature.getToughnessModifier(stack);
+        float toughnessAdd = DefenseFeature.getToughnessAdditive(stack);
+
+        float toughnessFinal = (this.toughness * toughnessMod) + toughnessAdd;
+
         if(hasFunction("addArmorToughness"))
             toughnessFinal += (int) invokeFunction("addArmorToughness", stack);
 
         if(hasFunction("mulArmorToughness"))
             toughnessFinal *= (int) invokeFunction("mulArmorToughness", stack);
 
-        multimap.get(Attributes.ARMOR).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Defense", defenseFinal, AttributeModifier.Operation.ADDITION));
-        multimap.get(Attributes.ARMOR_TOUGHNESS).add(new AttributeModifier(ARMOR_MODIFIER_UUID_PER_TYPE.get(type),"Toughness", toughnessFinal, AttributeModifier.Operation.ADDITION));
-
-        return pEquipmentSlot == this.type.getSlot() ? multimap : super.getDefaultAttributeModifiers(pEquipmentSlot);
-    }
-
-    
-    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
-        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.ARMOR_TOUGHNESS)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-        for(AttributeModifier modifier : this.getAttributeModifiers(pStack.getEquipmentSlot(), pStack).get(Attributes.KNOCKBACK_RESISTANCE)) {
-            pTooltipComponents.add(MutableComponent.create(Component.literal(modifier.getName()).withStyle(ChatFormatting.GRAY).append(": ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(String.valueOf(modifier.getAmount())).withStyle(ChatFormatting.AQUA)).getContents()));
-        }
-    }
-
-    
-    public int getDefaultTooltipHideFlags(@NotNull ItemStack stack) {
-        return 2;
+        return toughnessFinal;
     }
 
     public int getDefense() {
