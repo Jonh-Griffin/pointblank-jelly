@@ -59,7 +59,7 @@
       {
         "type": "Pip",
         "overlayTexture": "textures/gui/augscope_pip.png",
-        "parallaxEnabled": true,
+        "parallax": true,
         "zoom": 0.75,
         "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"ar_sightsandscopes" } ] }
       },

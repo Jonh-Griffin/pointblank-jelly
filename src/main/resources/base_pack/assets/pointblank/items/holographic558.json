@@ -14,7 +14,7 @@
   "features": [
     {
       "type": "Reticle",
-      "parallaxEnabled": true,
+      "parallax": true,
       "maxAngularOffset": 5.0
     },
     {
