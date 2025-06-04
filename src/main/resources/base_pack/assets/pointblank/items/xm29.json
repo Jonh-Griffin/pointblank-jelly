@@ -1,221 +1,287 @@
 {
-    "name": "xm29",
-    "type": "Gun",
-    "maxAmmoCapacity": 30,
-    "compatibleAmmo": ["ammo556","ammocreative"],
-    "damage": 5,
-    "rpm": 800,
-    "fireSound": "xm29",
-    "animationType": "rifle",
-    "compatibleAttachments": [
-        "cantedrail"
-    ],
-    "compatibleAttachmentGroups": [
-        "ar_sightsandscopes",
-        "ar_muzzle",
-        "underbarrel",
-        "underbarrel_2",
-        "xm29_skins"
-    ],
-    "gunRecoilInitialAmplitude" : 0.8,
-    "shakeRecoilAmplitude" : 0.35,
-    "shakeRecoilSpeed" : 2,
-    "viewRecoilAmplitude" : 1.6,
-    "phasedReloads": [
+  "name": "xm29",
+  "type": "Gun",
+  "maxAmmoCapacity": 30,
+  "compatibleAmmo": ["ammocreative", "ammo556"],
+  "damage": 5,
+  "rpm": 800,
+  "fireSound": "xm29",
+  "animationType": "rifle",
+  "compatibleAttachments": [
+    "cantedrail"
+  ],
+  "compatibleAttachmentGroups": [
+    "ar_sightsandscopes",
+    "ar_muzzle",
+    "underbarrel",
+    "underbarrel_2",
+    "xm29_skins"
+  ],
+  "gunRecoilInitialAmplitude": 0.3,
+  "shakeRecoilAmplitude": 0.35,
+  "shakeRecoilSpeed": 2.0,
+  "viewRecoilAmplitude": 1.6,
+  "phasedReloads": [
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": true },
+          { "unselectedFireMode": "grenade_launcher" }
+        ]
+      },
+      "duration": 2980,
+      "animation": "animation.model.reloadempty"
+    },
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": false },
+          { "unselectedFireMode": "grenade_launcher" }
+        ]
+      },
+      "duration": 2480,
+      "animation": "animation.model.reload"
+    },
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": true },
+          { "selectedFireMode": "grenade_launcher" }
+        ]
+      },
+      "duration": 2370,
+      "animation": "animation.model.reloadgrenadeempty",
+      "shakeEffects": [
+        { "start": 0, "duration": 800, "initialAmplitude": 0.1, "rateOfAmplitudeDecay": 0.4 },
+        { "start": 430, "duration": 1000, "initialAmplitude": 0.25, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 870, "duration": 500, "initialAmplitude": 0.2, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 1130, "duration": 600, "initialAmplitude": 0.25, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 1580, "duration": 600, "initialAmplitude": 0.2, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 1720, "duration": 600, "initialAmplitude": 0.25, "rateOfAmplitudeDecay": 0.5 }
+      ]
+    },
+    {
+      "phase": "RELOADING",
+      "condition": {
+        "allOf": [
+          { "onEmptyReload": false },
+          { "selectedFireMode": "grenade_launcher" }
+        ]
+      },
+      "duration": 1770,
+      "animation": "animation.model.reloadgrenade",
+      "shakeEffects": [
+        { "start": 0, "duration": 800, "initialAmplitude": 0.1, "rateOfAmplitudeDecay": 0.4 },
+        { "start": 430, "duration": 1000, "initialAmplitude": 0.25, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 870, "duration": 500, "initialAmplitude": 0.2, "rateOfAmplitudeDecay": 0.5 },
+        { "start": 1130, "duration": 600, "initialAmplitude": 0.25, "rateOfAmplitudeDecay": 0.5 }
+      ]
+    }
+  ],
+  "drawAnimations": [
+    {
+      "name": "animation.model.draw",
+      "duration": 650
+    }
+  ],
+  "inspectAnimations": [
+    {
+      "name": "animation.model.inspect",
+      "duration": 4200
+    }
+  ],
+  "effects": [
+    {
+      "phase": "hit_scan_acquired",
+      "name": "tracer"
+    },
+    {
+      "phase": "firing",
+      "name": "muzzle_flash_small"
+    }
+  ],
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "effects": [
         {
-            "phase": "RELOADING",
-            "condition": {
-                "allOf": [
-                    { "onEmptyReload": true },
-                    { "unselectedFireMode": "grenade_launcher" },
-                    { "unselectedFireMode": "laser_cannon" },
-                    { "unselectedFireMode": "shotgun" }
-                ]
-            },
-            "duration": 3300,
-            "animation": "animation.model.reloadempty"
-        },
-        {
-            "phase": "RELOADING",
-            "condition": {
-                "allOf": [
-                    { "onEmptyReload": false },
-                    { "unselectedFireMode": "grenade_launcher" },
-                    { "unselectedFireMode": "laser_cannon" },
-                    { "unselectedFireMode": "shotgun" }
-                ]
-            },
-            "duration": 2550,
-            "animation": "animation.model.reload"
-        },
-        {
-            "phase": "RELOADING",
-            "condition": {
-                "allOf": [
-                    { "selectedFireMode": "grenade_launcher" },
-                    { "onEmptyReload": false }
-                ]
-            },
-            "duration": 2000,
-            "animation": "animation.model.reloadgrenade"
-        },
-        {
-            "phase": "RELOADING",
-            "condition": {
-                "allOf": [
-                    { "selectedFireMode": "grenade_launcher" },
-                    { "onEmptyReload": true }
-                ]
-            },
-            "duration": 2550,
-            "animation": "animation.model.reloadgrenadeempty"
-        }
-    ],
-    "drawAnimations": [
-        {
-            "name": "animation.model.draw",
-            "duration": 650
-        }
-    ],
-    "inspectAnimations": [
-        {
-            "name": "animation.model.inspect",
-            "duration": 4300
-        }
-    ],
-    "effects": [
-        {
-            "phase": "hit_scan_acquired",
-            "name": "tracer"
-        },
-        {
-            "phase": "firing",
-            "name": "muzzle_flash_small"
-        }
-    ],
-    "features": [
-        {
-            "type": "FireMode",
-            "fireModes": [
-                {
-                    "name": "grenade_launcher",
-                    "displayName": "GRENADE",
-                    "type": "SINGLE",
-                    "rpm": 200,
-                    "damage": 20.0,
-                    "ammo": "grenade20mm",
-                    "maxAmmoCapacity": 6,
-                    "isUsingDefaultMuzzle": false,
-                    "fireAnimations": [
-                        {
-                            "name": "animation.model.firegrenade",
-                            "duration": 2500
-                        }
-                    ]
-                },
-                {
-                    "name": "single",
-                    "displayName": "label.pointblank.fireMode.single",
-                    "type": "SINGLE"
-                },
-                {
-                    "name": "automatic",
-                    "displayName": "label.pointblank.fireMode.automatic",
-                    "type": "AUTOMATIC"
-                }
+          "phase": "firing",
+          "name": "muzzle_flash",
+          "condition": {
+            "allOf": [
+              { "unselectedFireMode": "grenade_launcher" },
+              { "doesNotHaveAttachmentGroup": "ar_suppressors" }
             ]
+          }
         },
         {
-            "type": "Aiming",
-            "zoom": 0.25,
-            "condition": {
-                "allOf": [
-                    { "doesNotHaveAttachmentGroup": "ar_sightsandscopes"},
-                    { "unselectedFireMode": "grenade_launcher"},
-                    { "unselectedFireMode": "laser_cannon"},
-                    { "unselectedFireMode": "shotgun"}
-                ]
-            }
-        },
-        {
-            "type": "PiP",
-            "parallax": true,
-            "zoom": 0.75,
-            "condition": {
-                "doesNotHaveAttachmentGroup": "m16_sightsandscopes"
-            },
-            "overlayTexture": "textures/gui/starscope_pip.png"
-        },
-        {
-            "type": "Sound",
-            "fireSound": "xm29",
-            "fireSoundVolume": 1,
-            "condition": {
-                "allOf": [
-                    { "hasAttachmentGroup": "ar_suppressors"},
-                    { "unselectedFireMode": "grenade_launcher"},
-                    { "unselectedFireMode": "laser_cannon"},
-                    { "unselectedFireMode": "shotgun"}
-                ]
-            }
-        },
-        {
-            "type": "PartVisibility",
-            "parts": [
-                {
-                    "name": "xm29scope",
-                    "visible": false,
-                    "condition": {
-                        "allOf": [{"hasAttachmentGroup": "m16_sightsandscopes"}]
-                    }
-                },
-                {
-                    "name": "rearsightflipped",
-                    "visible": true,
-                    "condition": {
-                        "allOf": [{"hasAttachmentGroup": "ar_sightsandscopes"}]
-                    }
-                },
-                {
-                    "name": "frontsightflipped",
-                    "visible": true,
-                    "condition": {
-                        "allOf": [{"hasAttachmentGroup": "ar_sightsandscopes"}]
-                    }
-                }
+          "phase": "firing",
+          "name": "launcher_muzzle",
+          "condition": {
+            "allOf": [
+              { "selectedFireMode": "grenade_launcher" }
             ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "ActiveMuzzle",
+      "parts": [
+        {
+          "name": "muzzleflash",
+          "condition": {
+            "allOf": [
+              { "unselectedFireMode": "grenade_launcher" },
+              { "doesNotHaveAttachmentGroup": "ar_suppressors" }
+            ]
+          }
         },
         {
-            "type": "MuzzleFlash",
-            "effects": [
-                {
-                    "phase": "firing",
-                    "name": "muzzle_flash_small",
-                    "condition": {
-                        "allOf": [
-                            {"unselectedFireMode": "grenade_launcher"}
-                        ]
-                    }
-                },
-                {
-                    "phase": "firing",
-                    "name": "launcher_muzzle",
-                    "condition": {
-                        "allOf": [
-                            {"selectedFireMode": "grenade_launcher"}
-                        ]
-                    }
-                }
-            ],
-            "condition": {
-                "allOf": [
-                    { "doesNotHaveAttachmentGroup": "ar_suppressors"},
-                    { "unselectedFireMode": "grenade_launcher"},
-                    { "unselectedFireMode": "laser_cannon"},
-                    { "unselectedFireMode": "shotgun"}
-                ]
-            }
+          "name": "muzzleflash2",
+          "condition": {
+            "allOf": [
+              { "selectedFireMode": "grenade_launcher" }
+            ]
+          }
         }
-    ],
-    "glowingParts": [{"name": "glowy_new6"}]
+      ]
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.35,
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+        ]
+      }
+    },
+    {
+      "type": "PIP",
+      "overlayTexture": "textures/gui/starscope_pip.png",
+      "parallaxEnabled": true,
+      "zoom": 0.75,
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+        ]
+      }
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "xm29scope",
+          "visible": false,
+          "condition": {
+            "allOf": [
+              { "hasAttachmentGroup": "m16_sightsandscopes" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "fireSound": "xm29",
+      "fireSoundVolume": 6.0,
+      "condition": {
+        "allOf": [
+          { "unselectedFireMode": "grenade_launcher" },
+          { "doesNotHaveAttachmentGroup": "ar_suppressors" }
+        ]
+      }
+    },
+    {
+      "type": "Sound",
+      "fireSound": "m4a1_silenced",
+      "fireSoundVolume": 1.0,
+      "condition": {
+        "allOf": [
+          { "unselectedFireMode": "grenade_launcher" },
+          { "hasAttachmentGroup": "ar_suppressors" }
+        ]
+      }
+    },
+    {
+      "type": "Sound",
+      "fireSound": "xm29_grenade",
+      "fireSoundVolume": 6.0,
+      "condition": {
+        "allOf": [
+          { "selectedFireMode": "grenade_launcher" }
+        ]
+      }
+    },
+    {
+      "type": "FireMode",
+      "fireModes": [
+        {
+          "name": "grenade_launcher",
+          "displayName": "label.pointblank.fireMode.grenade",
+          "type": "SINGLE",
+          "rpm": 200,
+          "damage": 190.0,
+          "ammo": "grenade20mm",
+          "maxAmmoCapacity": 6,
+          "isUsingDefaultMuzzle": false,
+          "fireAnimations": [
+            {
+              "name": "animation.model.firegrenade",
+              "duration": 350
+            }
+          ],
+          "viewShake": {
+            "duration": 350,
+            "amplitude": 2.0,
+            "speed": 2.0
+          }
+        },
+        {
+          "name": "single",
+          "displayName": "label.pointblank.fireMode.single",
+          "type": "SINGLE",
+          "rpm": 800,
+          "damage": 5.0,
+          "isUsingDefaultMuzzle": true,
+          "fireAnimations": [
+            {
+              "name": "animation.model.fire",
+              "duration": 350
+            }
+          ],
+          "viewShake": {
+            "duration": 350,
+            "amplitude": 0.35,
+            "speed": 2.0
+          }
+        },
+        {
+          "name": "automatic",
+          "displayName": "label.pointblank.fireMode.automatic",
+          "type": "AUTOMATIC",
+          "rpm": 800,
+          "damage": 5.0,
+          "isUsingDefaultMuzzle": true,
+          "fireAnimations": [
+            {
+              "name": "animation.model.fire",
+              "duration": 350
+            }
+          ],
+          "viewShake": {
+            "duration": 350,
+            "amplitude": 0.35,
+            "speed": 2.0
+          }
+        }
+      ]
+    }
+  ],
+  "glowingParts": [
+    { "name": "glowy_new6" }
+  ]
 }

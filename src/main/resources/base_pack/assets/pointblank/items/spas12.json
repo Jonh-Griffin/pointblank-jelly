@@ -3,70 +3,20 @@
   "type": "Gun",
   "maxAmmoCapacity": 9,
   "maxAmmoPerReloadIteration": 1,
-  "pelletCount": 12,
-  "pelletSpread": 0.2,
-  "compatibleAmmo": ["ammocreative", "ammo12gauge"],
+  "pelletCount": 30,
+  "pelletSpread": 0.1,
+  "compatibleAmmo": ["ammocreative","ammo12gauge"],
   "rpm": 160,
   "fireModes": ["SINGLE"],
   "fireSound": "spas12",
-  "drawAnimations": [
-    { "name": "animation.model.draw", "duration": 800 }
-  ],
-  "inspectAnimations": [
-    { "name": "animation.model.inspect", "duration": 4030 }
-  ],
+  "drawCooldownDuration": 800,
+  "inspectCooldownDuration": 4030,
   "gunRecoilInitialAmplitude": 1.3,
   "shakeRecoilAmplitude": 0.65,
   "shakeRecoilSpeed": 3.5,
   "viewRecoilAmplitude": 7.0,
-  "features": [
-    {
-      "type": "MuzzleFlash",
-      "effects": [
-        { "phase": "firing", "name": "muzzle_flash_big_ex" }
-      ],
-      "condition": { "allOf": [{ "doesNotHaveAttachment": "sg_suppressor" }] }
-    },
-    {
-      "type": "Aiming",
-      "zoom": 0.25
-    },
-    {
-      "type": "Sound",
-      "fireSound": "spas12_silenced",
-      "fireSoundVolume": 1.0,
-      "condition": { "allOf": [{ "hasAttachment": "sg_suppressor" }] }
-    },
-    {
-      "type": "FireMode",
-      "modes": [
-        {
-          "name": "pump",
-          "type": "SINGLE",
-          "displayName": "label.pointblank.fireMode.pump",
-          "isUsingDefaultMuzzle": false,
-          "rpm": 129,
-          "damage": 1.7,
-          "pelletSpread": 0.1,
-          "pelletCount": 30,
-          "fireAnimation": "animation.model.fire",
-          "viewShake": { "duration": 350, "amplitudeX": 2.0, "amplitudeY": 2.0 }
-        },
-        {
-          "name": "single",
-          "type": "SINGLE",
-          "displayName": "label.pointblank.fireMode.single",
-          "isUsingDefaultMuzzle": false,
-          "rpm": 500,
-          "damage": 1.1,
-          "pelletSpread": 0.1,
-          "pelletCount": 30,
-          "fireAnimation": "animation.model.firesemi",
-          "viewShake": { "duration": 350, "amplitudeX": 2.0, "amplitudeY": 2.0 }
-        }
-      ]
-    }
-  ],
+  "drawAnimations": [{ "name": "animation.model.draw", "duration": 800 }],
+  "inspectAnimations": [{ "name": "animation.model.inspect", "duration": 4030 }],
   "compatibleAttachments": ["sg_suppressor"],
   "compatibleAttachmentGroups": ["spas12_skins"],
   "phasedReloads": [
@@ -84,13 +34,13 @@
     },
     {
       "phase": "RELOADING",
-      "condition": "reloadIterationIndex == -1",
+      "condition": "reloadIterationIndex == 0",
       "duration": 1200,
       "animation": "animation.model.loadchamber"
     },
     {
       "phase": "RELOADING",
-      "condition": "reloadIterationIndex >= 0",
+      "condition": "reloadIterationIndex > 0",
       "duration": 700,
       "animation": "animation.model.load"
     },
@@ -101,6 +51,67 @@
       "animation": "animation.model.finish"
     }
   ],
-  "effects": [],
-  "glowingParts": []
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "effects": [
+        {
+          "phase": "firing",
+          "name": "muzzle_flash_big_ex"
+        }
+      ],
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachment": "sg_suppressor" }
+        ]
+      }
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.25
+    },
+    {
+      "type": "Sound",
+      "fireSound": "spas12_silenced",
+      "fireSoundVolume": 1.0,
+      "condition": {
+        "allOf": [
+          { "hasAttachment": "sg_suppressor" }
+        ]
+      }
+    },
+    {
+      "type": "FireMode",
+      "fireModes": [
+        {
+          "name": "pump",
+          "displayName": "label.pointblank.fireMode.pump",
+          "type": "SINGLE",
+          "rpm": 129,
+          "damage": 1.7,
+          "pelletSpread": 0.1,
+          "pelletCount": 30,
+          "isUsingDefaultMuzzle": false,
+          "fireAnimations": [
+            { "name": "animation.model.fire", "duration": 350 }
+          ],
+          "viewShake": { "duration": 350, "amplitude": 2.0, "speed": 2.0 }
+        },
+        {
+          "name": "single",
+          "displayName": "label.pointblank.fireMode.single",
+          "type": "SINGLE",
+          "rpm": 500,
+          "damage": 1.1,
+          "pelletSpread": 0.1,
+          "pelletCount": 30,
+          "isUsingDefaultMuzzle": false,
+          "fireAnimations": [
+            { "name": "animation.model.firesemi", "duration": 350 }
+          ],
+          "viewShake": { "duration": 350, "amplitude": 2.0, "speed": 2.0 }
+        }
+      ]
+    }
+  ]
 }
