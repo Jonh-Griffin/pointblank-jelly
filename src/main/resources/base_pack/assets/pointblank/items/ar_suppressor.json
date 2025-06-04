@@ -1,0 +1,28 @@
+{
+  "name": "ar_suppressor",
+  "type": "Attachment",
+  "category": "MUZZLE",
+  "description": "description.pointblank.supressesWeapon",
+  "groups": [
+    "ar_muzzle",
+    "ar_suppressors"
+  ],
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "condition": {
+        "isUsingDefaultMuzzle": true
+      },
+      "effects": [
+        {
+          "phase": "firing",
+          "name": "muzzle_flash_small"
+        }
+      ]
+    },
+    {
+      "type": "Recoil",
+      "recoilModifier": 1.2
+    }
+  ]
+}

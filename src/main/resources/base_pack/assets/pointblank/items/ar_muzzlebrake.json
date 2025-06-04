@@ -1,0 +1,16 @@
+{
+  "name": "ar_muzzlebrake",
+  "type": "Attachment",
+  "category": "MUZZLE",
+  "groups": [
+    "ar_muzzle",
+    "ak_muzzle",
+    "xm7_muzzle"
+  ],
+  "features": [
+    {
+      "type": "Recoil",
+      "recoilModifier": 0.8
+    }
+  ]
+}

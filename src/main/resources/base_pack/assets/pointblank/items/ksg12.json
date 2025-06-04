@@ -1,21 +1,21 @@
 {
-  "name": "m870",
+  "name": "ksg12",
   "type": "Gun",
-  "maxAmmoCapacity": 6,
+  "maxAmmoCapacity": 13,
   "maxAmmoPerReloadIteration": 1,
   "compatibleAmmo": ["ammocreative", "ammo12gauge"],
   "pelletCount": 12,
-  "pelletSpread": 0.1,
-  "damage": 2.2,
-  "rpm": 110,
+  "pelletSpread": 0.15,
+  "damage": 2.5,
+  "rpm": 100,
   "fireModes": ["SINGLE"],
   "fireSound": "m870",
-  "drawCooldownDuration": 800,
-  "inspectCooldownDuration": 4030,
-  "gunRecoilInitialAmplitude": 1.3,
+  "drawCooldownDuration": 900,
+  "inspectCooldownDuration": 3030,
+  "gunRecoilInitialAmplitude": 1.2,
   "shakeRecoilAmplitude": 2.0,
-  "shakeRecoilSpeed": 2.0,
-  "viewRecoilAmplitude": 10.0,
+  "shakeRecoilSpeed": 1.5,
+  "viewRecoilAmplitude": 7.5,
 
   "compatibleAttachments": [
     "cantedrail",
@@ -23,38 +23,39 @@
   ],
   "compatibleAttachmentGroups": [
     "ar_sightsandscopes",
-    "m870_skins"
+    "underbarrel",
+    "ksg12_skins"
   ],
 
   "phasedReloads": [
     {
       "phase": "PREPARING",
       "condition": "reloadIterationIndex == -1",
-      "duration": 320,
-      "animation": "animation.model.prepareempty"
+      "duration": 750,
+      "animation": "animation.model.prepare"
     },
     {
       "phase": "PREPARING",
       "condition": "reloadIterationIndex >= 0",
-      "duration": 320,
+      "duration": 750,
       "animation": "animation.model.prepare"
     },
     {
       "phase": "RELOADING",
       "condition": "reloadIterationIndex == 0",
-      "duration": 1230,
-      "animation": "animation.model.loadchamber"
+      "duration": 1530,
+      "animation": "animation.model.reloadempty"
     },
     {
       "phase": "RELOADING",
       "condition": "reloadIterationIndex > 0",
-      "duration": 600,
-      "animation": "animation.model.load"
+      "duration": 580,
+      "animation": "animation.model.reload"
     },
     {
       "phase": "COMPLETETING",
       "condition": "reloadIterationIndex >= 0",
-      "duration": 570,
+      "duration": 670,
       "animation": "animation.model.finish"
     }
   ],
@@ -87,11 +88,12 @@
       "type": "PartVisibility",
       "parts": [
         {
-          "name": "ironsights",
+          "name": "sights",
           "visible": false,
           "condition": {
             "allOf": [
-              { "hasAttachmentGroup": "m16_sightsandscopes" }
+              { "hasAttachmentGroup": "m16_sightsandscopes" },
+              { "hasAttachmentGroup": "ar_sightsandscopes" }
             ]
           }
         }

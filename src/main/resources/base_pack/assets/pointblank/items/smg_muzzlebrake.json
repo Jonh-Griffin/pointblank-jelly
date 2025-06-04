@@ -1,0 +1,14 @@
+{
+  "name": "smg_muzzlebrake",
+  "type": "Attachment",
+  "category": "MUZZLE",
+  "groups": [
+    "smg_muzzle"
+  ],
+  "features": [
+    {
+      "type": "Recoil",
+      "recoilModifier": 0.8
+    }
+  ]
+}

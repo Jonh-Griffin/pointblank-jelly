@@ -1,0 +1,24 @@
+{
+  "name": "grenade",
+  "type": "Throwable",
+  "damage": 30,
+  "maxLifetime": 2500,
+  "ricochet": true,
+  "projectile": {
+    "initialVelocity": 25,
+    "gravity": 0.03,
+    "topDownAttackEnabled": "false",
+    "renderer": {
+      "type": "model"
+    }
+  },
+  "explosion": {
+    "power": 4.0,
+    "fire": false,
+    "soundVolume": 40,
+    "effects": [
+      "explosion",
+      "debris"
+    ]
+  }
+}

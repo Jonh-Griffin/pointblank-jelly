@@ -60,6 +60,7 @@
   "item.pointblank.spas12": "SPAS-12",
   "item.pointblank.m1014": "M1014",
   "item.pointblank.aa12": "AA12",
+  "item.pointblank.ksg12": "KSG-12",
   "item.pointblank.aughbar": "AUG HBAR",
   "item.pointblank.lamg": "LAMG",
   "item.pointblank.mk48": "Mk48",
@@ -154,7 +155,7 @@
   "item.pointblank.m4sopmodii_bartender": "(Skin) M4 SOPMOD II Bartender",
   "item.pointblank.m4a1_asiimov": "(Skin) M4A1 ASIIMOV",
   "item.pointblank.l96a1_hyperbeast": "(Skin) L96A1_HYPERBEAST",
-  "item.pointblank.cs2_skins": "(Skin) CS2 ASIIMOV / HYPERBEAST",
+  "item.pointblank.cs2skins": "(Skin) CS2 ASIIMOV / HYPERBEAST",
   "item.pointblank.us_army_dress": "US Army Uniform",
   "item.pointblank.us_chest_pouches": "US Army Bandolier Pouches",
   "item.pointblank.grenade": "Frag Grenade"

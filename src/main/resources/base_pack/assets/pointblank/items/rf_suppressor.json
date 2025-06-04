@@ -1,0 +1,28 @@
+{
+  "name": "rf_suppressor",
+  "type": "Attachment",
+  "category": "MUZZLE",
+  "description": "description.pointblank.supressesWeapon",
+  "groups": [
+    "rf_muzzle",
+    "rf_suppressors"
+  ],
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "condition": {
+        "isUsingDefaultMuzzle": true
+      },
+      "effects": [
+        {
+          "phase": "firing",
+          "name": "muzzle_flash_small"
+        }
+      ]
+    },
+    {
+      "type": "Recoil",
+      "recoilModifier": 1.2
+    }
+  ]
+}

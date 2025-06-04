@@ -1,0 +1,29 @@
+{
+  "name": "acog",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "sights_group",
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "deagle_sights",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "compatibleAttachmentGroups": [
+    "sub_sight"
+  ],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/acog_pip.png",
+      "parallax": true,
+      "zoom": 0.8
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.45
+    }
+  ]
+}

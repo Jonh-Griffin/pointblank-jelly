@@ -6,15 +6,6 @@ import com.vicmatskiv.pointblank.config.Configurable;
 import com.vicmatskiv.pointblank.entity.EntityBuilderProvider;
 import com.vicmatskiv.pointblank.item.AttachmentItem;
 import com.vicmatskiv.pointblank.item.ItemBuilder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -26,6 +17,10 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public final class ItemRegistry {
    private final Map<String, Supplier<? extends Item>> itemsByName = new LinkedHashMap<>();
@@ -115,7 +110,7 @@ public final class ItemRegistry {
       TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, "pointblank");
       MiscItemRegistry.init();
       AmmoRegistry.init();
-      AttachmentRegistry.init();
+      //AttachmentRegistry.init();
       //GunRegistry.init();
       POINTBLANK_TAB = TABS.register("pointblank", () -> CreativeModeTab.builder().title(Component.translatable("itemGroup.pointblank.items")).icon(() -> new ItemStack(BlockRegistry.PRINTER.get() != null ? BlockRegistry.PRINTER.get() : Items.AIR)).displayItems((enabledFeatures, entries) -> {
          Consumer<ItemLike> output = itemLike -> {
@@ -131,7 +126,7 @@ public final class ItemRegistry {
 
          };
          //GunRegistry.registerTabItems(output);
-         AttachmentRegistry.registerTabItems(output);
+         //AttachmentRegistry.registerTabItems(output);
          AmmoRegistry.registerTabItems(output);
          MiscItemRegistry.registerTabItems(output);
       }).build());

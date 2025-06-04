@@ -1,0 +1,27 @@
+{
+  "name": "rspec",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "sights_group",
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "deagle_sights",
+    "snipers_sights",
+    "sl8_sights",
+    "sub_sight"
+  ],
+  "features": [
+    {
+      "type": "Reticle",
+      "texture": "textures/item/reticledot_new.png",
+      "parallax": true,
+      "maxAngularOffset": 5.0
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.3
+    }
+  ]
+}

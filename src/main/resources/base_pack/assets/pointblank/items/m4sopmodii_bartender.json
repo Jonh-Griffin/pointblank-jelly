@@ -1,0 +1,19 @@
+{
+  "name": "m4sopmodii_bartender",
+  "type": "ATTACHMENT",
+  "category": "SKIN",
+  "groups": [
+    "m4sopmodii_skins"
+  ],
+  "features": [
+    {
+      "type": "Skin",
+      "skins": [
+        {
+          "gunId": "m4sopmodii",
+          "texture": "textures/item/skin_sopmod_bartender.png"
+        }
+      ]
+    }
+  ]
+}
