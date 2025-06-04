@@ -122,7 +122,7 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         }
     }
 
-    public ProjectileBulletEntity(LivingEntity shooter, Level world, float damage, float speed, int shotCount, float maxDistance) {
+    public ProjectileBulletEntity(LivingEntity shooter, Level world, float damage, float speed, int shotCount, float maxDistance, float headshotMultiplier) {
         this(TYPE, shooter.getX(), shooter.getEyeY() - (double) 0.1F, shooter.getZ(), world);
         this.setOwner(shooter);
         this.damage = damage;
@@ -130,7 +130,7 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         this.shotCount = shotCount;
         this.initPos = new Vec3(shooter.getX(), shooter.getEyeY() - (double) 0.1F, shooter.getZ());
         this.maxDistance = maxDistance;
-        this.headshotMultiplier = 1f;
+        this.headshotMultiplier = headshotMultiplier;
 
     }
 
