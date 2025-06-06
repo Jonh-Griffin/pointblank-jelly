@@ -1,0 +1,11 @@
+{
+  "name": "ak_romgrip",
+  "type": "Attachment",
+  "category": "UNDERBARREL",
+  "features": [
+    {
+      "type": "Recoil",
+      "recoilModifier": 0.75
+    }
+  ]
+}

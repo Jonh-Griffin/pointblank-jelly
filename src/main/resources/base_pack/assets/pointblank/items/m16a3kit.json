@@ -1,0 +1,36 @@
+{
+  "name": "m16a3kit",
+  "type": "Attachment",
+  "category": "scope",
+  "compatibleAttachmentGroups": [
+    "m16_sightsandscopes",
+    "underbarrel",
+    "underbarrel_2"
+  ],
+  "compatibleAttachments": [
+    "m203launcher",
+    "ulg99cannon",
+    "m870modshotgun"
+  ],
+  "features": [
+    {
+      "type": "aiming",
+      "zoom": 0.25,
+      "condition": {
+        "doesNotHaveAttachmentGroup": "m16_sightsandscopes"
+      }
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "carryhandle",
+          "visible": false,
+          "condition": {
+            "hasAttachmentGroup": "m16_sightsandscopes"
+          }
+        }
+      ]
+    }
+  ]
+}

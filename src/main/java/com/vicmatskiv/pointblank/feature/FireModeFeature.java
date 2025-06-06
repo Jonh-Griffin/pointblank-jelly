@@ -13,15 +13,6 @@ import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
 import com.vicmatskiv.pointblank.util.TimeUnit;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import groovy.lang.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -30,6 +21,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class FireModeFeature extends ConditionalFeature {
    public static final int DEFAULT_RPM = -1;
@@ -262,7 +260,7 @@ public class FireModeFeature extends ConditionalFeature {
       return script;
    }
 
-   public record FireModeDescriptor(String name, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, Script script) {
+   public record FireModeDescriptor(String name, Component displayName, FireMode type, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, int pelletCount, double pelletSpread, boolean isUsingDefaultMuzzle, AnimationProvider prepareFireAnimationProvider, AnimationProvider fireAnimationProvider, AnimationProvider completeFireAnimationProvider, AnimationProvider enableFireModeAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor, Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders, float headshotMultiplier, Script script) {
 
       public String name() {
          return this.name;
@@ -294,6 +292,10 @@ public class FireModeFeature extends ConditionalFeature {
 
       public double damage() {
          return this.damage;
+      }
+
+      public float headshotMultiplier() {
+         return this.headshotMultiplier;
       }
 
       public int maxShootingDistance() {
@@ -356,6 +358,7 @@ public class FireModeFeature extends ConditionalFeature {
          private double pelletSpread;
          private final Map<GunItem.FirePhase, List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>> effectBuilders;
          private Script script;
+         private float headshotMultiplier = 1.25f;
 
          public Builder() {
             this.type = FireMode.SINGLE;
@@ -477,7 +480,12 @@ public class FireModeFeature extends ConditionalFeature {
                this.maxShootingDistance = 50;
             }
 
-            return new FireModeDescriptor(this.name, this.displayName != null ? this.displayName : Component.translatable("label.pointblank.fireMode.single"), this.type, this.ammoSupplier, this.maxAmmoCapacity, this.rpm, this.burstShots, this.damage, this.maxShootingDistance, this.pelletCount, this.pelletSpread, this.isUsingDefaultMuzzle, this.prepareFireAnimationProvider, this.fireAnimationProvider, this.completeFireAnimationProvider, this.enableFireModeAnimationProvider, this.viewShakeDescriptor, this.effectBuilders, this.script);
+            return new FireModeDescriptor(this.name, this.displayName != null ? this.displayName : Component.translatable("label.pointblank.fireMode.single"), this.type, this.ammoSupplier, this.maxAmmoCapacity, this.rpm, this.burstShots, this.damage, this.maxShootingDistance, this.pelletCount, this.pelletSpread, this.isUsingDefaultMuzzle, this.prepareFireAnimationProvider, this.fireAnimationProvider, this.completeFireAnimationProvider, this.enableFireModeAnimationProvider, this.viewShakeDescriptor, this.effectBuilders, this.headshotMultiplier, this.script);
+         }
+
+         public FireModeDescriptor.Builder withHeadshotMultiplier(float headshotMultiplier) {
+            this.headshotMultiplier = headshotMultiplier;
+            return this;
          }
       }
    }
@@ -493,29 +501,6 @@ public class FireModeFeature extends ConditionalFeature {
       public Builder withCondition(Predicate<ConditionContext> condition) {
          this.condition = condition;
          return this;
-      }
-
-      public Builder withFireMode(String name, FireMode type, Component displayName, int rpm, double damage, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         return this.withFireMode(name, type, displayName, AmmoRegistry.DEFAULT_AMMO_POOL, 0, rpm, -1, damage, 200, isUsingDefaultMuzzle, fireAnimationName, viewShakeDescriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Component displayName, int rpm, int burstShots, double damage, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         return this.withFireMode(name, type, displayName, AmmoRegistry.DEFAULT_AMMO_POOL, 0, rpm, burstShots, damage, 200, isUsingDefaultMuzzle, fireAnimationName, viewShakeDescriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, double damage, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, -1, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap(), null);
-         return this.withFireMode(fireModeDesriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, boolean isUsingDefaultMuzzle, String fireAnimationName, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, new AnimationProvider.Simple(fireAnimationName), null, null, viewShakeDescriptor, Collections.emptyMap(), null);
-         return this.withFireMode(fireModeDesriptor);
-      }
-
-      public Builder withFireMode(String name, FireMode type, Component displayName, Supplier<AmmoItem> ammoSupplier, int maxAmmoCapacity, int rpm, int burstShots, double damage, int maxShootingDistance, boolean isUsingDefaultMuzzle, AnimationProvider fireAnimationProvider, FireModeInstance.ViewShakeDescriptor viewShakeDescriptor) {
-         FireModeDescriptor fireModeDesriptor = new FireModeDescriptor(name, displayName, type, ammoSupplier, maxAmmoCapacity, rpm, burstShots, damage, 200, 0, 1.0F, isUsingDefaultMuzzle, null, fireAnimationProvider, null, null, viewShakeDescriptor, Collections.emptyMap(), null);
-         return this.withFireMode(fireModeDesriptor);
       }
 
       public Builder withFireMode(FireModeDescriptor descriptor) {
@@ -568,6 +553,7 @@ public class FireModeFeature extends ConditionalFeature {
             fireModeBuilder.withPelletCount(JsonUtil.getJsonInt(fireModeObj, "pelletCount", 0));
             fireModeBuilder.withPelletSpread(JsonUtil.getJsonDouble(fireModeObj, "pelletSpread", 1.0F));
             fireModeBuilder.withIsUsingDefaultMuzzle(JsonUtil.getJsonBoolean(fireModeObj, "isUsingDefaultMuzzle", true));
+            fireModeBuilder.withHeadshotMultiplier(JsonUtil.getJsonFloat(fireModeObj, "headshotMultiplier", 1.25F));
             FireModeInstance.ViewShakeDescriptor viewShakeDescriptor = null;
             if (fireModeObj.has("shakeRecoilAmplitude") || fireModeObj.has("shakeRecoilSpeed") || fireModeObj.has("shakeRecoilDuration")) {
                long shakeRecoilDuration = JsonUtil.getJsonInt(fireModeObj, "shakeRecoilDuration", 400);
@@ -667,7 +653,7 @@ public class FireModeFeature extends ConditionalFeature {
       }
 
       public FireModeFeature build(FeatureProvider featureProvider) {
-         return new FireModeFeature(featureProvider, this.condition, this.fireModes.stream().map((info) -> FireModeInstance.create(info.name, featureProvider, info.displayName, info.type, info.ammoSupplier, info.maxAmmoCapacity, info.rpm, info.burstShots, info.damage, info.maxShootingDistance, info.pelletCount, info.pelletSpread, info.isUsingDefaultMuzzle, info.prepareFireAnimationProvider, info.fireAnimationProvider, info.completeFireAnimationProvider, info.enableFireModeAnimationProvider, info.viewShakeDescriptor, info.effectBuilders, info.script)).toList());
+         return new FireModeFeature(featureProvider, this.condition, this.fireModes.stream().map((info) -> FireModeInstance.create(info.name, featureProvider, info.displayName, info.type, info.ammoSupplier, info.maxAmmoCapacity, info.rpm, info.burstShots, info.damage, info.maxShootingDistance, info.pelletCount, info.pelletSpread, info.isUsingDefaultMuzzle, info.headshotMultiplier, info.prepareFireAnimationProvider, info.fireAnimationProvider, info.completeFireAnimationProvider, info.enableFireModeAnimationProvider, info.viewShakeDescriptor, info.effectBuilders, info.script)).toList());
       }
    }
 }

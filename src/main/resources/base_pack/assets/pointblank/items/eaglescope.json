@@ -1,0 +1,28 @@
+{
+  "name": "eaglescope",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "compatibleAttachmentGroups": [
+    "sights_group"
+  ],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/starscope_pip.png",
+      "parallax": true,
+      "zoom": 0.92
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.57,
+      "viewBobbing": 0.4
+    }
+  ]
+}

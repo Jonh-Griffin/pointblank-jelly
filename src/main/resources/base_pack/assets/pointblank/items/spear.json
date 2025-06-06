@@ -1,0 +1,24 @@
+{
+  "name": "spear",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/starscope_pip.png",
+      "parallax": true,
+      "zoom": 0.8
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.5
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "hawk_scope",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "m16_sightsandscopes",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "compatibleAttachmentGroups": [
+    "sights_group"
+  ],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/l96scope_pip.png",
+      "parallax": true,
+      "zoom": 0.85
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.4
+    }
+  ]
+}

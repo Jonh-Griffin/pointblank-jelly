@@ -106,7 +106,7 @@ List<GunItem.PhasedReload> overrideReloads(GunItem.Builder builder) {
             GunItem.ReloadPhase.RELOADING,
             1000,
             "animation.model.name",
-            Conditions.hasAmmoCount(0).and { it.player().health > 10 } )
+                    Conditions.hasAmmoCount(0) & { it.player().health > 10 })
     ]
 }
 

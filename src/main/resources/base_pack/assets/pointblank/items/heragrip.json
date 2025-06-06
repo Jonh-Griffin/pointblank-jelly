@@ -1,0 +1,16 @@
+{
+  "name": "heragrip",
+  "type": "Attachment",
+  "category": "UNDERBARREL",
+  "groups": [
+    "underbarrel_2",
+    "underbarrel",
+    "underbarrel_extra"
+  ],
+  "features": [
+    {
+      "type": "Recoil",
+      "recoilModifier": 0.6
+    }
+  ]
+}
