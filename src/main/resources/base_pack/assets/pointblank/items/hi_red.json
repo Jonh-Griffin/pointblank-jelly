@@ -1,0 +1,30 @@
+{
+  "name": "hi_red",
+  "type": "Attachment",
+  "category": "SCOPE",
+  "groups": [
+    "sights_group",
+    "ar_sightsandscopes",
+    "sopmod_group",
+    "m16_sightsandscopes",
+    "deagle_sights",
+    "snipers_sights",
+    "sl8_sights"
+  ],
+  "compatibleAttachments": [
+    "hi_red_zoom"
+  ],
+  "features": [
+    {
+      "type": "PiP",
+      "overlayTexture": "textures/gui/hi_redscope_pip.png",
+      "maskTexture": "textures/gui/hi_red_mask.png",
+      "parallax": true,
+      "zoom": 0.6
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.6
+    }
+  ]
+}

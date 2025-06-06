@@ -1,0 +1,13 @@
+{
+  "name": "p30l_compensator",
+  "type": "Attachment",
+  "category": "MUZZLE",
+  "groups": [
+  ],
+  "features": [
+    {
+      "type": "Recoil",
+      "recoilModifier": 0.8
+    }
+  ]
+}

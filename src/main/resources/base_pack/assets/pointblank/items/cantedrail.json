@@ -1,0 +1,12 @@
+{
+  "name": "cantedrail",
+  "type": "Attachment",
+  "category": "RAIL",
+  "groups": [
+    "sopmod_group",
+    "m16_sightsandscopes"
+  ],
+  "compatibleAttachmentGroups": [
+    "sights_group"
+  ]
+}

@@ -61,7 +61,7 @@
       {
         "type": "Pip",
         "overlayTexture": "textures/gui/scope_pip.png",
-        "parallaxEnabled": true,
+        "parallax": true,
         "zoom": 0.88,
         "condition": { "allOf":[ { "doesNotHaveAttachmentGroup":"snipers_sights" } ] }
       },

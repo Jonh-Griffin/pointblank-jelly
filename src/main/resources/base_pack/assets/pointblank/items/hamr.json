@@ -19,7 +19,7 @@
     {
       "type": "PiP",
       "overlayTexture": "textures/gui/starscope_pip.png",
-      "parallaxEnabled": true,
+      "parallax": true,
       "zoom": 0.8
     },
     {

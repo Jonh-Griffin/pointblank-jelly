@@ -3,14 +3,13 @@ package com.vicmatskiv.pointblank.registry;
 import com.vicmatskiv.pointblank.client.render.ProjectileItemEntityRenderer;
 import com.vicmatskiv.pointblank.entity.SlowProjectile;
 import com.vicmatskiv.pointblank.item.AmmoItem;
-import com.vicmatskiv.pointblank.item.ThrowableItem;
-import com.vicmatskiv.pointblank.util.TimeUnit;
 import com.vicmatskiv.pointblank.util.TopDownAttackTrajectory;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.Level.ExplosionInteraction;
+
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import net.minecraft.world.level.ItemLike;
-import net.minecraft.world.level.Level.ExplosionInteraction;
 
 public class AmmoRegistry {
    public static final Supplier<AmmoItem> AMMO9MM;
@@ -35,7 +34,6 @@ public class AmmoRegistry {
    public static final Supplier<AmmoItem> SMAW_ROCKET;
    public static final Supplier<AmmoItem> AT4_ROCKET;
    public static final Supplier<AmmoItem> JAVELIN_ROCKET;
-   public static final Supplier<ThrowableItem> GRENADE;
 
    public static void init() {
    }
@@ -62,7 +60,6 @@ public class AmmoRegistry {
       entries.accept(SMAW_ROCKET.get());
       entries.accept(AT4_ROCKET.get());
       entries.accept(JAVELIN_ROCKET.get());
-      entries.accept(GRENADE.get());
    }
 
    static {
@@ -88,6 +85,5 @@ public class AmmoRegistry {
       SMAW_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("smaw_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
       AT4_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("at4_rocket").withTradePrice(10000.0D, 3).withProjectileInitialVelocity(50.0D).withProjectileGravity(0.005D).withProjectileEffect(EffectRegistry.CHEM_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 8.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
       JAVELIN_ROCKET = ItemRegistry.ITEMS.register((new AmmoItem.Builder()).withName("javelin_rocket").withProjectileInitialVelocity(50.0D).withProjectileGravity(0.002D).withProjectileTopDownAttackEnabled(true).withProjectileEffect(EffectRegistry.JAVELIN_TRAIL).withProjectileEffect(EffectRegistry.ROCKET_EXHAUST_PLUME, SlowProjectile.topDownTrajectoryPhasePredicate((t) -> t.getPhase() != TopDownAttackTrajectory.Phase.SOFT_LAUNCH)).withProjectileTopDownAttackPhaseSound(TopDownAttackTrajectory.Phase.CLIMB, SoundRegistry.IGNITE, 4.0F).withExplosion(7.0F, false, ExplosionInteraction.BLOCK, null, 10.0F, List.of(EffectRegistry.EXPLOSION_BIG, EffectRegistry.DEBRIS)).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
-      GRENADE = ItemRegistry.ITEMS.register((new ThrowableItem.Builder()).withName("grenade").withTradePrice(100.0D, 1).withProjectileInitialVelocity(25.0D).withProjectileGravity(0.03D).withDrawCooldownDuration(380L, TimeUnit.MILLISECOND).withExplosion(4.0F, false, ExplosionInteraction.BLOCK, null, 4.0F, List.of(EffectRegistry.EXPLOSION, EffectRegistry.DEBRIS)).withProjectileMaxLifetime(5000, TimeUnit.MILLISECOND).withProjectileRicochet(true).withProjectileRenderer(() -> new ProjectileItemEntityRenderer.Builder()));
    }
 }

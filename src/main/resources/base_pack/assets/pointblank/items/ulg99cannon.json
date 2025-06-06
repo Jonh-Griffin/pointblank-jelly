@@ -1,0 +1,81 @@
+{
+  "name": "ulg99cannon",
+  "type": "Attachment",
+  "category": "UNDERBARREL",
+  "groups": [
+    "underbarrel_extra"
+  ],
+  "features": [
+    {
+      "type": "FireMode",
+      "fireModes": [
+        {
+          "name": "laser_cannon",
+          "type": "SINGLE",
+          "displayName": "label.pointblank.fireMode.laser",
+          "isUsingDefaultMuzzle": false,
+          "ammo": "ammolasercharge",
+          "maxAmmoCapacity": 10,
+          "rpm": 80,
+          "damage": 25.0,
+          "fireAnimations": [
+            {
+              "name": "animation.model.firelaser",
+              "viewShake": {
+                "duration": 350,
+                "amplitude": 2.0,
+                "speed": 2.0
+              }
+            }
+          ],
+          "prepareFireAnimations": [
+            {
+              "name": "animation.model.preparefire",
+              "duration": 570
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "condition": {
+        "selectedFireMode": "laser_cannon"
+      },
+      "fireSound": "laser",
+      "fireSoundVolume": 6.0
+    },
+    {
+      "type": "MuzzleFlash",
+      "condition": {
+        "not": {
+          "isUsingDefaultMuzzle": true
+        }
+      },
+      "effects": [
+        {
+          "phase": "hit_scan_acquired",
+          "name": "laser"
+        }
+      ]
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "lasermain",
+          "visible": true,
+          "condition": {
+            "isGunOnGround": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "ActiveMuzzle",
+      "condition": {
+        "selectedFireMode": "laser_cannon"
+      }
+    }
+  ]
+}

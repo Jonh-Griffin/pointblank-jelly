@@ -3,55 +3,29 @@
   "type": "Gun",
   "maxAmmoCapacity": 8,
   "maxAmmoPerReloadIteration": 1,
+  "compatibleAmmo": ["ammocreative", "ammo12gauge"],
   "pelletCount": 30,
   "pelletSpread": 0.1,
-  "compatibleAmmo": ["ammocreative", "ammo12gauge"],
   "damage": 1.2,
   "rpm": 500,
   "fireModes": ["SINGLE"],
   "fireSound": "spas12",
-  "drawAnimations": [
-    { "name": "animation.model.draw", "duration": 800 }
-  ],
-  "inspectAnimations": [
-    { "name": "animation.model.inspect", "duration": 4030 }
-  ],
+  "drawCooldownDuration": 800,
+  "inspectCooldownDuration": 4030,
   "gunRecoilInitialAmplitude": 0.9,
   "shakeRecoilAmplitude": 0.65,
   "shakeRecoilSpeed": 3.5,
   "viewRecoilAmplitude": 5.0,
-  "features": [
-    {
-      "type": "MuzzleFlash",
-      "effects": [
-        { "phase": "firing", "name": "muzzle_flash_big_ex" }
-      ],
-      "condition": { "allOf": [{ "doesNotHaveAttachment": "sg_suppressor" }] }
-    },
-    {
-      "type": "Aiming",
-      "zoom": 0.25,
-      "condition": { "allOf": [{ "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }] }
-    },
-    {
-      "type": "PartVisibility",
-      "parts": [
-        {
-          "name": "ironsights",
-          "visible": false,
-          "condition": { "allOf": [{ "hasAttachmentGroup": "m16_sightsandscopes" }] }
-        }
-      ]
-    },
-    {
-      "type": "Sound",
-      "fireSound": "spas12_silenced",
-      "fireSoundVolume": 1.0,
-      "condition": { "allOf": [{ "hasAttachment": "sg_suppressor" }] }
-    }
+
+  "compatibleAttachments": [
+    "cantedrail",
+    "sg_suppressor"
   ],
-  "compatibleAttachments": ["cantedrail", "sg_suppressor"],
-  "compatibleAttachmentGroups": ["ar_sightsandscopes", "m1014_skins"],
+  "compatibleAttachmentGroups": [
+    "ar_sightsandscopes",
+    "m1014_skins"
+  ],
+
   "phasedReloads": [
     {
       "phase": "PREPARING",
@@ -67,13 +41,13 @@
     },
     {
       "phase": "RELOADING",
-      "condition": "reloadIterationIndex == -1",
+      "condition": "reloadIterationIndex == 0",
       "duration": 1300,
       "animation": "animation.model.chamberload"
     },
     {
       "phase": "RELOADING",
-      "condition": "reloadIterationIndex >= 0",
+      "condition": "reloadIterationIndex > 0",
       "duration": 660,
       "animation": "animation.model.iterativeload"
     },
@@ -84,6 +58,54 @@
       "animation": "animation.model.finish"
     }
   ],
-  "effects": [],
-  "glowingParts": []
+
+  "features": [
+    {
+      "type": "MuzzleFlash",
+      "effects": [
+        {
+          "phase": "firing",
+          "name": "muzzle_flash_big_ex"
+        }
+      ],
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachment": "sg_suppressor" }
+        ]
+      }
+    },
+    {
+      "type": "Aiming",
+      "zoom": 0.25,
+      "condition": {
+        "allOf": [
+          { "doesNotHaveAttachmentGroup": "m16_sightsandscopes" }
+        ]
+      }
+    },
+    {
+      "type": "PartVisibility",
+      "parts": [
+        {
+          "name": "ironsights",
+          "visible": false,
+          "condition": {
+            "allOf": [
+              { "hasAttachmentGroup": "m16_sightsandscopes" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Sound",
+      "fireSound": "spas12_silenced",
+      "fireSoundVolume": 1.0,
+      "condition": {
+        "allOf": [
+          { "hasAttachment": "sg_suppressor" }
+        ]
+      }
+    }
+  ]
 }

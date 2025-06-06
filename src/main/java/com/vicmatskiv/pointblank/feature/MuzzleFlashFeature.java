@@ -79,7 +79,7 @@ public final class MuzzleFlashFeature extends ConditionalFeature {
          }
 
          GunItem.FirePhase firePhase;
-         Supplier<EffectBuilder<?,?>> supplier;
+         Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>> supplier;
          Predicate<ConditionContext> condition;
          for(Iterator<JsonObject> var2 = JsonUtil.getJsonObjects(obj, "effects").iterator(); var2.hasNext(); this.withEffect(firePhase, supplier, condition)) {
             JsonObject effect = var2.next();

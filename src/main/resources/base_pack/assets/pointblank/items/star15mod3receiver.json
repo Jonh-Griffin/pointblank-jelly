@@ -1,0 +1,17 @@
+{
+    "name": "star15mod3receiver",
+    "type": "Attachment",
+    "category": "receiver",
+    "features": [
+        {
+            "type": "FireMode",
+            "fireModes": [
+                {
+                    "name": "automatic",
+                    "type": "AUTOMATIC",
+                    "displayName": "label.pointblank.fireMode.automatic"
+                }
+            ]
+        }
+    ]
+}

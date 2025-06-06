@@ -12,13 +12,11 @@ import com.vicmatskiv.pointblank.util.JsonUtil;
 import groovy.lang.Script;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -27,24 +25,24 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class SlotFeature extends ConditionalFeature {
     public int weight = 64;
     @Nullable
-    public List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = null;
+    public List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist = null;
 
     public final Script script;
 
-    public SlotFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, int weight, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist, Script script) {
+    public SlotFeature(FeatureProvider owner, Predicate<ConditionContext> predicate, int weight, List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist, Script script) {
         super(owner, predicate);
         this.script = script;
         this.weight = weight;
         this.whitelist = whitelist;
     }
 
-    public static int getWeight(ItemStack itemStack, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
+    public static int getWeight(ItemStack itemStack, List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist) {
         if(itemStack.isEmpty() || itemStack.getCount() == 0) return 99999;
         if (whitelist == null) return 64 / itemStack.getCount();
         if(matches(itemStack, whitelist)) return 64 / itemStack.getCount();
@@ -52,14 +50,14 @@ public class SlotFeature extends ConditionalFeature {
         return -1;
     }
 
-    public static boolean matches(ItemStack itemStack, List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist) {
+    public static boolean matches(ItemStack itemStack, List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist) {
         if(whitelist == null || whitelist.isEmpty()) return true;
-        for (Either<Either<Item, TagKey<Item>>, Class<? extends Item>> entry : whitelist) {
+        for (Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>> entry : whitelist) {
             if (entry.left().isPresent()) {
-                Either<Item, TagKey<Item>> itemOrTag = entry.left().get();
+                Either<Supplier<Item>, TagKey<Item>> itemOrTag = entry.left().get();
                 if (itemOrTag.left().isPresent()) {
-                    Item item = itemOrTag.left().get();
-                    if (item == itemStack.getItem()) return true;
+                    Item item = itemOrTag.left().get().get();
+                    if (itemStack.is(item)) return true;
                 } else {
                     TagKey<Item> tag = itemOrTag.right().get();
                     if (itemStack.is(tag)) return true;
@@ -79,7 +77,7 @@ public class SlotFeature extends ConditionalFeature {
         public int maxStackSize = 64;
         public Predicate<ConditionContext> predicate = (ctx) -> true;
         public Script script = null;
-        public List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist;
+        public List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist;
 
         public Builder withMaxStackSize(int maxStackSize) {
             this.maxStackSize = maxStackSize;
@@ -97,7 +95,7 @@ public class SlotFeature extends ConditionalFeature {
         }
 
         public Builder withWhitelist(JsonArray list) {
-            List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
+            List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
             for (JsonElement jsonElement : list) {
                 String element = jsonElement.getAsString();
                 if(element.startsWith("class")) {
@@ -117,12 +115,7 @@ public class SlotFeature extends ConditionalFeature {
                     whitelist.add(Either.left(Either.right(tagKey)));
                     continue;
                 }
-
-                Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName));
-                if (item != null)
-                    whitelist.add(Either.left(Either.left(item)));
-                else
-                    throw new RuntimeException("Item not found: " + itemName + " | a Pointblank Slot feature has malformed whitelist!");
+                whitelist.add(Either.left(Either.left(()-> ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)))));
             }
             this.whitelist = whitelist;
             return this;
@@ -165,7 +158,7 @@ public class SlotFeature extends ConditionalFeature {
         }
         default boolean addItem(ItemStack pStack, ItemStack toAdd) {
             var weight = 0;
-            List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
+            List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
             if(!pStack.getOrCreateTag().contains(TAG))
                 pStack.getOrCreateTag().put(TAG, new ListTag());
             if(pStack.getItem() instanceof AttachmentHost host) {
@@ -263,8 +256,8 @@ public class SlotFeature extends ConditionalFeature {
         }
 
         @Nullable
-        default List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> getWhitelist(ItemStack pStack) {
-            List<Either<Either<Item, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
+        default List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> getWhitelist(ItemStack pStack) {
+            List<Either<Either<Supplier<Item>, TagKey<Item>>, Class<? extends Item>>> whitelist = new ArrayList<>();
             if(this instanceof AttachmentHost host) {
                 if (host.hasFeature(SlotFeature.class)) {
                     SlotFeature selfFeature = host.getFeature(SlotFeature.class);
