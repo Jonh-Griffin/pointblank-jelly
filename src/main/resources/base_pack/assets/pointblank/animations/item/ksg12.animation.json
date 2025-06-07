@@ -1235,13 +1235,10 @@
 				"0.85": {
 					"effect": "inspect_turn"
 				},
-				"2.025": {
-					"effect": "inspect_turn"
-				},
-				"2.7": {
+				"2.6": {
 					"effect": "inspect_up"
 				},
-				"3.9": {
+				"2.875": {
 					"effect": "inspect_down"
 				}
 			}
