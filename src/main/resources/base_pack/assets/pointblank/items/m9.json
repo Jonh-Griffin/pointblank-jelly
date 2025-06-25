@@ -7,6 +7,7 @@
     "rpm": 900,
     "fireSound": "m9",
     "animationType": "pistol",
+    "script": "m9_stock_script",
     "compatibleAttachments": [
         "m9_stock"
     ],

@@ -7,7 +7,7 @@ import com.vicmatskiv.pointblank.client.effect.EffectBuilder;
 import com.vicmatskiv.pointblank.feature.ConditionContext;
 import com.vicmatskiv.pointblank.feature.FeatureProvider;
 import com.vicmatskiv.pointblank.registry.AmmoRegistry;
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;

@@ -3,18 +3,18 @@ package com.vicmatskiv.pointblank.feature;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Predicate;
 
 public class ActiveMuzzleFeature extends ConditionalFeature {
    private final Map<String, Predicate<ConditionContext>> muzzleParts;

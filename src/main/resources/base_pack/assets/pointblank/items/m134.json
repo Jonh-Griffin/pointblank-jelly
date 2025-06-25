@@ -45,12 +45,5 @@
       "phase": "hit_scan_acquired",
       "name": "tracer"
     }
-  ],
-  "features": [
-    {
-      "type": "Aiming",
-      "zoom": 0.25,
-      "enabled": false
-    }
   ]
 }

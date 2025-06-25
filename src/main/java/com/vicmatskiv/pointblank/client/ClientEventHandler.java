@@ -31,12 +31,7 @@ import com.vicmatskiv.pointblank.item.*;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
 import com.vicmatskiv.pointblank.network.Network;
 import com.vicmatskiv.pointblank.registry.*;
-import com.vicmatskiv.pointblank.util.ClientUtil;
-import com.vicmatskiv.pointblank.util.HitScan;
-import com.vicmatskiv.pointblank.util.MiscUtil;
-import com.vicmatskiv.pointblank.util.UpDownCounter;
-import groovy.lang.GroovyShell;
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
@@ -1218,7 +1213,6 @@ public class ClientEventHandler {
          MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
          PlayerAnimatorCompat.getInstance().registerAnimationTypes();
          ThirdPersonAnimationRegistry.init();
-         GroovyShell clientShell = new GroovyShell();
          for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
             for (Map.Entry<String, Supplier<Script>> entry: extension.clientScripts.entrySet()) {
                 entry.getValue().get().run();

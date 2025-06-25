@@ -7,7 +7,6 @@
   "mixins": [
     "EntityMixin",
     "LivingEntityMixin",
-    "ScriptAttacher",
     "SlotMixin",
     "StructureTemplatePoolMixin"
   ],

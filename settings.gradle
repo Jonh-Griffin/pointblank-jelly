@@ -15,3 +15,5 @@ plugins {
 }
 
 rootProject.name = 'pointblank-jelly'
+
+include 'script-definition'

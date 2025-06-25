@@ -3,12 +3,12 @@ package com.vicmatskiv.pointblank.feature;
 import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.function.Predicate;
-
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 public final class ReticleFeature extends ConditionalFeature {
    public static final float DEFAULT_MAX_ANGULAR_OFFSET_DEGREES = 5.0F;

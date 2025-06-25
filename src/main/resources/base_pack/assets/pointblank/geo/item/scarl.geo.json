@@ -173,8 +173,13 @@
 					]
 				},
 				{
-					"name": "rearsight",
+					"name": "sights",
 					"parent": "gun",
+					"pivot": [0, 30.5, 4.8]
+				},
+				{
+					"name": "rearsight",
+					"parent": "sights",
 					"pivot": [0, 30.5, 4.8],
 					"cubes": [
 						{"origin": [-0.5, 29.75, 4.375], "size": [1, 2.5, 1], "pivot": [0, 30.55, 4.875], "rotation": [0, -33.75, 0], "uv": [217, 98]},
@@ -189,7 +194,7 @@
 				},
 				{
 					"name": "frontsight",
-					"parent": "gun",
+					"parent": "sights",
 					"pivot": [-0.15, 29.95, -42.6],
 					"cubes": [
 						{"origin": [-0.5, 32.45, -43.375], "size": [1, 1.7, 1.5], "inflate": -0.4, "uv": [166, 193]},

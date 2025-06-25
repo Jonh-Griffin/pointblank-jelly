@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.registry.ItemRegistry;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.Nullable;
 

@@ -49,7 +49,7 @@ side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "gml"
-mandatory = true
+mandatory = false
 versionRange = "[4.0.0,)"
 ordering = "NONE"
 side = "BOTH"

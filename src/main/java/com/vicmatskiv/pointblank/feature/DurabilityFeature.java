@@ -4,15 +4,15 @@ import com.google.gson.JsonObject;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import java.util.function.Predicate;
-
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 public class DurabilityFeature extends ConditionalFeature {
    private static final double MIN_DEGRADATION_RATE = 1.0E-7;

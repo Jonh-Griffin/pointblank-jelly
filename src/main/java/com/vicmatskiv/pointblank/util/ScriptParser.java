@@ -1,15 +1,14 @@
 package com.vicmatskiv.pointblank.util;
 
-import groovy.lang.GroovyShell;
-import groovy.lang.MetaMethod;
-import groovy.lang.Script;
+import dev.latvian.mods.rhino.Context;
+import dev.latvian.mods.rhino.ScriptableObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
@@ -18,13 +17,14 @@ import java.util.logging.Logger;
 
 
 public final class ScriptParser {
-    public static final GroovyShell shell = new GroovyShell();
+    public static final Context shell = Context.enter();
+    public static final ScriptableObject scope = shell.initStandardObjects(null, true);
     public static final Logger LOGGER = Logger.getLogger(ScriptParser.class.getName());
     public static final HashMap<ResourceLocation, Script> SCRIPTCACHE = new HashMap<>();
 
     public static Script getScript(Path pathFromRun) {
         try {
-            Script parse = shell.parse(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toUri());
+            Script parse = new Script(pathFromRun.toString(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toFile()), pathFromRun.toString(), 1, null), shell.initStandardObjects());
             System.out.println("Script Parsed: " + parse);
             return parse;
         } catch (IOException e) {
@@ -33,8 +33,12 @@ public final class ScriptParser {
         }
     }
 
-    public static Script getScript(Reader reader) {
-        return shell.parse(reader);
+    public static Script getScript(Reader reader, String scriptName) {
+        try {
+            return new Script(scriptName, shell.compileReader(reader, scriptName, 1, null), shell.initStandardObjects(null, true));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Script cacheScript(Path toScript, ResourceLocation scriptId) {
@@ -42,7 +46,7 @@ public final class ScriptParser {
             return SCRIPTCACHE.get(scriptId);
         }
         try {
-            Script script = shell.parse(FMLPaths.GAMEDIR.get().resolve(toScript).toUri());
+            Script script = new Script(scriptId.getPath(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(toScript).toFile()), scriptId.getPath(), 1, null), shell.initStandardObjects());
             SCRIPTCACHE.put(scriptId, script);
             return script;
         } catch (IOException e) {
@@ -56,7 +60,7 @@ public final class ScriptParser {
             return SCRIPTCACHE.get(scriptId);
         }
         try {
-            Script script = shell.parse(scriptReader);
+            Script script = new Script(scriptId.getPath(),shell.compileReader(scriptReader, scriptId.getPath(), 1, null), shell.initStandardObjects());
             SCRIPTCACHE.put(scriptId, script);
             return script;
         } catch (Exception e) {
@@ -66,22 +70,10 @@ public final class ScriptParser {
     }
 
     public static void runScripts(IEventBus modEventBus) {
+
+
         for (Script staticScript : SCRIPTCACHE.values()) {
-            staticScript.run();
-            if (staticScript.getMetaClass().getMethods().stream().anyMatch(method -> method.getName().equals("init")))
-                staticScript.invokeMethod("init", modEventBus);
-        }
-    }
-
-
-
-    public static class ScriptEventInvoker<T extends Event> {
-        final MetaMethod method;
-        public ScriptEventInvoker(MetaMethod method) {
-            this.method = method;
-        }
-        public void invoke(T event) {
-            method.invoke(null, new Object[]{event});
+            staticScript.script().exec(shell, staticScript.scope());
         }
     }
 
@@ -90,11 +82,11 @@ public final class ScriptParser {
         public static final HashMap<ResourceLocation, Script> SCRIPTCACHE = new HashMap<>();
 
         public static void cacheClientScript(Path scriptFile, ResourceLocation resourceLocation) {
-            try {
-                SCRIPTCACHE.put(resourceLocation, shell.parse(scriptFile.toFile()));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            //try {
+                //SCRIPTCACHE.put(resourceLocation, shell.parse(scriptFile.toFile()));
+            //} catch (IOException e) {
+            //    throw new RuntimeException(e);
+            //}
         }
     }
 }

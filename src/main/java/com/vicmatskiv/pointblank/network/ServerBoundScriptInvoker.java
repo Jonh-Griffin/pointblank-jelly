@@ -1,9 +1,9 @@
 package com.vicmatskiv.pointblank.network;
 
 import com.google.gson.JsonObject;
+import com.vicmatskiv.pointblank.util.Script;
 import com.vicmatskiv.pointblank.util.ScriptParser;
 import com.vicmatskiv.pointblank.util.Scripts;
-import groovy.lang.Script;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;

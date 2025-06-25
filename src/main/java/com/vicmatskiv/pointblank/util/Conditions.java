@@ -9,16 +9,13 @@ import com.vicmatskiv.pointblank.attachment.Attachments;
 import com.vicmatskiv.pointblank.feature.ConditionContext;
 import com.vicmatskiv.pointblank.item.FireModeInstance;
 import com.vicmatskiv.pointblank.item.GunItem;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Objects;
-import java.util.SortedMap;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class Conditions {
    public static final Predicate<ConditionContext> RANDOM_PICK = (ctx) -> ctx.randomSample2() == ctx.randomSample1();
@@ -28,6 +25,10 @@ public class Conditions {
 
    public static Predicate<ConditionContext> isGunOnGround() {
       return (ctx) -> ctx.itemDisplayContext() == ItemDisplayContext.GROUND;
+   }
+
+   public static Predicate<ConditionContext> aiming() {
+      return (ctx) -> ctx.rootStack().getOrCreateTag().getBoolean("aim");
    }
 
    public static Predicate<ConditionContext> isGunInHands() {
@@ -212,6 +213,9 @@ public class Conditions {
             } else if (obj.has("isUsingDefaultMuzzle")) {
                boolean isUsingDefaultMuzzle = JsonUtil.getJsonBoolean(obj, "isUsingDefaultMuzzle", true);
                return isUsingDefaultMuzzle ? isUsingDefaultMuzzle() : isUsingDefaultMuzzle().negate();
+            } else if(obj.has("aiming")) {
+               boolean isAiming = obj.get("aiming").getAsBoolean();
+               return isAiming ? aiming() : Predicate.not(aiming());
             } else if (obj.has("onEmptyReload")) {
                boolean value = JsonUtil.getJsonBoolean(obj, "onEmptyReload", true);
                return value ? onEmptyReload() : onNonEmptyReload();

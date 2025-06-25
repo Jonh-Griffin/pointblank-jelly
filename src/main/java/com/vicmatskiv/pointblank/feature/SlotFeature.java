@@ -9,7 +9,7 @@ import com.vicmatskiv.pointblank.attachment.Attachments;
 import com.vicmatskiv.pointblank.item.AttachmentItem;
 import com.vicmatskiv.pointblank.util.Conditions;
 import com.vicmatskiv.pointblank.util.JsonUtil;
-import groovy.lang.Script;
+import com.vicmatskiv.pointblank.util.Script;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;

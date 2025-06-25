@@ -11,9 +11,9 @@ import com.vicmatskiv.pointblank.compat.playeranimator.PlayerAnimationBuilder;
 import com.vicmatskiv.pointblank.entity.EntityBuilder;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.item.ItemBuilder;
+import com.vicmatskiv.pointblank.util.Script;
 import com.vicmatskiv.pointblank.util.ScriptParser;
 import cpw.mods.jarhandling.SecureJar;
-import groovy.lang.Script;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -324,10 +324,10 @@ public class ExtensionRegistry {
                   Path clientScriptsPath = scriptsPath.resolve("client");
 
                   if(Files.exists(scriptsPath) && Files.isDirectory(scriptsPath)) {
-                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.groovy")) {
+                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(scriptsPath, "*.js")) {
                         for(Path scriptFile : scriptFiles) {
                            if(scriptFile.getParent().endsWith("scripts")) {
-                              String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
+                              String scriptName = scriptFile.getFileName().toString().replace(".js", "");
                               ScriptParser.cacheScript(scriptFile, ResourceLocation.fromNamespaceAndPath(extension.name, scriptName));
                               PointBlankJelly.LOGGER.debug("Loaded script: {} from extension: {}", scriptName, extension.name);
                            }
@@ -336,9 +336,9 @@ public class ExtensionRegistry {
                   }
 
                   if(Files.exists(clientScriptsPath) && Files.isDirectory(clientScriptsPath)) {
-                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(clientScriptsPath, "*.groovy")) {
+                     try (DirectoryStream<Path> scriptFiles = Files.newDirectoryStream(clientScriptsPath, "*.js")) {
                         for(Path scriptFile : scriptFiles) {
-                           String scriptName = scriptFile.getFileName().toString().replace(".groovy", "");
+                           String scriptName = scriptFile.getFileName().toString().replace(".js", "");
                            extension.clientScripts.put(scriptName, ()-> ScriptParser.getScript(scriptFile));
                            PointBlankJelly.LOGGER.debug("Loaded client script: {} from extension: {}", scriptName, extension.name);
                         }
@@ -416,16 +416,16 @@ public class ExtensionRegistry {
 
                   while(entries.hasMoreElements()) {
                      ZipEntry entry = entries.nextElement();
-                     if(entry.getName().startsWith("assets/pointblank/scripts/") && entry.getName().endsWith(".groovy")) {
+                     if(entry.getName().startsWith("assets/pointblank/scripts/") && entry.getName().endsWith(".js")) {
                         try (BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
                            //extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
                            ScriptParser.cacheScript(scriptreader, ResourceLocation.fromNamespaceAndPath(extension.name, entry.getName().replace("assets/pointblank/scripts/", "")));
                         }
-                     } else if(entry.getName().startsWith("assets/pointblank/scripts/client/") && entry.getName().endsWith(".groovy")) {
+                     } else if(entry.getName().startsWith("assets/pointblank/scripts/client/") && entry.getName().endsWith(".js")) {
                            try(BufferedReader scriptreader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry)))) {
                               //extension.scripts.put(entry.getName().split("assets/pointblank/scripts/")[1], ScriptParser.getScript(scriptreader));
                               //ScriptParser.cacheScript(scriptreader, ResourceLocation.fromNamespaceAndPath(extension.name, entry.getName().replace("assets/pointblank/scripts/client/", "")));
-                              extension.clientScripts.put(entry.getName().replace("assets/pointblank/scripts/client/", ""), () -> ScriptParser.getScript(scriptreader));
+                              extension.clientScripts.put(entry.getName().replace("assets/pointblank/scripts/client/", ""), () -> ScriptParser.getScript(scriptreader, entry.getName().replace("assets/pointblank/scripts/client/", "")));
                            }
                      } else if (entry.getName().startsWith("assets/pointblank/items/") && entry.getName().endsWith(".json")) {
                         extension.itemBuilders.add(ItemBuilder.fromZipEntry(zipFile, entry, extension));

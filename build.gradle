@@ -113,6 +113,10 @@ repositories {
         name "KosmX's maven"
         url 'https://maven.kosmx.dev/'
     }
+    maven {
+        name = 'Kotlin for Forge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+    }
 }
 
 dependencies {
@@ -125,19 +129,26 @@ dependencies {
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))
     runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
     implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
-
+    implementation fg.deobf("curse.maven:mmmmmmmmmmmm-225738:6608233")
+    implementation fg.deobf("curse.maven:selene-499980:6611244")
+    implementation fg.deobf("curse.maven:rhino-416294:6186971")
     //Groovy
 
-    compileOnly 'org.groovymc.gml:gml:4.0.0'
-    runtimeOnly('org.groovymc.gml:gml:4.0.0:all') {
-        exclude module: 'transform'
-    }
+    //compileOnly 'org.groovymc.gml:gml:4.0.0'
+    //runtimeOnly('org.groovymc.gml:gml:4.0.0:all') {
+    //    exclude module: 'transform'
+    //}
 
     //jarJar('org.groovymc.gml:gml:4.0.0:all') {
     //    jarJar.ranged(it, "[4.0.0,)")
     //    exclude module: 'transform'
     //}
 
+    //compileOnly('org.codehaus.groovy:groovy:3.0.25')
+
+    //jarJar('org.codehaus.groovy:groovy:3.0.25') {
+    //    jarJar.ranged(it, "[3.0.25,)")
+    //}
     // CommonGroovyLibrary (bundled with GML)
     //jarJar('org.groovymc.cgl:cgl-1.20-forge:0.3.7') {
     //    jarJar.ranged(it, "[0.3.7,)")

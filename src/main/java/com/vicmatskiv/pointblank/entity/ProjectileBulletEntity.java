@@ -6,6 +6,7 @@ import com.vicmatskiv.pointblank.util.HitboxHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
@@ -149,6 +150,7 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     @Override
     protected void onHitBlock(BlockHitResult pResult) {
         super.onHitBlock(pResult);
+        if(this.level() instanceof ServerLevel serverLevel) serverLevel.sendParticles(ParticleTypes.FLAME, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 1, 0.0D, 0.0D, 0.0D, 0.01D);
         this.playSound(level().getBlockState(pResult.getBlockPos()).getSoundType().getHitSound(), 1f / shotCount, 1.2F / (this.random.nextFloat() * 0.2F + 0.9F));
     }
 
@@ -184,9 +186,8 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
                 level().playSound(null, entity.blockPosition(), SoundRegistry.HIT_HEADSHOT.get(), SoundSource.HOSTILE, 0.8f / shotCount, 1.0f);
 
             pResult.getEntity().hurt(damageSource, (float) (damage * headshotmulti));
-            Entity entity1 = this.getOwner();
             //Lower invulnerability for gun firing (Full auto more viable)
-            pResult.getEntity().invulnerableTime = 2;
+            pResult.getEntity().invulnerableTime = 1;
             this.discard();
         }
     }
