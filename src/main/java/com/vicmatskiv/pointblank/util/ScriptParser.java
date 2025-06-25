@@ -1,12 +1,13 @@
 package com.vicmatskiv.pointblank.util;
 
-import dev.latvian.mods.rhino.Context;
-import dev.latvian.mods.rhino.ScriptableObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ImporterTopLevel;
+import org.mozilla.javascript.ScriptableObject;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -18,13 +19,13 @@ import java.util.logging.Logger;
 
 public final class ScriptParser {
     public static final Context shell = Context.enter();
-    public static final ScriptableObject scope = shell.initStandardObjects(null, true);
+    public static ScriptableObject scope = new ImporterTopLevel(shell, false);
     public static final Logger LOGGER = Logger.getLogger(ScriptParser.class.getName());
     public static final HashMap<ResourceLocation, Script> SCRIPTCACHE = new HashMap<>();
 
     public static Script getScript(Path pathFromRun) {
         try {
-            Script parse = new Script(pathFromRun.toString(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toFile()), pathFromRun.toString(), 1, null), shell.initStandardObjects());
+            Script parse = new Script(pathFromRun.toString(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(pathFromRun).toFile()), pathFromRun.toString(), 1, null), new ImporterTopLevel(shell, false));
             System.out.println("Script Parsed: " + parse);
             return parse;
         } catch (IOException e) {
@@ -46,7 +47,7 @@ public final class ScriptParser {
             return SCRIPTCACHE.get(scriptId);
         }
         try {
-            Script script = new Script(scriptId.getPath(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(toScript).toFile()), scriptId.getPath(), 1, null), shell.initStandardObjects());
+            Script script = new Script(scriptId.getPath(), shell.compileReader(new FileReader(FMLPaths.GAMEDIR.get().resolve(toScript).toFile()), scriptId.getPath(), 1, null), new ImporterTopLevel(shell, false));
             SCRIPTCACHE.put(scriptId, script);
             return script;
         } catch (IOException e) {
@@ -60,7 +61,7 @@ public final class ScriptParser {
             return SCRIPTCACHE.get(scriptId);
         }
         try {
-            Script script = new Script(scriptId.getPath(),shell.compileReader(scriptReader, scriptId.getPath(), 1, null), shell.initStandardObjects());
+            Script script = new Script(scriptId.getPath(),shell.compileReader(scriptReader, scriptId.getPath(), 1, null), new ImporterTopLevel(shell, false));
             SCRIPTCACHE.put(scriptId, script);
             return script;
         } catch (Exception e) {

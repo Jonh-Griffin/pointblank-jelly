@@ -1,21 +1,21 @@
 package com.vicmatskiv.pointblank.util;
 
-import dev.latvian.mods.rhino.Function;
-import dev.latvian.mods.rhino.ScriptableObject;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.ScriptableObject;
 
 import static com.vicmatskiv.pointblank.util.ScriptParser.shell;
 
-public record Script(String id, dev.latvian.mods.rhino.Script script, ScriptableObject scope) {
+public record Script(String id, org.mozilla.javascript.Script script, ScriptableObject scope) {
 
     public Object invokeMethod(String methodName, Object... finalArgs) {
-        Object obj = scope.get(shell, methodName, scope);
+        Object obj = scope.get(methodName, scope);
         if(obj instanceof Function func) {
             return func.call(shell, scope, scope, finalArgs);
         }
         return null;
     }
     public <T> T invokeMethod(String methodName, Class<T> returnType, Object... args) {
-        Object obj = scope.get(shell, methodName, scope);
+        Object obj = scope.get(methodName, scope);
         if(obj instanceof Function func) {
             Object result = func.call(shell, scope, scope, args);
             if(returnType.isInstance(result)) {
@@ -28,7 +28,7 @@ public record Script(String id, dev.latvian.mods.rhino.Script script, Scriptable
     }
 
     public boolean hasFunction(String functionName) {
-        Object obj = scope.get(shell, functionName, scope);
+        Object obj = scope.get(functionName, scope);
         return obj instanceof Function;
     }
 

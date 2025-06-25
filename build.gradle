@@ -15,7 +15,6 @@ plugins {
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     //id 'org.groovymc.modsdotgroovy' version '1.4.1'
-    id 'groovy'
 }
 
 apply plugin: 'org.spongepowered.mixin'
@@ -131,7 +130,10 @@ dependencies {
     implementation fg.deobf("curse.maven:playeranimator-658587:4587214")
     implementation fg.deobf("curse.maven:mmmmmmmmmmmm-225738:6608233")
     implementation fg.deobf("curse.maven:selene-499980:6611244")
-    implementation fg.deobf("curse.maven:rhino-416294:6186971")
+    //implementation fg.deobf("curse.maven:rhino-416294:6186971")
+    minecraftLibrary(jarJar('org.mozilla:rhino:1.8.0')) {
+        jarJar.ranged(it, "[1.8.0,)")
+    }
     //Groovy
 
     //compileOnly 'org.groovymc.gml:gml:4.0.0'
