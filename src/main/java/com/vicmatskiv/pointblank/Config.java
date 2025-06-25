@@ -42,6 +42,7 @@ public class Config {
    public static final BooleanValue PLAYERHEADSHOTS;
    public static final BooleanValue MOBHEADSHOTS;
    static final ForgeConfigSpec SPEC;
+   private static final IntValue IFRAMES;
    public static AutoReload autoReload;
    public static double scopeAimingMouseSensitivity;
    public static boolean resetAutoFirePitchEnabled;
@@ -55,6 +56,7 @@ public class Config {
    public static int pipScopeColorBalanceRed;
    public static int pipScopeColorBalanceGreen;
    public static int pipScopeColorBalanceBlue;
+   public static int iframes;
    public static boolean customShadersEnabled;
    public static boolean explosionDestroyBlocksEnabled;
    public static double itemDropChance;
@@ -101,6 +103,7 @@ public class Config {
       thirdPersonAnimationsEnabled = THIRD_PERSON_ANIMATIONS_ENABLED.get();
       playerHeadshots = PLAYERHEADSHOTS.get();
       mobHeadshots = MOBHEADSHOTS.get();
+      iframes = IFRAMES.get();
    }
 
    static {
@@ -125,6 +128,7 @@ public class Config {
       BULLETS_BREAK_GLASS_ENABLED = BUILDER.comment("Enables bullets breaking glass").define("bulletsBreakGlassEnabled", true);
       HITSCAN_DAMAGE_MODIFIER = BUILDER.comment("Modifier to adjust damage dealt by hitscan weapons.").defineInRange("hitscanDamageModifier", 1.0D, 0.1D, 10.0D);
       HEADSHOT_DAMAGE_MODIFIER = BUILDER.comment("Modifier to adjust damage dealt by headshot.").defineInRange("headshotDamageModifier", 3.0D, 1.0D, 10.0D);
+      IFRAMES = BUILDER.comment("Time in ticks before a player can be damaged again by a gun.").defineInRange("iframes", 1, 0, 20);
       CROSSHAIR_TYPE = BUILDER.comment("Sets the crosshair type.").defineEnum("crosshair", CrosshairType.DEFAULT);
       GORE_ENABLED = BUILDER.comment("Enables gore effects").define("goreEnabled", true);
       ADVANCE_IRIS_INTEGRATION_ENABLED = BUILDER.comment("Enables advanced integraiton with Iris shaders").define("advancedIrisIntegrationEnabled", true);

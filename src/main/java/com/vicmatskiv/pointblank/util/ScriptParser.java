@@ -1,5 +1,6 @@
 package com.vicmatskiv.pointblank.util;
 
+import com.vicmatskiv.pointblank.util.rhino.PBJImporter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -7,7 +8,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ImporterTopLevel;
-import org.mozilla.javascript.ScriptableObject;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 
 public final class ScriptParser {
     public static final Context shell = Context.enter();
-    public static ScriptableObject scope = new ImporterTopLevel(shell, false);
+    public static PBJImporter scope = new PBJImporter();
     public static final Logger LOGGER = Logger.getLogger(ScriptParser.class.getName());
     public static final HashMap<ResourceLocation, Script> SCRIPTCACHE = new HashMap<>();
 
