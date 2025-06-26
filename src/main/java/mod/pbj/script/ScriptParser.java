@@ -1,5 +1,6 @@
 package mod.pbj.script;
 
+import mod.pbj.PointBlankJelly;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -25,6 +26,8 @@ public final class ScriptParser {
         Thread currentThread = Thread.currentThread();
         if (!shell.containsKey(currentThread)) {
             Context context = Context.enter();
+            context.initStandardObjects();
+            context.setApplicationClassLoader(PointBlankJelly.class.getClassLoader());
             context.setLanguageVersion(Context.VERSION_ES6);
             shell.put(currentThread, context);
         }

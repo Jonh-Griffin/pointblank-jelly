@@ -28,6 +28,7 @@ public record Script(String id, org.mozilla.javascript.Script script, Scriptable
     }
 
     public boolean hasFunction(String functionName) {
+        shell(); // Ensure the shell is initialized on thread
         Object obj = scope.get(functionName, scope);
         return obj instanceof Function;
     }
