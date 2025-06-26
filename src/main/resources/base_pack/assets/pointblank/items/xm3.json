@@ -75,7 +75,7 @@
         "type": "Slot",
         "weight": 64,
         "whitelist": [
-          "class:com.vicmatskiv.pointblank.item.AmmoItem",
+          "class:mod.pbj.item.AmmoItem",
           "#pointblank:xm3ammo",
           "pointblank:ammo762x51"
         ]

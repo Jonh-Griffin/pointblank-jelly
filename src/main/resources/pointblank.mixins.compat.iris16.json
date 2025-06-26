@@ -1,13 +1,13 @@
 {
     "required": true,
-    "package": "com.vicmatskiv.pointblank.compat.iris.mixin",
-    "plugin": "com.vicmatskiv.pointblank.compat.iris.mixin.IrisCompatMixinPlugin16",
+    "package": "mod.pbj.compat.iris.mixin",
+    "plugin": "mod.pbj.compat.iris.mixin.IrisCompatMixinPlugin16",
     "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "mixins": [
     ],
     "client": [
-        "IrisShadowRendererMixin16"
+      "IrisShadowRendererMixin16"
     ],
     "injectors": {
         "defaultRequire": 1

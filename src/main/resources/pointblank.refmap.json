@@ -1,90 +1,90 @@
 {
   "mappings": {
-    "com/vicmatskiv/pointblank/mixin/GameRendererMixin": {
+    "mod/pbj/mixin/GameRendererMixin": {
       "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(D)Lorg/joml/Matrix4f;": "Lnet/minecraft/client/renderer/GameRenderer;m_253088_(D)Lorg/joml/Matrix4f;",
       "renderLevel": "Lnet/minecraft/client/renderer/GameRenderer;m_109089_(FJLcom/mojang/blaze3d/vertex/PoseStack;)V",
       "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/vertex/PoseStack;)V": "Lnet/minecraft/client/renderer/GameRenderer;m_109089_(FJLcom/mojang/blaze3d/vertex/PoseStack;)V",
       "render": "Lnet/minecraft/client/renderer/GameRenderer;m_109093_(FJZ)V"
     },
-    "com/vicmatskiv/pointblank/mixin/SlotMixin": {
+    "mod/pbj/mixin/SlotMixin": {
       "mayPlace": "Lnet/minecraft/world/inventory/Slot;m_5857_(Lnet/minecraft/world/item/ItemStack;)Z"
     },
-    "com/vicmatskiv/pointblank/mixin/PostPassMixin": {
+    "mod/pbj/mixin/PostPassMixin": {
       "process": "Lnet/minecraft/client/renderer/PostPass;m_110065_(F)V",
       "Lnet/minecraft/client/renderer/EffectInstance;apply()V": "Lnet/minecraft/client/renderer/EffectInstance;m_108966_()V"
     },
-    "com/vicmatskiv/pointblank/mixin/StructureTemplatePoolMixin": {
+    "mod/pbj/mixin/StructureTemplatePoolMixin": {
       "rawTemplates": "f_210559_:Ljava/util/List;",
       "templates": "f_210560_:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
     },
-    "com/vicmatskiv/pointblank/mixin/LivingEntityMixin": {
+    "mod/pbj/mixin/LivingEntityMixin": {
       "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V": "Lnet/minecraft/world/entity/LivingEntity;m_147240_(DDD)V",
       "hurt": "Lnet/minecraft/world/entity/LivingEntity;m_6469_(Lnet/minecraft/world/damagesource/DamageSource;F)Z"
     },
-    "com/vicmatskiv/pointblank/mixin/MinecraftAccessorMixin": {
+    "mod/pbj/mixin/MinecraftAccessorMixin": {
       "mainRenderTarget": "f_91042_:Lcom/mojang/blaze3d/pipeline/RenderTarget;"
     },
-    "com/vicmatskiv/pointblank/mixin/GameRendererAccessorMixin": {
+    "mod/pbj/mixin/GameRendererAccessorMixin": {
       "lightTexture": "f_109074_:Lnet/minecraft/client/renderer/LightTexture;",
       "mainCamera": "f_109054_:Lnet/minecraft/client/Camera;",
       "renderDistance": "f_109062_:F",
       "getFov": "m_109141_(Lnet/minecraft/client/Camera;FZ)D",
       "renderItemInHand": "m_109120_(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/Camera;F)V"
     },
-    "com/vicmatskiv/pointblank/mixin/ItemInHandRendererMixin": {
+    "mod/pbj/mixin/ItemInHandRendererMixin": {
       "renderArmWithItem": "Lnet/minecraft/client/renderer/ItemInHandRenderer;m_109371_(Lnet/minecraft/client/player/AbstractClientPlayer;FFLnet/minecraft/world/InteractionHand;FLnet/minecraft/world/item/ItemStack;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
       "renderHandsWithItems": "Lnet/minecraft/client/renderer/ItemInHandRenderer;m_109314_(FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/player/LocalPlayer;I)V"
     },
-    "com/vicmatskiv/pointblank/mixin/AbstractContainerScreenMixin": {
+    "mod/pbj/mixin/AbstractContainerScreenMixin": {
       "Lnet/minecraft/client/gui/GuiGraphics;renderItem(Lnet/minecraft/world/item/ItemStack;III)V": "Lnet/minecraft/client/gui/GuiGraphics;m_280256_(Lnet/minecraft/world/item/ItemStack;III)V",
       "renderSlot": "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;m_280092_(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V"
     },
-    "com/vicmatskiv/pointblank/mixin/MouseHandlerMixin": {
+    "mod/pbj/mixin/MouseHandlerMixin": {
       "turnPlayer()V": "Lnet/minecraft/client/MouseHandler;m_91523_()V"
     }
   },
   "data": {
     "searge": {
-      "com/vicmatskiv/pointblank/mixin/GameRendererMixin": {
+      "mod/pbj/mixin/GameRendererMixin": {
         "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(D)Lorg/joml/Matrix4f;": "Lnet/minecraft/client/renderer/GameRenderer;m_253088_(D)Lorg/joml/Matrix4f;",
         "renderLevel": "Lnet/minecraft/client/renderer/GameRenderer;m_109089_(FJLcom/mojang/blaze3d/vertex/PoseStack;)V",
         "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/vertex/PoseStack;)V": "Lnet/minecraft/client/renderer/GameRenderer;m_109089_(FJLcom/mojang/blaze3d/vertex/PoseStack;)V",
         "render": "Lnet/minecraft/client/renderer/GameRenderer;m_109093_(FJZ)V"
       },
-      "com/vicmatskiv/pointblank/mixin/SlotMixin": {
+      "mod/pbj/mixin/SlotMixin": {
         "mayPlace": "Lnet/minecraft/world/inventory/Slot;m_5857_(Lnet/minecraft/world/item/ItemStack;)Z"
       },
-      "com/vicmatskiv/pointblank/mixin/PostPassMixin": {
+      "mod/pbj/mixin/PostPassMixin": {
         "process": "Lnet/minecraft/client/renderer/PostPass;m_110065_(F)V",
         "Lnet/minecraft/client/renderer/EffectInstance;apply()V": "Lnet/minecraft/client/renderer/EffectInstance;m_108966_()V"
       },
-      "com/vicmatskiv/pointblank/mixin/StructureTemplatePoolMixin": {
+      "mod/pbj/mixin/StructureTemplatePoolMixin": {
         "rawTemplates": "f_210559_:Ljava/util/List;",
         "templates": "f_210560_:Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
       },
-      "com/vicmatskiv/pointblank/mixin/LivingEntityMixin": {
+      "mod/pbj/mixin/LivingEntityMixin": {
         "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V": "Lnet/minecraft/world/entity/LivingEntity;m_147240_(DDD)V",
         "hurt": "Lnet/minecraft/world/entity/LivingEntity;m_6469_(Lnet/minecraft/world/damagesource/DamageSource;F)Z"
       },
-      "com/vicmatskiv/pointblank/mixin/MinecraftAccessorMixin": {
+      "mod/pbj/mixin/MinecraftAccessorMixin": {
         "mainRenderTarget": "f_91042_:Lcom/mojang/blaze3d/pipeline/RenderTarget;"
       },
-      "com/vicmatskiv/pointblank/mixin/GameRendererAccessorMixin": {
+      "mod/pbj/mixin/GameRendererAccessorMixin": {
         "lightTexture": "f_109074_:Lnet/minecraft/client/renderer/LightTexture;",
         "mainCamera": "f_109054_:Lnet/minecraft/client/Camera;",
         "renderDistance": "f_109062_:F",
         "getFov": "m_109141_(Lnet/minecraft/client/Camera;FZ)D",
         "renderItemInHand": "m_109120_(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/Camera;F)V"
       },
-      "com/vicmatskiv/pointblank/mixin/ItemInHandRendererMixin": {
+      "mod/pbj/mixin/ItemInHandRendererMixin": {
         "renderArmWithItem": "Lnet/minecraft/client/renderer/ItemInHandRenderer;m_109371_(Lnet/minecraft/client/player/AbstractClientPlayer;FFLnet/minecraft/world/InteractionHand;FLnet/minecraft/world/item/ItemStack;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
         "renderHandsWithItems": "Lnet/minecraft/client/renderer/ItemInHandRenderer;m_109314_(FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/player/LocalPlayer;I)V"
       },
-      "com/vicmatskiv/pointblank/mixin/AbstractContainerScreenMixin": {
+      "mod/pbj/mixin/AbstractContainerScreenMixin": {
         "Lnet/minecraft/client/gui/GuiGraphics;renderItem(Lnet/minecraft/world/item/ItemStack;III)V": "Lnet/minecraft/client/gui/GuiGraphics;m_280256_(Lnet/minecraft/world/item/ItemStack;III)V",
         "renderSlot": "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;m_280092_(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V"
       },
-      "com/vicmatskiv/pointblank/mixin/MouseHandlerMixin": {
+      "mod/pbj/mixin/MouseHandlerMixin": {
         "turnPlayer()V": "Lnet/minecraft/client/MouseHandler;m_91523_()V"
       }
     }

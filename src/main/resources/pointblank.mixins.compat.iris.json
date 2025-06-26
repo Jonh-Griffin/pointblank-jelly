@@ -1,7 +1,7 @@
 {
     "required": true,
-    "package": "com.vicmatskiv.pointblank.compat.iris.mixin",
-    "plugin": "com.vicmatskiv.pointblank.compat.iris.mixin.IrisCompatMixinPlugin",
+    "package": "mod.pbj.compat.iris.mixin",
+    "plugin": "mod.pbj.compat.iris.mixin.IrisCompatMixinPlugin",
     "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "mixins": [

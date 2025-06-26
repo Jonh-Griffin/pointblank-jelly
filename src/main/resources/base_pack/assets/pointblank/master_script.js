@@ -1,5 +1,18 @@
 // PointBlank API Documentation - JavaScript Version
-// All imports would be handled by the mod's JavaScript engine
+// Some imports will be handled by the mod's JavaScript engine
+
+//JLib println, other functions are available at mod.pbj.scripts.JLib
+println("M9 Stock Script Loaded")
+
+//Different Ways to Import
+jImport(["mod.pbj", "script.Scripts", "feature.AimingFeature"]) //requires "" and [] (array of strings), does not require Packages
+//Requires Packages, does not require "" or []
+importClass(Packages.mod.pbj.util.MiscUtil)
+importPackage(Packages.mod.pbj.explosion) //Imports all classes in the package
+// Be careful of duplicate imports, they can cause issues, classes with the same name will conflict
+
+//Automatic imports are as follows:
+
 
 /* If you get a crash related to "Invalid Dist", you need to move all the client related methods in that script to a separate script inside of a client folder */
 
