@@ -57,8 +57,8 @@ public class AmmoCapacityFeature extends ConditionalFeature {
          return this;
       }
 
-      public Builder withAmmoCapacityModifier(int ammoCapacityModifier) {
-         this.ammoCapacityTransformer = (ammo) -> Mth.clamp(ammo * ammoCapacityModifier, 1, Integer.MAX_VALUE);
+      public Builder withAmmoCapacityModifier(float ammoCapacityModifier) {
+         this.ammoCapacityTransformer = (ammo) -> Mth.clamp(Math.round(ammo * ammoCapacityModifier), 1, Integer.MAX_VALUE);
          this.description = Component.translatable("description.pointblank.extendsAmmoCapacity").append(Component.literal(String.format(" %d%%", (ammoCapacityModifier - 1) * 100)));
          return this;
       }
@@ -80,7 +80,7 @@ public class AmmoCapacityFeature extends ConditionalFeature {
          }
 
          if (obj.has("ammoCapacityModifier")) {
-            this.withAmmoCapacityModifier(JsonUtil.getJsonInt(obj, "ammoCapacityModifier"));
+            this.withAmmoCapacityModifier(JsonUtil.getJsonFloat(obj, "ammoCapacityModifier"));
          } else if (obj.has("ammoCapacity")) {
             this.withAmmoCapacity(JsonUtil.getJsonInt(obj, "ammoCapacity"));
          }

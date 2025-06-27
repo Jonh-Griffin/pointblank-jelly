@@ -1,11 +1,18 @@
 package mod.pbj.entity;
 
 import mod.pbj.Config;
+import mod.pbj.PointBlankJelly;
+import mod.pbj.network.HitScanFireResponsePacket;
+import mod.pbj.network.Network;
 import mod.pbj.registry.SoundRegistry;
 import mod.pbj.util.HitboxHelper;
+import mod.pbj.util.MiscUtil;
+import mod.pbj.util.SimpleHitResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
@@ -17,13 +24,18 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.*;
+import net.minecraftforge.network.PacketDistributor;
+
+import static mod.pbj.item.GunItem.getItemStackId;
 
 public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     public static final EntityType<ProjectileBulletEntity> TYPE;
+    private int correlationId;
     public float speed;
     public float damage;
     public int time = 0;
@@ -31,13 +43,16 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     public Vec3 initPos = new Vec3(0, 0, 0);
     public float maxDistance = 1000f;
     public float headshotMultiplier = 1.0f;
+    public ItemStack gunStack;
     public static TagKey<Block> PASSABLE = BlockTags.create(new ResourceLocation("pointblank", "passable"));
     private float bulletGravity = 0.03f;
 
     public void setBulletGravity(float gravity) {
         this.bulletGravity = gravity;
     }
-
+    public ProjectileBulletEntity(Level world) {
+        super(TYPE, world);
+    }
     public ProjectileBulletEntity(EntityType<ProjectileBulletEntity> entityType, Level world) {
         super(entityType, world);
     }
@@ -121,7 +136,7 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         }
     }
 
-    public ProjectileBulletEntity(LivingEntity shooter, Level world, float damage, float speed, int shotCount, float maxDistance, float headshotMultiplier) {
+    public ProjectileBulletEntity(LivingEntity shooter, Level world, float damage, float speed, int shotCount, float maxDistance, float headshotMultiplier, ItemStack gunStack, int correlationId) {
         this(TYPE, shooter.getX(), shooter.getEyeY() - (double) 0.1F, shooter.getZ(), world);
         this.setOwner(shooter);
         this.damage = damage;
@@ -130,6 +145,8 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         this.initPos = new Vec3(shooter.getX(), shooter.getEyeY() - (double) 0.1F, shooter.getZ());
         this.maxDistance = maxDistance;
         this.headshotMultiplier = headshotMultiplier;
+        this.gunStack = gunStack;
+        this.correlationId = correlationId;
 
     }
 
@@ -160,6 +177,14 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         Vec3 hitPos = boundingBox.clip(startVec, endVec).orElse(null);
         double headshotmulti = 1.0;
         if (hitPos != null) {
+            if(getOwner() != null && level() instanceof ServerLevel)
+                for(ServerPlayer serverPlayer : ((ServerLevel) MiscUtil.getLevel(getOwner())).getPlayers((p) -> true)) {
+                    if (serverPlayer == entity || serverPlayer.distanceToSqr(getOwner()) < (maxDistance * maxDistance)) {
+                        PointBlankJelly.LOGGER.debug("{} sends projectile effect notification to {}", this.getOwner(), serverPlayer);
+                        Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new HitScanFireResponsePacket(getOwner().getId(), getItemStackId(this.gunStack), serverPlayer.getInventory().findSlotMatchingItem(this.gunStack), this.correlationId, SimpleHitResult.fromHitResult(pResult), damage));
+                    }
+                }
+
             Vec3 hitBoxPos = hitPos.subtract(entity.position());
 
             boolean headshot = false;

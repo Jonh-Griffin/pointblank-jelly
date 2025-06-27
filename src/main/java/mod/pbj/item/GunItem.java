@@ -1456,9 +1456,9 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                ServerLevel level = (ServerLevel) MiscUtil.getLevel(player);
                double maxHitScanDistance = this.getMaxServerShootingDistance(itemStack, isAiming, level);
                List<BlockPos> blockPosToDestroy = new ArrayList<>();
-               if(this.hitscan)
+               if(this.hitscan) {
                   hitResults.addAll(HitScan.getObjectsInCrosshair(player, eyePos, lookVec, 0.0F, maxHitScanDistance, shotCount, adjustedInaccuracy, xorSeed, this.getDestroyBlockByHitScanPredicate(), this.getPassThroughBlocksByHitScanPredicate(), blockPosToDestroy));
-               else { //bullet
+               } else { //bullet
                   BulletData modifiedBulletData = this.bulletData;
                   List<Features.EnabledFeature> modifiers = Features.getEnabledFeatures(itemStack, BulletModifierFeature.class);
                   for (Features.EnabledFeature feature : modifiers) {
@@ -1476,12 +1476,13 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
                      float speed = modifiedBulletData.speedOffset() + Mth.clamp((fireModeInstance.getDamage() * shotCount) / (modifiedBulletData.velocity() + 1f), 0, modifiedBulletData.maxSpeedOffset());
                      ProjectileBulletEntity bullet;
                      float damage = fireModeInstance.getDamage();
-                     bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance(), fireModeInstance.getHeadshotMultiplier());
+                     bullet = new ProjectileBulletEntity(player, player.level(), damage, speed, shotCount, fireModeInstance.getMaxShootingDistance(), fireModeInstance.getHeadshotMultiplier(), itemStack, correlationId);
                      bullet.setOwner(player);
                      bullet.setBulletGravity(modifiedBulletData.gravity());
                      bullet.shootFromRotation(bullet, player.getXRot(), player.getYRot(), 0.0F, speed, (float) adjustedInaccuracy * modifiedBulletData.inaccuracy());
                      player.level().addFreshEntity(bullet);
                   }
+
                }
                LOGGER.debug("{} obtained hit results", System.currentTimeMillis() % 100000L);
 
