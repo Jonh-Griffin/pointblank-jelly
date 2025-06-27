@@ -1,17 +1,23 @@
 package mod.pbj.client.model;
 
 import mod.pbj.client.controller.BlendingAnimationProcessor;
+import mod.pbj.item.FireModeInstance;
 import mod.pbj.item.GunItem;
-import java.util.ArrayList;
-import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.GeckoLibException;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.core.animation.Animation;
 import software.bernie.geckolib.core.animation.AnimationProcessor;
+import software.bernie.geckolib.core.molang.MolangParser;
 import software.bernie.geckolib.loading.object.BakedAnimations;
 import software.bernie.geckolib.model.DefaultedItemGeoModel;
+
+import java.util.ArrayList;
+import java.util.List;
+import static mod.pbj.Constants.*;
+
+import static mod.pbj.util.ClientUtil.getClientPlayer;
 
 public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
    private BakedGeoModel currentModel = null;
@@ -27,7 +33,27 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 
    }
 
-   public AnimationProcessor<GunItem> getAnimationProcessor() {
+    @Override
+    public void applyMolangQueries(GunItem animatable, double animTime) {
+        super.applyMolangQueries(animatable, animTime);
+        MolangParser.INSTANCE.setValue(AMMO, () -> GunItem.getClientSideAmmo(getClientPlayer(), getClientPlayer().getMainHandItem(), getClientPlayer().getInventory().selected).orElse(0));
+        MolangParser.INSTANCE.setValue(FIREMODE, GunGeoModel::getFireModeIndex);
+    }
+
+    public static int getFireModeIndex() {
+        var player = getClientPlayer();
+        var stack = player != null ? player.getMainHandItem() : null;
+        if (player != null && player.getMainHandItem().getItem() instanceof GunItem) {
+            int i = 0;
+            for(FireModeInstance fireMode : GunItem.getFireModes(stack)) {
+                if(GunItem.getFireModeInstance(stack) == fireMode) return i;
+                i++;
+            }
+        }
+        return 0;
+    }
+
+    public AnimationProcessor<GunItem> getAnimationProcessor() {
       return this.anotherAnimationProcessor;
    }
 

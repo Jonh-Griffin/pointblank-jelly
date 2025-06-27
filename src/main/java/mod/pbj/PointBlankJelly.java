@@ -67,6 +67,8 @@ import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.bernie.geckolib.GeckoLib;
+import software.bernie.geckolib.core.molang.LazyVariable;
+import software.bernie.geckolib.core.molang.MolangParser;
 
 import java.util.List;
 import java.util.Map;
@@ -120,6 +122,10 @@ public class PointBlankJelly {
       MinecraftForge.EVENT_BUS.register(this);
       Network.setupNetworkChannel();
 
+   }
+
+   public static void registerMolang() {
+      MolangParser.INSTANCE.register(new LazyVariable("pbj.ammoCount", 0));
    }
 
    public static <E extends Event> void registerEvent(Consumer<E> event) {
