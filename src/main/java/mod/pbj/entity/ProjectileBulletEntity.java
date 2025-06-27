@@ -165,6 +165,13 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
     @Override
     protected void onHitBlock(BlockHitResult pResult) {
         super.onHitBlock(pResult);
+        if(getOwner() != null && level() instanceof ServerLevel)
+            for(ServerPlayer serverPlayer : ((ServerLevel) MiscUtil.getLevel(getOwner())).getPlayers((p) -> true)) {
+                if (serverPlayer == getOwner() || serverPlayer.distanceToSqr(getOwner()) < (maxDistance * maxDistance)) {
+                    PointBlankJelly.LOGGER.debug("{} sends projectile effect notification to {}", this.getOwner(), serverPlayer);
+                    Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new HitScanFireResponsePacket(getOwner().getId(), getItemStackId(this.gunStack), serverPlayer.getInventory().findSlotMatchingItem(this.gunStack), this.correlationId, SimpleHitResult.fromHitResult(pResult), damage));
+                }
+            }
         this.playSound(level().getBlockState(pResult.getBlockPos()).getSoundType().getHitSound(), 1f / shotCount, 1.2F / (this.random.nextFloat() * 0.2F + 0.9F));
     }
 
@@ -179,7 +186,7 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
         if (hitPos != null) {
             if(getOwner() != null && level() instanceof ServerLevel)
                 for(ServerPlayer serverPlayer : ((ServerLevel) MiscUtil.getLevel(getOwner())).getPlayers((p) -> true)) {
-                    if (serverPlayer == entity || serverPlayer.distanceToSqr(getOwner()) < (maxDistance * maxDistance)) {
+                    if (serverPlayer == getOwner() || serverPlayer.distanceToSqr(getOwner()) < (maxDistance * maxDistance)) {
                         PointBlankJelly.LOGGER.debug("{} sends projectile effect notification to {}", this.getOwner(), serverPlayer);
                         Network.networkChannel.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new HitScanFireResponsePacket(getOwner().getId(), getItemStackId(this.gunStack), serverPlayer.getInventory().findSlotMatchingItem(this.gunStack), this.correlationId, SimpleHitResult.fromHitResult(pResult), damage));
                     }
