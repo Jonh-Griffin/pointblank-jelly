@@ -870,9 +870,6 @@ public class ClientEventHandler {
       Minecraft mc = Minecraft.getInstance();
       LocalPlayer player = mc.player;
       if (player != null) {
-         if (player.isSprinting()) {
-            player.setSprinting(false);
-         }
 
          MiscUtil.getMainHeldGun(player).ifPresent((item) -> {
             if (item.isAimingEnabled()) {

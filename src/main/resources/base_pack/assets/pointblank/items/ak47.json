@@ -32,7 +32,7 @@
                     { "unselectedFireMode": "grenade_launcher" }
                 ]
             },
-            "duration": 2833,
+            "duration": 2433,
             "animation": "animation.model.reloadempty"
         },
         {
@@ -43,7 +43,7 @@
                     { "unselectedFireMode": "grenade_launcher" }
                 ]
             },
-            "duration": 2666,
+            "duration": 2066,
             "animation": "animation.model.reload"
         },
         {
