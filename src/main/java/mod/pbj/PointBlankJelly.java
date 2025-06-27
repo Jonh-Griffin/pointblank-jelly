@@ -88,12 +88,12 @@ public class PointBlankJelly {
    public static IEventBus modEventBus;
    public PointBlankJelly() {
       instance = this;
-
       modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
       LOGGER.info("Loading mod {}", "pointblank");
       ModLoadingContext.get().registerConfig(Type.COMMON, Config.SPEC);
       GeckoLib.initialize();
 
+      registerMolang();
       FeatureTypeRegistry.init();
       this.extensionRegistry = new ExtensionRegistry();
       Dist side = FMLLoader.getDist();
