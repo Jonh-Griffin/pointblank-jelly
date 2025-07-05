@@ -700,6 +700,22 @@ public class GunClientState {
       return statesById.get(stateId);
    }
 
+   public int getTotalUninterruptedFireTime() {
+      return totalUninterruptedFireTime;
+   }
+
+   public void increaseTotalUninterruptedFireTime() {
+      ++totalUninterruptedFireTime;
+   }
+
+   public void decreaseTotalUninterruptedFireTime() {
+      --totalUninterruptedFireTime;
+   }
+
+   public void resetTotalUninterruptedFireTime() {
+      totalUninterruptedFireTime = 0;
+   }
+
    public void addMuzzleEffect(MuzzleFlashEffect muzzleFlashEffect) {
       this.muzzleFlashEffects.add(muzzleFlashEffect);
    }

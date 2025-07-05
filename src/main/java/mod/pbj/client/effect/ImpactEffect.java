@@ -6,8 +6,6 @@ import mod.pbj.item.GunItem;
 import mod.pbj.item.GunItem.FirePhase;
 import mod.pbj.util.Interpolators;
 import mod.pbj.util.ParticleValueProviders;
-import java.util.Collection;
-import java.util.Set;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
@@ -15,6 +13,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+
+import java.util.Collection;
+import java.util.Set;
 
 public class ImpactEffect extends AbstractEffect {
    private final float textureMinU = 0.0F;

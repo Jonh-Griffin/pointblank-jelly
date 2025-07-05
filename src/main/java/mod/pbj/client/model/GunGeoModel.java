@@ -1,22 +1,28 @@
 package mod.pbj.client.model;
 
+import mod.pbj.client.GunClientState;
 import mod.pbj.client.controller.BlendingAnimationProcessor;
 import mod.pbj.item.FireModeInstance;
 import mod.pbj.item.GunItem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.GeckoLibException;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.core.animation.Animation;
 import software.bernie.geckolib.core.animation.AnimationProcessor;
 import software.bernie.geckolib.core.molang.MolangParser;
+import software.bernie.geckolib.core.molang.MolangQueries;
 import software.bernie.geckolib.loading.object.BakedAnimations;
 import software.bernie.geckolib.model.DefaultedItemGeoModel;
+import software.bernie.geckolib.util.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import static mod.pbj.Constants.*;
 
+import static mod.pbj.Constants.*;
 import static mod.pbj.util.ClientUtil.getClientPlayer;
 
 public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
@@ -38,6 +44,20 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
         super.applyMolangQueries(animatable, animTime);
         MolangParser.INSTANCE.setValue(AMMO, () -> GunItem.getClientSideAmmo(getClientPlayer(), getClientPlayer().getMainHandItem(), getClientPlayer().getInventory().selected).orElse(0));
         MolangParser.INSTANCE.setValue(FIREMODE, GunGeoModel::getFireModeIndex);
+        MolangParser.INSTANCE.setValue(FIRETICKS, ()-> GunClientState.getMainHeldState().getTotalUninterruptedFireTime());
+        MolangParser.INSTANCE.setValue(TOTALSHOTS, ()-> GunClientState.getMainHeldState().getTotalUninterruptedShots());
+
+        //Apply Player molang queries
+        var livingEntity = Minecraft.getInstance().player;
+            MolangParser.INSTANCE.setMemoizedValue(MolangQueries.HEALTH, livingEntity::getHealth);
+            MolangParser.INSTANCE.setMemoizedValue(MolangQueries.MAX_HEALTH, livingEntity::getMaxHealth);
+            MolangParser.INSTANCE.setMemoizedValue(MolangQueries.IS_ON_FIRE, () -> RenderUtils.booleanToFloat(livingEntity.isOnFire()));
+            MolangParser.INSTANCE.setMemoizedValue(MolangQueries.GROUND_SPEED, () -> {
+                Vec3 velocity = livingEntity.getDeltaMovementLerped(Minecraft.getInstance().getPartialTick());
+
+                return Mth.sqrt((float) ((velocity.x * velocity.x) + (velocity.z * velocity.z)));
+            });
+            MolangParser.INSTANCE.setMemoizedValue(MolangQueries.YAW_SPEED, () -> livingEntity.getViewYRot((float)animTime - livingEntity.getViewYRot((float)animTime - 0.1f)));
     }
 
     public static int getFireModeIndex() {

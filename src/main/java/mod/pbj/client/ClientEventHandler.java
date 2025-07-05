@@ -355,6 +355,7 @@ public class ClientEventHandler {
                             GunClientState previousState = GunClientState.getState(player, previousStack, this.previousInventorySlot, false);
                            if (previousState != null) {
                               previousState.tryDeactivate(player, previousStack);
+                              previousState.resetTotalUninterruptedFireTime();
                            }
 
                            AnimationController<GeoAnimatable> walkingController = previousGunItem.getGeoAnimationController("walking", previousStack);
@@ -394,6 +395,16 @@ public class ClientEventHandler {
 
             this.leftMouseButtonDown = leftMouseButtonDown;
             this.rightMouseButtonDown = rightMouseButtonDown;
+
+            if(player.getMainHandItem().getItem() instanceof GunItem)
+               if(GunClientState.getMainHeldState() != null && GunClientState.getMainHeldState().isFiring())
+                  GunClientState.getMainHeldState().increaseTotalUninterruptedFireTime();
+               else if (GunClientState.getMainHeldState() != null) GunClientState.getMainHeldState().resetTotalUninterruptedFireTime();
+
+            if(player.getMainHandItem().getItem() instanceof GunItem)
+               if(GunClientState.getMainHeldState() != null && GunClientState.getMainHeldState().isFiring())
+                  GunClientState.getMainHeldState().increaseTotalUninterruptedFireTime();
+               else if (GunClientState.getMainHeldState() != null) { GunClientState.getMainHeldState().decreaseTotalUninterruptedFireTime();}
          }
 
          mainLoopLock.unlock();

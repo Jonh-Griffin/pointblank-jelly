@@ -134,7 +134,7 @@ dependencies {
     implementation fg.deobf("curse.maven:selene-499980:6611244")
     implementation fg.deobf("curse.maven:first-aid-276837:5531834")
     implementation fg.deobf("curse.maven:legendary-survival-overhaul-840254:6680779")
-    //implementation fg.deobf("curse.maven:rhino-416294:6186971")
+
     minecraftLibrary(jarJar('org.mozilla:rhino:1.8.0')) {
         jarJar.ranged(it, "[1.8.0,)")
     }

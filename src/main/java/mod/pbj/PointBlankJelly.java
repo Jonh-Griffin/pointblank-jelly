@@ -78,6 +78,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static mod.pbj.Constants.*;
+
 @Mod("pointblank")
 public class PointBlankJelly {
    public static final Logger LOGGER = LogManager.getLogger("pointblank");
@@ -125,7 +127,10 @@ public class PointBlankJelly {
    }
 
    public static void registerMolang() {
-      MolangParser.INSTANCE.register(new LazyVariable("pbj.ammoCount", 0));
+      MolangParser.INSTANCE.register(new LazyVariable(AMMO, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(FIREMODE, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(FIRETICKS, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(TOTALSHOTS, 0));
    }
 
    public static <E extends Event> void registerEvent(Consumer<E> event) {
