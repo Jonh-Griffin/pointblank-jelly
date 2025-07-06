@@ -8,6 +8,7 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.math.Axis;
 import mod.pbj.attachment.Attachment;
 import mod.pbj.attachment.AttachmentHost;
+import mod.pbj.client.GunClientState;
 import mod.pbj.event.AttachmentAddedEvent;
 import mod.pbj.event.AttachmentRemovedEvent;
 import mod.pbj.inventory.AttachmentContainerMenu;
@@ -16,9 +17,6 @@ import mod.pbj.inventory.HierarchicalSlot;
 import mod.pbj.inventory.SimpleAttachmentContainer;
 import mod.pbj.registry.SoundRegistry;
 import mod.pbj.util.MiscUtil;
-import java.util.ArrayDeque;
-import java.util.Objects;
-import java.util.Queue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -40,6 +38,10 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector4f;
 import software.bernie.geckolib.util.ClientUtils;
+
+import java.util.ArrayDeque;
+import java.util.Objects;
+import java.util.Queue;
 
 public class AttachmentManagerScreen extends AbstractContainerScreen<AttachmentContainerMenu> {
    private static final ResourceLocation GUI_TEXTURES = new ResourceLocation("pointblank", "textures/gui/attachments4.png");
@@ -345,6 +347,8 @@ public class AttachmentManagerScreen extends AbstractContainerScreen<AttachmentC
          if (this.minecraft.screen != this) {
             return;
          }
+
+         GunClientState.getMainHeldState().callAttachmentListener(event.getParentStack(), event.getAttachmentStack());
 
          ClientUtils.getClientPlayer().playSound(SoundRegistry.ATTACHMENT_ADDED.get(), 1.0F, 1.0F);
          this.attachmentEventQueue.add(new AttachmentHighlightEvent(System.currentTimeMillis(), 750L, event.getParentStack(), event.getAttachmentStack()));
