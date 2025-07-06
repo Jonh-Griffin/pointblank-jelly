@@ -455,12 +455,22 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
             position = position.add(v1Position);
             EffectRenderContext context = (new EffectRenderContext()).withPoseStack(poseStack).withPosition(new Vec3(position.x, position.y, position.z)).withVertexBuffer(buffer).withLightColor(packedLight);
 
-            for(MuzzleFlashEffect effect : this.gunClientState.getMuzzleFlashEffects()) {
-               UUID effectId = EffectRegistry.getEffectId(effect.getName());
-               if (Objects.equal(effectId, RenderPass.getEffectId())) {
-                  effect.render(context);
-               }
-            }
+            // for(MuzzleFlashEffect effect : this.gunClientState.getMuzzleFlashEffects()) {
+            //    UUID effectId = EffectRegistry.getEffectId(effect.getName());
+            //    if (Objects.equal(effectId, RenderPass.getEffectId())) {
+            //       effect.render(context);
+            //    }
+            // }
+
+			// avoid ConcurrentModificationException by not using ArrayList.iterator()
+			final var muzzleFlashEffects = this.gunClientState.getMuzzleFlashEffects();
+			for (int i = 0; i < muzzleFlashEffects.size(); ++i) {
+				final var effect = muzzleFlashEffects.get(i);
+				UUID effectId = EffectRegistry.getEffectId(effect.getName());
+				if (Objects.equal(effectId, RenderPass.getEffectId())) {
+					effect.render(context);
+				}
+			}
          }
 
       }
