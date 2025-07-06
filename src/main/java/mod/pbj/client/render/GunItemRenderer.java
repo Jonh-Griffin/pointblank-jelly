@@ -7,11 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.datafixers.util.Pair;
 import mod.pbj.Config;
-import mod.pbj.client.BiDirectionalInterpolator;
-import mod.pbj.client.ClientEventHandler;
-import mod.pbj.client.ClientSystem;
-import mod.pbj.client.GunClientState;
-import mod.pbj.client.GunStatePoseProvider;
+import mod.pbj.client.*;
 import mod.pbj.client.GunStatePoseProvider.PoseContext;
 import mod.pbj.client.controller.GlowAnimationController;
 import mod.pbj.client.controller.RotationAnimationController;
@@ -19,29 +15,14 @@ import mod.pbj.client.effect.EffectRenderContext;
 import mod.pbj.client.effect.MuzzleFlashEffect;
 import mod.pbj.client.gui.AttachmentManagerScreen;
 import mod.pbj.client.model.GunGeoModel;
-import mod.pbj.client.render.layer.AttachmentLayer;
-import mod.pbj.client.render.layer.GlowingItemLayer;
-import mod.pbj.client.render.layer.GunHandsItemLayer;
-import mod.pbj.client.render.layer.MuzzleFlashItemLayer;
-import mod.pbj.client.render.layer.PipItemLayer;
-import mod.pbj.client.render.layer.ReticleItemLayer;
+import mod.pbj.client.render.layer.*;
 import mod.pbj.client.uv.SpriteUVProvider;
 import mod.pbj.compat.iris.IrisCompat;
-import mod.pbj.feature.ActiveMuzzleFeature;
-import mod.pbj.feature.AimingFeature;
-import mod.pbj.feature.ConditionContext;
-import mod.pbj.feature.Feature;
-import mod.pbj.feature.Features;
-import mod.pbj.feature.PartVisibilityFeature;
-import mod.pbj.feature.SkinFeature;
+import mod.pbj.feature.*;
 import mod.pbj.item.GunItem;
 import mod.pbj.mixin.BakedModelMixin;
 import mod.pbj.registry.EffectRegistry;
 import mod.pbj.util.MiscUtil;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Supplier;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -60,24 +41,22 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.model.SeparateTransformsModel;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.*;
 import org.lwjgl.opengl.GL30;
 import software.bernie.geckolib.cache.GeckoLibCache;
-import software.bernie.geckolib.cache.object.BakedGeoModel;
-import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.cache.object.GeoCube;
-import software.bernie.geckolib.cache.object.GeoQuad;
-import software.bernie.geckolib.cache.object.GeoVertex;
+import software.bernie.geckolib.cache.object.*;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoItemRenderer;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.RenderUtils;
+
+import java.lang.Math;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 @OnlyIn(Dist.CLIENT)
 public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderPassGeoRenderer<GunItem>, RenderApprover {
@@ -553,7 +532,7 @@ public class GunItemRenderer extends GeoItemRenderer<GunItem> implements RenderP
 
    private void renderPip(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, float red, float green, float blue, double aimingProgress) {
       poseStack.pushPose();
-      if (aimingProgress > 0.9 && this.gunClientState != null && !this.gunClientState.isReloading()) {
+      if (aimingProgress > 0.9 && this.gunClientState != null) {
          List<GeoCube> cubes = bone.getCubes();
          if (cubes != null && !cubes.isEmpty()) {
             GeoCube cube = cubes.get(0);

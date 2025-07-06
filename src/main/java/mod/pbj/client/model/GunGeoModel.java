@@ -1,5 +1,6 @@
 package mod.pbj.client.model;
 
+import mod.pbj.client.BiDirectionalInterpolator;
 import mod.pbj.client.GunClientState;
 import mod.pbj.client.controller.BlendingAnimationProcessor;
 import mod.pbj.item.FireModeInstance;
@@ -42,10 +43,24 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
     @Override
     public void applyMolangQueries(GunItem animatable, double animTime) {
         super.applyMolangQueries(animatable, animTime);
+        if(Minecraft.getInstance().player == null) return;
+        GunClientState state = GunClientState.getMainHeldState();
+        if(state == null) return;
         MolangParser.INSTANCE.setValue(AMMO, () -> GunItem.getClientSideAmmo(getClientPlayer(), getClientPlayer().getMainHandItem(), getClientPlayer().getInventory().selected).orElse(0));
         MolangParser.INSTANCE.setValue(FIREMODE, GunGeoModel::getFireModeIndex);
-        MolangParser.INSTANCE.setValue(FIRETICKS, ()-> GunClientState.getMainHeldState().getTotalUninterruptedFireTime());
-        MolangParser.INSTANCE.setValue(TOTALSHOTS, ()-> GunClientState.getMainHeldState().getTotalUninterruptedShots());
+        MolangParser.INSTANCE.setValue(FIRETICKS, state::getTotalUninterruptedFireTime);
+        MolangParser.INSTANCE.setValue(TOTALSHOTS, state::getTotalUninterruptedShots);
+        MolangParser.INSTANCE.setValue(AIMING, ()-> state.isAiming() ? 0 : 1);
+        BiDirectionalInterpolator aimingController = (BiDirectionalInterpolator)state.getAnimationController("aiming");
+        double aimprog;
+        if(aimingController == null) aimprog = 0;
+        else aimprog = aimingController.getValue();
+        MolangParser.INSTANCE.setValue(AIMPROG, ()-> aimprog);
+        MolangParser.INSTANCE.setValue(HEADBOB, ()-> Minecraft.getInstance().player.bob);
+        MolangParser.INSTANCE.setValue(HEADROTX, ()-> Minecraft.getInstance().player.getXRot());
+        MolangParser.INSTANCE.setValue(HEADROTY, ()-> Minecraft.getInstance().player.getYRot());
+        MolangParser.INSTANCE.setValue(CRAWLING, ()-> Minecraft.getInstance().player.isVisuallyCrawling() ? 0 : 1);
+        MolangParser.INSTANCE.setValue(CROUCHING, ()-> Minecraft.getInstance().player.isCrouching() ? 0 : 1);
 
         //Apply Player molang queries
         var livingEntity = Minecraft.getInstance().player;

@@ -396,15 +396,13 @@ public class ClientEventHandler {
             this.leftMouseButtonDown = leftMouseButtonDown;
             this.rightMouseButtonDown = rightMouseButtonDown;
 
-            if(player.getMainHandItem().getItem() instanceof GunItem)
-               if(GunClientState.getMainHeldState() != null && GunClientState.getMainHeldState().isFiring())
+            if(player.getMainHandItem().getItem() instanceof GunItem) {
+               if (GunClientState.getMainHeldState() != null && GunClientState.getMainHeldState().isFiring()) {
                   GunClientState.getMainHeldState().increaseTotalUninterruptedFireTime();
-               else if (GunClientState.getMainHeldState() != null) GunClientState.getMainHeldState().resetTotalUninterruptedFireTime();
-
-            if(player.getMainHandItem().getItem() instanceof GunItem)
-               if(GunClientState.getMainHeldState() != null && GunClientState.getMainHeldState().isFiring())
-                  GunClientState.getMainHeldState().increaseTotalUninterruptedFireTime();
-               else if (GunClientState.getMainHeldState() != null) { GunClientState.getMainHeldState().decreaseTotalUninterruptedFireTime();}
+               } else if (GunClientState.getMainHeldState() != null) {
+                  GunClientState.getMainHeldState().decreaseTotalUninterruptedFireTime();
+               }
+            }
          }
 
          mainLoopLock.unlock();

@@ -131,6 +131,12 @@ public class PointBlankJelly {
       MolangParser.INSTANCE.register(new LazyVariable(FIREMODE, 0));
       MolangParser.INSTANCE.register(new LazyVariable(FIRETICKS, 0));
       MolangParser.INSTANCE.register(new LazyVariable(TOTALSHOTS, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(AIMING, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(HEADBOB, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(HEADROTX, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(HEADROTY, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(CROUCHING, 0));
+      MolangParser.INSTANCE.register(new LazyVariable(CRAWLING, 0));
    }
 
    public static <E extends Event> void registerEvent(Consumer<E> event) {

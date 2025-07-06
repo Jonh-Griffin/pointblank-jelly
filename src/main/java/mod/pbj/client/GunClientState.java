@@ -709,6 +709,8 @@ public class GunClientState {
    }
 
    public void decreaseTotalUninterruptedFireTime() {
+      if(totalUninterruptedFireTime < 0) totalUninterruptedFireTime = 0;
+      if(totalUninterruptedFireTime == 0) return;
       --totalUninterruptedFireTime;
    }
 
