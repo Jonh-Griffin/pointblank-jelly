@@ -30,10 +30,19 @@ public class Features {
       return !enabledFeatures.isEmpty() ? enabledFeatures.get(0) : null;
    }
 
-   public static <T extends Feature> List<EnabledFeature> getEnabledFeatures(ItemStack itemStack, Class<? extends Feature> featureClass) {
-      CompoundTag tag = itemStack.getTag();
-      return tag == null ? Collections.emptyList() : selectedItemFeatureCache.computeIfAbsent(Pair.of(tag, featureClass), (p) -> computeEnabledFeatures(itemStack, featureClass));
-   }
+    // avoid computeIfAbsent() due to ConcurrentModificationException
+	public static <T extends Feature> List<EnabledFeature> getEnabledFeatures(ItemStack itemStack,
+			Class<? extends Feature> featureClass) {
+		final var tag = itemStack.getTag();
+		if (tag == null)
+			return Collections.emptyList();
+
+		final Pair<Tag, Class<? extends Feature>> key = Pair.of(tag, featureClass);
+		var enabledFeatures = selectedItemFeatureCache.get(key);
+		if (enabledFeatures == null)
+			selectedItemFeatureCache.put(key, enabledFeatures = computeEnabledFeatures(itemStack, featureClass));
+		return enabledFeatures;
+	}
 
    private static List<EnabledFeature> computeEnabledFeatures(ItemStack rootStack, Class<? extends Feature> featureType) {
       NavigableMap<String, ItemStack> attachmentStacks = Attachments.getAttachments(rootStack, true);
