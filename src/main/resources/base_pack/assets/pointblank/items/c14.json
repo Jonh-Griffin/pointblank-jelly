@@ -4,7 +4,7 @@
     "maxAmmoCapacity": 5,
     "compatibleAmmo": ["ammocreative", "ammo338lapua"],
     "damage": 25.0,
-    "adsSpeed": 600,
+    "adsSpeed": 550,
     "rpm": 77,
     "fireModes": ["SINGLE"],
     "fireSound": "xm3",
