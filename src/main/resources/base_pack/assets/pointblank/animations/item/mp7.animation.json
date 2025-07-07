@@ -1708,7 +1708,7 @@
 			"bones": {
 				"main": {
 					"rotation": {
-						"0.0": ["0 - (pbj.fireticks / 30)", 0, 0],
+						"0.0": ["0 - (pbj.fireticks / 30)", "-0.97773 * (pbj.fireticks / 80)", "-0.64005 * (pbj.fireticks / 80)"],
 						"0.05": ["-1.20759 - (pbj.fireticks / 30)", "-0.97773 * (pbj.fireticks / 80)", "-2.64005 * (pbj.fireticks / 80)"],
 						"0.15": ["0 - (pbj.fireticks / 30)", "-0.6 * (pbj.fireticks / 20)", "4.77446 * (pbj.fireticks / 80)"],
 						"0.25": [0, "-0.20211 * (pbj.fireticks / 80)", "-0.79207 * (pbj.fireticks / 80)"],
