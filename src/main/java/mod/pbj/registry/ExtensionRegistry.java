@@ -11,7 +11,6 @@ import mod.pbj.compat.playeranimator.PlayerAnimationBuilder;
 import mod.pbj.entity.EntityBuilder;
 import mod.pbj.item.GunItem;
 import mod.pbj.item.ItemBuilder;
-import mod.pbj.script.Script;
 import mod.pbj.script.ScriptParser;
 import cpw.mods.jarhandling.SecureJar;
 import net.minecraft.SharedConstants;
@@ -181,7 +180,7 @@ public class ExtensionRegistry {
 
    }
    @Nullable
-   public static Script getScript(ResourceLocation scriptName) {
+   public static Object getScript(ResourceLocation scriptName) {
       System.out.println("Getting Script of " + scriptName.getNamespace() + " with name " + scriptName.getPath());
 
       return ScriptParser.SCRIPTCACHE.get(scriptName);
@@ -268,7 +267,7 @@ public class ExtensionRegistry {
       private List<PlayerAnimationBuilder> playerAnimationBuilders;
       private Set<String> sounds;
       private Map<String, Supplier<SoundEvent>> registeredExtSounds;
-      public Map<String, Supplier<Script>> clientScripts = new HashMap<>();
+      public Map<String, Supplier<Object>> clientScripts = new HashMap<>();
 
       public Extension(String name, Path path, String creativeTabIconItem) {
          this.name = name;
