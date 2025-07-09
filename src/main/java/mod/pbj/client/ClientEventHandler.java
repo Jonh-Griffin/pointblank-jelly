@@ -1312,17 +1312,18 @@ public class ClientEventHandler {
 				ParticleRegistry.IMPACT_PARTICLE.get(), EffectParticles.EffectParticleProvider::new);
 		}
 
-      @SubscribeEvent
-      public static void setupClient(FMLClientSetupEvent evt) {
-         MenuScreens.register(MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
-         MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
-         PlayerAnimatorCompat.getInstance().registerAnimationTypes();
-         ThirdPersonAnimationRegistry.init();
-         //for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
-         //   for (Map.Entry<String, Supplier<Script>> entry: extension.clientScripts.entrySet()) {
-         //       entry.getValue().get().run();
-         //   }
-         //}
-      }
-   }
+		@SubscribeEvent
+		public static void setupClient(FMLClientSetupEvent evt) {
+			MenuScreens.register(MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
+			MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
+			PlayerAnimatorCompat.getInstance().registerAnimationTypes();
+			ThirdPersonAnimationRegistry.init();
+			// for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions())
+			// {
+			//    for (Map.Entry<String, Supplier<Script>> entry: extension.clientScripts.entrySet()) {
+			//        entry.getValue().get().run();
+			//    }
+			// }
+		}
+	}
 }

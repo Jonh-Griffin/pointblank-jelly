@@ -159,8 +159,8 @@ public class VirtualInventory implements ContainerListener {
 								AttachmentAddedEvent event = new AttachmentAddedEvent(this.itemStack, slotStack);
 								MinecraftForge.EVENT_BUS.post(event);
 								logger.debug(
-									"Added new attachment '{}' from slot {} with tag {} to stack '{}' with tag {} " +
-									"and path {}",
+									"Added new attachment '{}' from slot {} with tag {} to stack '{}' with tag {} "
+										+ "and path {}",
 									slotStack,
 									i,
 									slotStack.getTag(),
@@ -168,8 +168,8 @@ public class VirtualInventory implements ContainerListener {
 									this.itemStack.getTag());
 							} else {
 								logger.debug(
-									"Re-added existing attachment '{}' from slot {} with tag {} to stack '{}' with " +
-									"tag {}",
+									"Re-added existing attachment '{}' from slot {} with tag {} to stack '{}' with "
+										+ "tag {}",
 									slotStack,
 									i,
 									slotStack.getTag(),

@@ -14,9 +14,9 @@ public class FinalPassRendererMixin {
 		method = {"createProgram"},
 		at =
 			@At(value = "INVOKE",
-				target = "Lnet/irisshaders/iris/gl/program/ProgramBuilder;begin(Ljava/lang/String;Ljava/lang/" +
-						 "String;Ljava/lang/String;Ljava/lang/String;Lcom/google/common/collect/ImmutableSet;)Lnet/" +
-						 "irisshaders/iris/gl/program/ProgramBuilder;"),
+				target = "Lnet/irisshaders/iris/gl/program/ProgramBuilder;begin(Ljava/lang/String;Ljava/lang/"
+						 + "String;Ljava/lang/String;Ljava/lang/String;Lcom/google/common/collect/ImmutableSet;)Lnet/"
+						 + "irisshaders/iris/gl/program/ProgramBuilder;"),
 		index = 1,
 		remap = false)
 	private String
@@ -38,9 +38,9 @@ public class FinalPassRendererMixin {
 		method = {"createProgram"},
 		at =
 			@At(value = "INVOKE",
-				target = "Lnet/irisshaders/iris/gl/program/ProgramBuilder;begin(Ljava/lang/String;Ljava/lang/" +
-						 "String;Ljava/lang/String;Ljava/lang/String;Lcom/google/common/collect/ImmutableSet;)Lnet/" +
-						 "irisshaders/iris/gl/program/ProgramBuilder;"),
+				target = "Lnet/irisshaders/iris/gl/program/ProgramBuilder;begin(Ljava/lang/String;Ljava/lang/"
+						 + "String;Ljava/lang/String;Ljava/lang/String;Lcom/google/common/collect/ImmutableSet;)Lnet/"
+						 + "irisshaders/iris/gl/program/ProgramBuilder;"),
 		index = 3,
 		remap = false)
 	private String

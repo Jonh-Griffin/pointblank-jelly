@@ -56,8 +56,8 @@ public abstract class PlayerAnimatorCompat implements ResourceManagerReloadListe
 					IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException |
 					NoClassDefFoundError e) {
 					LOGGER.error(
-						"Player Animator mod version {} detected, but compatibility could not be enabled. This is " +
-						"likely due to an outdated and/or incompatible version of the Player Animator mod. ",
+						"Player Animator mod version {} detected, but compatibility could not be enabled. This is "
+							+ "likely due to an outdated and/or incompatible version of the Player Animator mod. ",
 						compatModFileInfo.versionString(),
 						e);
 				}

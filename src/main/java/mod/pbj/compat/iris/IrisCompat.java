@@ -36,9 +36,10 @@ public abstract class IrisCompat {
 					IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException |
 					NoClassDefFoundError var3) {
 					LOGGER.error(
-						"Oculus mod version {} detected, but compatibility could not be enabled. This is likely due " +
-						"to an outdated and/or incompatible version of the Oculus mod. Please ensure you have Oculus " +
-						"version 1.7.0 or later installed.",
+						"Oculus mod version {} detected, but compatibility could not be enabled. This is likely due "
+							+ "to an outdated and/or incompatible version of the Oculus mod. Please ensure you have "
+							+ "Oculus "
+							+ "version 1.7.0 or later installed.",
 						shadersModFileInfo.versionString(),
 						var3);
 				}

@@ -676,8 +676,8 @@ public class GunClientState {
 		this.remainingAmmoToReload -= ammoToReloadPerIteration;
 		this.ammoCount.incrementAmmoCount(context.getFireModeInstance(), ammoToReloadPerIteration);
 		LOGGER.debug(
-			"Ammo to reload per iteration: {}, remaining ammo to reload: {}, current ammo: {}, reload iteration " +
-			"index: {}",
+			"Ammo to reload per iteration: {}, remaining ammo to reload: {}, current ammo: {}, reload iteration "
+				+ "index: {}",
 			ammoToReloadPerIteration,
 			this.remainingAmmoToReload,
 			this.ammoCount,

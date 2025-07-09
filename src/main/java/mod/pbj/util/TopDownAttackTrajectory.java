@@ -416,8 +416,8 @@ public class TopDownAttackTrajectory implements Trajectory<TopDownAttackTrajecto
 					double rightSimilarity = currentRight.dot(newRight);
 					double angle = Math.acos(rightSimilarity < (double)0.0F ? -rightSimilarity : rightSimilarity);
 					LOGGER.trace(
-						"Correction angle: %.3f, old right vector: (%.5f, %.5f, %.5f), new right vector: (%.5f, " +
-						"%.5f, %.5f)",
+						"Correction angle: %.3f, old right vector: (%.5f, %.5f, %.5f), new right vector: (%.5f, "
+							+ "%.5f, %.5f)",
 						Math.toDegrees(angle),
 						currentRight.x,
 						currentRight.y,

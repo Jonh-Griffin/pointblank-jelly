@@ -112,17 +112,18 @@ public class Config {
 											.define("resetAutoFirePitchEnabled", true);
 		KNOCKBACK = BUILDER
 						.comment(
-							"Adjusts the knockback force applied to entities hit by gunfire, with higher values " +
-							"causing greater knockback distance.")
+							"Adjusts the knockback force applied to entities hit by gunfire, with higher values "
+							+ "causing greater knockback distance.")
 						.defineInRange("knockback", 1.0D, 0.1D, 2.0D);
 		PARTICLE_EFFECTS_ENABLED = BUILDER.comment("Enables particle effects").define("particleEffectsEnabled", true);
 		OVERWRITE_DISABLED =
 			BUILDER.comment("Disables overwriting of the base content pack").define("allowBasePackOverwrite", false);
-		ARMS_DEALER_HOUSE_WEIGHT = BUILDER
-									   .comment(
-										   "Sets the likelihood of an 'Arms Dealer' house appearing in new villages, " +
-										   "with higher values increasing frequency and lower values making it rarer.")
-									   .defineInRange("armsDealerHouse", 10, 0, 20);
+		ARMS_DEALER_HOUSE_WEIGHT =
+			BUILDER
+				.comment(
+					"Sets the likelihood of an 'Arms Dealer' house appearing in new villages, "
+					+ "with higher values increasing frequency and lower values making it rarer.")
+				.defineInRange("armsDealerHouse", 10, 0, 20);
 		EMERALD_EXCHANGE_RATE =
 			BUILDER
 				.comment(
@@ -131,14 +132,14 @@ public class Config {
 		THIRD_PERSON_ARM_POSE_ALWAYS_ON =
 			BUILDER
 				.comment(
-					"Controls whether the player's arm pose is permanently set to the aiming/firing position in " +
-					"third-person view, regardless of their current action with a gun.")
+					"Controls whether the player's arm pose is permanently set to the aiming/firing position in "
+					+ "third-person view, regardless of their current action with a gun.")
 				.define("thirdPersonArmPoseAlwaysOn", true);
 		PIP_SCOPE_REFRESH_FRAME =
 			BUILDER
 				.comment(
-					"Specifies how often the \"picture-in-picture\" scope updates, with 1 being every frame, 2 for " +
-					"every other frame, etc. A higher number may improve performance.")
+					"Specifies how often the \"picture-in-picture\" scope updates, with 1 being every frame, 2 for "
+					+ "every other frame, etc. A higher number may improve performance.")
 				.defineInRange("pipScopeRefreshRate", 2, 0, 5);
 		PIP_SCOPES_ENABLED = BUILDER.comment("Enables pip scopes").define("pipScopesEnabled", true);
 		PIP_SCOPE_COLOR_BALANCE_RED =

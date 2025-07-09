@@ -2333,8 +2333,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 			for (Attachment attachment : this.getDefaultAttachments()) {
 				if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
 					LOGGER.warn(
-						"Cannot add compatible attachment {} with category {} to  item {} because the existing " +
-						"number of compatible categories for this item cannot exceed {}",
+						"Cannot add compatible attachment {} with category {} to  item {} because the existing "
+							+ "number of compatible categories for this item cannot exceed {}",
 						attachment.getName(),
 						attachment.getCategory(),
 						this.getName(),
@@ -2350,8 +2350,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 				Attachment attachment = attachmentSupplier.get();
 				if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
 					LOGGER.warn(
-						"Cannot add compatible attachment {} with category {} to  item {} because the existing " +
-						"number of compatible categories for this item cannot exceed {}",
+						"Cannot add compatible attachment {} with category {} to  item {} because the existing "
+							+ "number of compatible categories for this item cannot exceed {}",
 						attachment.getName(),
 						attachment.getCategory(),
 						this.getName(),
@@ -2369,8 +2369,8 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 					if (item instanceof Attachment attachment) {
 						if (attachmentCategories.size() >= this.getMaxAttachmentCategories()) {
 							LOGGER.warn(
-								"Cannot add compatible attachment {} with category {} to  item {} because the " +
-								"existing number of compatible categories for this item cannot exceed {}",
+								"Cannot add compatible attachment {} with category {} to  item {} because the "
+									+ "existing number of compatible categories for this item cannot exceed {}",
 								attachment.getName(),
 								attachment.getCategory(),
 								this.getName(),
