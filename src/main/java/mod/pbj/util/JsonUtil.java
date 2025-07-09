@@ -4,13 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import mod.pbj.registry.ExtensionRegistry;
 import mod.pbj.script.Script;
-import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,16 +190,16 @@ public class JsonUtil {
 		}
 	}
 
-	public static Script getJsonScript(JsonObject obj) {
-		if (obj.has("script")) {
-			try {
-				String str = getJsonString(obj, "script");
-				return ExtensionRegistry.getScript(ResourceLocation.parse(str));
-			} catch (Exception e) {
-				JsonUtil.log.debug("Failed to load script: {}", obj.getAsJsonPrimitive("script").getAsString(), e);
-				return null;
-			}
-		}
-		return null;
-	}
+   public static Script getJsonScript(JsonObject obj) {
+      //if(obj.has("script")) {
+      //   try {
+      //      String str = getJsonString(obj, "script");
+      //      return ExtensionRegistry.getScript(ResourceLocation.parse(str));
+      //   } catch (Exception e) {
+      //       JsonUtil.log.debug("Failed to load script: {}", obj.getAsJsonPrimitive("script").getAsString(), e);
+      //       return null;
+      //   }
+      //}
+      return null;
+   }
 }

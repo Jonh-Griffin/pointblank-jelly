@@ -16,7 +16,6 @@ import mod.pbj.Config.AutoReload;
 import mod.pbj.Config.CrosshairType;
 import mod.pbj.Enableable;
 import mod.pbj.Nameable;
-import mod.pbj.PointBlankJelly;
 import mod.pbj.attachment.*;
 import mod.pbj.client.controller.*;
 import mod.pbj.client.gui.AttachmentManagerScreen;
@@ -37,8 +36,10 @@ import mod.pbj.item.*;
 import mod.pbj.network.AimingChangeRequestPacket;
 import mod.pbj.network.Network;
 import mod.pbj.registry.*;
-import mod.pbj.script.Script;
-import mod.pbj.util.*;
+import mod.pbj.util.ClientUtil;
+import mod.pbj.util.HitScan;
+import mod.pbj.util.MiscUtil;
+import mod.pbj.util.UpDownCounter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
@@ -1311,17 +1312,17 @@ public class ClientEventHandler {
 				ParticleRegistry.IMPACT_PARTICLE.get(), EffectParticles.EffectParticleProvider::new);
 		}
 
-		@SubscribeEvent
-		public static void setupClient(FMLClientSetupEvent evt) {
-			MenuScreens.register(MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
-			MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
-			PlayerAnimatorCompat.getInstance().registerAnimationTypes();
-			ThirdPersonAnimationRegistry.init();
-			for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
-				for (Map.Entry<String, Supplier<Script>> entry : extension.clientScripts.entrySet()) {
-					entry.getValue().get().run();
-				}
-			}
-		}
-	}
+      @SubscribeEvent
+      public static void setupClient(FMLClientSetupEvent evt) {
+         MenuScreens.register(MenuRegistry.ATTACHMENTS.get(), AttachmentManagerScreen::new);
+         MenuScreens.register(MenuRegistry.CRAFTING.get(), CraftingScreen::new);
+         PlayerAnimatorCompat.getInstance().registerAnimationTypes();
+         ThirdPersonAnimationRegistry.init();
+         //for (ExtensionRegistry.Extension extension : PointBlankJelly.instance.extensionRegistry.getExtensions()) {
+         //   for (Map.Entry<String, Supplier<Script>> entry: extension.clientScripts.entrySet()) {
+         //       entry.getValue().get().run();
+         //   }
+         //}
+      }
+   }
 }

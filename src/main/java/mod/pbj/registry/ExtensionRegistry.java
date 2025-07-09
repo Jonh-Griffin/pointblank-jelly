@@ -24,7 +24,6 @@ import mod.pbj.compat.playeranimator.PlayerAnimationBuilder;
 import mod.pbj.entity.EntityBuilder;
 import mod.pbj.item.GunItem;
 import mod.pbj.item.ItemBuilder;
-import mod.pbj.script.Script;
 import mod.pbj.script.ScriptParser;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
@@ -194,16 +193,17 @@ public class ExtensionRegistry {
 								   }
 							   };
 
-							   for (Supplier<Item> registeredExtensionItem : registeredExtItems) {
-								   output.accept(registeredExtensionItem.get());
-							   }
-						   })
-						   .build());
-		}
-	}
-	@Nullable
-	public static Script getScript(ResourceLocation scriptName) {
-		System.out.println("Getting Script of " + scriptName.getNamespace() + " with name " + scriptName.getPath());
+            for(Supplier<Item> registeredExtensionItem : registeredExtItems) {
+               output.accept(registeredExtensionItem.get());
+            }
+
+         }).build());
+      }
+
+   }
+   @Nullable
+   public static Object getScript(ResourceLocation scriptName) {
+      System.out.println("Getting Script of " + scriptName.getNamespace() + " with name " + scriptName.getPath());
 
 		return ScriptParser.SCRIPTCACHE.get(scriptName);
 	}
@@ -279,17 +279,17 @@ public class ExtensionRegistry {
 		}
 	}
 
-	public static class Extension {
-		private final String name;
-		private Path path;
-		private final String creativeTabIconItem;
-		private List<ItemBuilder<?>> itemBuilders;
-		private List<EffectBuilder<?, ?>> effectBuilders;
-		private List<EntityBuilder<?, ?>> entityBuilders;
-		private List<PlayerAnimationBuilder> playerAnimationBuilders;
-		private Set<String> sounds;
-		private Map<String, Supplier<SoundEvent>> registeredExtSounds;
-		public Map<String, Supplier<Script>> clientScripts = new HashMap<>();
+   public static class Extension {
+      private final String name;
+      private Path path;
+      private final String creativeTabIconItem;
+      private List<ItemBuilder<?>> itemBuilders;
+      private List<EffectBuilder<?, ?>> effectBuilders;
+      private List<EntityBuilder<?, ?>> entityBuilders;
+      private List<PlayerAnimationBuilder> playerAnimationBuilders;
+      private Set<String> sounds;
+      private Map<String, Supplier<SoundEvent>> registeredExtSounds;
+      public Map<String, Supplier<Object>> clientScripts = new HashMap<>();
 
 		public Extension(String name, Path path, String creativeTabIconItem) {
 			this.name = name;
