@@ -1,10 +1,8 @@
 package mod.pbj.item;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import com.mojang.datafixers.util.Pair;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import mod.pbj.Nameable;
 import mod.pbj.client.GunClientState;
 import mod.pbj.client.effect.EffectBuilder;
@@ -15,11 +13,21 @@ import mod.pbj.script.Script;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 public class FireModeInstance implements Comparable<FireModeInstance>, Nameable, ScriptHolder {
 	private static final Map<UUID, FireModeInstance> fireModesById = new HashMap<>();
+	private static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("be9c2c46-c024-4704-b9aa-3e59bb3cb8ac");
+	private static final UUID ATTACK_SPEED_UUID = UUID.fromString("9dbf52b9-acc8-4272-b854-597c4e443fb4");
 	private final UUID id;
 	private final String name;
 	private final Component displayName;
@@ -41,10 +49,12 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 			effectBuilders;
 	private final FeatureProvider featureProvider;
 	private final int maxShootingDistance;
+	private final float attackSpeed;
 	private int pelletCount = 0;
 	private double pelletSpread = 1.0F;
 	private final Script script;
 	private final float headshotMultiplier;
+	private Multimap<Attribute, AttributeModifier> cachedAttributes;
 
 	private FireModeInstance(
 		String name,
@@ -69,6 +79,7 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 			List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>>
 			effectBuilders,
 		float headshotMultiplier,
+		float attackSpeed,
 		Script script) {
 		this.name = name;
 		this.featureProvider = featureProvider;
@@ -103,6 +114,12 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 			this.maxShootingDistance = maxShootingDistance;
 			this.effectBuilders = effectBuilders;
 			this.headshotMultiplier = headshotMultiplier;
+			this.attackSpeed = attackSpeed;
+
+			ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
+			builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(ATTACK_DAMAGE_UUID, "Weapon modifier", (this.damage - 1), AttributeModifier.Operation.ADDITION));
+			builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(ATTACK_SPEED_UUID, "Weapon modifier", (this.attackSpeed - 4.0), AttributeModifier.Operation.ADDITION));
+			this.cachedAttributes = builder.build();
 		}
 	}
 
@@ -259,6 +276,7 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 		double pelletSpread,
 		boolean isUsingDefaultMuzzle,
 		float headshotMultiplier,
+		float attackSpeed,
 		AnimationProvider prepareFireAnimationProvider,
 		AnimationProvider fireAnimationProvider,
 		AnimationProvider completeFireAnimationProvider,
@@ -289,6 +307,7 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 			viewShakeDescriptor,
 			effectBuilders,
 			headshotMultiplier,
+			attackSpeed,
 			script);
 	}
 
@@ -308,6 +327,12 @@ public class FireModeInstance implements Comparable<FireModeInstance>, Nameable,
 
 	public boolean isMelee() {
 		return this.type == FireMode.MELEE;
+	}
+
+	//Operates under the assumption that the FireMode `type` is MELEE
+	public Multimap<Attribute, AttributeModifier> getCachedAttributes() {
+		if(type != FireMode.MELEE) throw new IllegalStateException("Cannot get cached attributes for non-melee fire mode: " + type);
+		return cachedAttributes;
 	}
 
 	public record ViewShakeDescriptor(long duration, double amplitude, double speed) {

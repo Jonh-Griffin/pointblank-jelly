@@ -1,8 +1,7 @@
 package mod.pbj.client.model;
 
-import java.util.ArrayList;
-import java.util.List;
 import mod.pbj.client.BiDirectionalInterpolator;
+import mod.pbj.client.ClientEventHandler;
 import mod.pbj.client.GunClientState;
 import mod.pbj.client.controller.BlendingAnimationProcessor;
 import mod.pbj.item.FireModeInstance;
@@ -11,9 +10,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.GeckoLibException;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.core.animation.Animation;
 import software.bernie.geckolib.core.animation.AnimationProcessor;
 import software.bernie.geckolib.core.molang.MolangParser;
@@ -21,6 +22,9 @@ import software.bernie.geckolib.core.molang.MolangQueries;
 import software.bernie.geckolib.loading.object.BakedAnimations;
 import software.bernie.geckolib.model.DefaultedItemGeoModel;
 import software.bernie.geckolib.util.RenderUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static mod.pbj.Constants.*;
 import static mod.pbj.util.ClientUtil.getClientPlayer;
@@ -30,6 +34,8 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 	private final List<ResourceLocation> fallbackAnimations = new ArrayList<>();
 	private final BlendingAnimationProcessor<GunItem> anotherAnimationProcessor =
 		new BlendingAnimationProcessor<>(this);
+	@Nullable
+	public static GeoBone mainBone;
 
 	public GunGeoModel(ResourceLocation assetSubpath, List<ResourceLocation> fallbackAnimations) {
 		super(assetSubpath);
@@ -47,6 +53,8 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 		GunClientState state = GunClientState.getMainHeldState();
 		if (state == null)
 			return;
+
+		var player = Minecraft.getInstance().player;
 		MolangParser.INSTANCE.setValue(
 			AMMO,
 			()
@@ -67,26 +75,25 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 		else
 			aimprog = aimingController.getValue();
 		MolangParser.INSTANCE.setValue(AIMPROG, () -> aimprog);
-		MolangParser.INSTANCE.setValue(HEADBOB, () -> Minecraft.getInstance().player.bob);
-		MolangParser.INSTANCE.setValue(HEADROTX, () -> Minecraft.getInstance().player.getXRot());
-		MolangParser.INSTANCE.setValue(HEADROTY, () -> Minecraft.getInstance().player.getYRot());
-		MolangParser.INSTANCE.setValue(CRAWLING, () -> Minecraft.getInstance().player.isVisuallyCrawling() ? 0 : 1);
-		MolangParser.INSTANCE.setValue(CROUCHING, () -> Minecraft.getInstance().player.isCrouching() ? 0 : 1);
+		MolangParser.INSTANCE.setValue(HEADBOB, () -> player.bob);
+		MolangParser.INSTANCE.setValue(HEADROTX, player::getXRot);
+		MolangParser.INSTANCE.setValue(HEADROTY, player::getYRot);
+		MolangParser.INSTANCE.setValue(CRAWLING, () -> player.isVisuallyCrawling() ? 0 : 1);
+		MolangParser.INSTANCE.setValue(CROUCHING, () -> ClientEventHandler.getInstance().crouchProg.update(player.isCrouching() && !state.isAiming() ? 1.0f : 0.0f));
 
 		// Apply Player molang queries
-		var livingEntity = Minecraft.getInstance().player;
-		MolangParser.INSTANCE.setMemoizedValue(MolangQueries.HEALTH, livingEntity::getHealth);
-		MolangParser.INSTANCE.setMemoizedValue(MolangQueries.MAX_HEALTH, livingEntity::getMaxHealth);
+		MolangParser.INSTANCE.setMemoizedValue(MolangQueries.HEALTH, player::getHealth);
+		MolangParser.INSTANCE.setMemoizedValue(MolangQueries.MAX_HEALTH, player::getMaxHealth);
 		MolangParser.INSTANCE.setMemoizedValue(
-			MolangQueries.IS_ON_FIRE, () -> RenderUtils.booleanToFloat(livingEntity.isOnFire()));
+			MolangQueries.IS_ON_FIRE, () -> RenderUtils.booleanToFloat(player.isOnFire()));
 		MolangParser.INSTANCE.setMemoizedValue(MolangQueries.GROUND_SPEED, () -> {
-			Vec3 velocity = livingEntity.getDeltaMovementLerped(Minecraft.getInstance().getPartialTick());
+			Vec3 velocity = player.getDeltaMovementLerped(Minecraft.getInstance().getPartialTick());
 
 			return Mth.sqrt((float)((velocity.x * velocity.x) + (velocity.z * velocity.z)));
 		});
 		MolangParser.INSTANCE.setMemoizedValue(
 			MolangQueries.YAW_SPEED,
-			() -> livingEntity.getViewYRot((float)animTime - livingEntity.getViewYRot((float)animTime - 0.1f)));
+			() -> player.getViewYRot((float)animTime - player.getViewYRot((float)animTime - 0.1f)));
 	}
 
 	public static int getFireModeIndex() {
@@ -116,7 +123,7 @@ public class GunGeoModel extends DefaultedItemGeoModel<GunItem> {
 				this.anotherAnimationProcessor.setActiveModel(model);
 				this.currentModel = model;
 			}
-
+			mainBone = model.getBone("main").orElse(null);
 			return this.currentModel;
 		}
 	}

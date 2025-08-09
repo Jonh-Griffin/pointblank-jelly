@@ -8,7 +8,6 @@
     "adsSpeed": 350,
     "fireSound": "m9",
     "animationType": "pistol",
-    "script": "m9_stock_script",
     "compatibleAttachments": [
         "m9_stock"
     ],
@@ -91,7 +90,6 @@
                     "type": "SINGLE",
                     "rpm": 900,
                     "damage": 4.0,
-                    "script": "pointblank-ext:m9_stock_script",
                     "fireAnimations": [
                         {
                             "name": "animation.model.fire",

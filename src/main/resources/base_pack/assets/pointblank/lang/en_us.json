@@ -5,6 +5,7 @@
   "label.pointblank.fireMode.single": "SINGLE",
   "label.pointblank.fireMode.automatic": "AUTOMATIC",
   "label.pointblank.fireMode.burst": "BURST",
+  "label.pointblank.fireMode.melee": "MELEE",
   "label.pointblank.fireMode.grenade": "GRENADE",
   "label.pointblank.fireMode.stealth": "STEALTH",
   "label.pointblank.fireMode.pump": "PUMP-ACTION",

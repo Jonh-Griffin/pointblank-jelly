@@ -1,11 +1,6 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"animation.model.active": {
-			"animation_length": 0.5,
-			"bones": {
-			}
-		},
 		"animation.model.walking": {
 			"loop": true,
 			"animation_length": 0.75,
@@ -464,6 +459,16 @@
 							"vector": [0, 0, 0]
 						}
 					}
+				}
+			}
+		},
+		"animation.model.active": {
+			"loop": true,
+			"animation_length": 0.25,
+			"bones": {
+				"main": {
+					"rotation": [0, "2 * pbj.e_inoutquart(pbj.crouch)", "20 * pbj.e_inoutquart(pbj.crouch)"],
+					"position": ["3 * (pbj.e_inoutquart(pbj.crouch) * 0.5) + (pbj.crouch * 0.5)", "-1 * pbj.crouch", 0]
 				}
 			}
 		}

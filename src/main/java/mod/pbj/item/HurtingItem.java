@@ -2,10 +2,6 @@ package mod.pbj.item;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import mod.pbj.Config;
 import mod.pbj.Enableable;
 import mod.pbj.client.effect.EffectBuilder;
@@ -48,6 +44,11 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 public abstract class HurtingItem extends Item implements Enableable {
 	private static final float DEFAULT_EXPLOSION_SOUND_VOLUME = 4.0F;
@@ -282,7 +283,7 @@ public abstract class HurtingItem extends Item implements Enableable {
 	public abstract static class Builder<T extends ItemBuilder<T>>
 		extends ItemBuilder<T> implements Configurable, Enableable {
 		private ExplosionDescriptor explosionDescriptor;
-		private double maxShootingDistance = 200.0F;
+		private double maxShootingDistance = 2000.0F;
 		private float damage = 5.0F;
 		private Supplier<Boolean> configOptionEnabled;
 		private Supplier<Double> configOptionDamage;
@@ -368,7 +369,7 @@ public abstract class HurtingItem extends Item implements Enableable {
 		}
 
 		public T withJsonObject(JsonObject obj) {
-			this.withMaxShootingDistance(JsonUtil.getJsonDouble(obj, "maxShootingDistance", 200.0F));
+			this.withMaxShootingDistance(JsonUtil.getJsonDouble(obj, "maxShootingDistance", 2000.0F));
 			this.withDamage(JsonUtil.getJsonFloat(obj, "damage", 5.0F));
 			float headshotSoundVolume = JsonUtil.getJsonFloat(obj, "headshotSoundVolume", 3.0F);
 			JsonElement headshotSoundElem = obj.get("headshotSound");

@@ -8,7 +8,6 @@ import mod.pbj.util.HitboxHelper;
 import mod.pbj.util.MiscUtil;
 import mod.pbj.util.SimpleHitResult;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,10 +21,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.*;
 import net.minecraftforge.network.PacketDistributor;
@@ -40,10 +39,11 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
 	public int time = 0;
 	public int shotCount;
 	public Vec3 initPos = new Vec3(0, 0, 0);
-	public float maxDistance = 1000f;
+	public float maxDistance = 1500f;
 	public float headshotMultiplier = 1.0f;
 	public ItemStack gunStack;
-	public static TagKey<Block> PASSABLE = BlockTags.create(new ResourceLocation("pointblank", "passable"));
+	public static TagKey<Block> PASSABLE = BlockTags.create(ResourceLocation.fromNamespaceAndPath("pointblank", "passable"));
+	public static TagKey<Block> BREAKABLE = BlockTags.create(ResourceLocation.fromNamespaceAndPath("pointblank", "breakable"));
 	private float bulletGravity = 0.03f;
 
 	public void setBulletGravity(float gravity) {
@@ -83,74 +83,8 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
 
 	@Override
 	public void tick() {
-		Entity entity = this.getOwner();
-		if (this.level().isClientSide ||
-			(entity == null || !entity.isRemoved()) && this.level().hasChunkAt(this.blockPosition())) {
-			if (!this.hasBeenShot) {
-				this.gameEvent(GameEvent.PROJECTILE_SHOOT, this.getOwner());
-				this.hasBeenShot = true;
-			}
-
-			if (!this.leftOwner) {
-				this.leftOwner = this.checkLeftOwner();
-			}
-
-			this.baseTick();
-
-			if (this.shouldBurn()) {
-				this.setSecondsOnFire(1);
-			}
-
-			HitResult hitresult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
-
-			boolean passThrough = true;
-			if (hitresult.getType() == HitResult.Type.BLOCK) {
-				if (level()
-						.getBlockState(new BlockPos(
-							(int)hitresult.getLocation().x,
-							(int)hitresult.getLocation().y,
-							(int)hitresult.getLocation().z))
-						.is(PASSABLE)) {
-					passThrough = false;
-				}
-			}
-
-			if (passThrough && hitresult.getType() != HitResult.Type.MISS &&
-				!net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this, hitresult)) {
-				this.onHit(hitresult);
-			}
-			if (passThrough)
-				this.checkInsideBlocks();
-			Vec3 vec3 = this.getDeltaMovement();
-
-			vec3 = vec3.add(0, -bulletGravity, 0);
-
-			double d0 = this.getX() + vec3.x;
-			double d1 = this.getY() + vec3.y;
-			double d2 = this.getZ() + vec3.z;
-			ProjectileUtil.rotateTowardsMovement(this, 0.2F);
-			float f = this.getInertia();
-			if (this.isInWater()) {
-				for (int i = 0; i < 4; ++i) {
-					float f1 = 0.25F;
-					this.level().addParticle(
-						ParticleTypes.BUBBLE,
-						d0 - vec3.x * 0.25D,
-						d1 - vec3.y * 0.25D,
-						d2 - vec3.z * 0.25D,
-						vec3.x,
-						vec3.y,
-						vec3.z);
-				}
-
-				f = 0.8F;
-			}
-
-			this.setDeltaMovement(vec3.add(this.xPower, this.yPower, this.zPower).scale((double)f));
-			this.setPos(d0, d1, d2);
-		} else {
-			this.discard();
-		}
+		super.tick();
+		this.addDeltaMovement(new Vec3(0, -bulletGravity, 0));
 	}
 
 	public ProjectileBulletEntity(
@@ -199,7 +133,42 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
 	}
 
 	@Override
+	protected void onHit(HitResult pResult) {
+		HitResult.Type hitresult$type = pResult.getType();
+		if (hitresult$type == HitResult.Type.ENTITY) {
+			this.onHitEntity((EntityHitResult)pResult);
+			this.level().gameEvent(GameEvent.PROJECTILE_LAND, pResult.getLocation(), GameEvent.Context.of(this, (BlockState)null));
+		} else if (hitresult$type == HitResult.Type.BLOCK) {
+			BlockHitResult blockhitresult = (BlockHitResult)pResult;
+			this.onHitBlock(blockhitresult);
+			BlockPos blockpos = blockhitresult.getBlockPos();
+			BlockState blockState = level().getBlockState(blockpos);
+			if(blockState.is(BREAKABLE)) {
+				level().destroyBlock(blockpos, true, getOwner());
+				return;
+			}
+			if(blockState.is(PASSABLE)) {
+				return;
+			}
+			this.level().gameEvent(GameEvent.PROJECTILE_LAND, blockpos, GameEvent.Context.of(this, this.level().getBlockState(blockpos)));
+		}
+	}
+
+	@Override
 	protected void onHitBlock(BlockHitResult pResult) {
+		if(pResult.getLocation().distanceTo(initPos) >= this.maxDistance) {
+			this.discard();
+			return;
+		}
+		var blockState = level().getBlockState(pResult.getBlockPos());
+		if(blockState.is(BREAKABLE)) {
+			level().destroyBlock(pResult.getBlockPos(), true, getOwner());
+			return;
+		}
+		if(blockState.is(PASSABLE)) {
+			return;
+		}
+
 		super.onHitBlock(pResult);
 		if (getOwner() != null && level() instanceof ServerLevel)
 			for (ServerPlayer serverPlayer : ((ServerLevel)MiscUtil.getLevel(getOwner())).getPlayers((p) -> true)) {
@@ -224,6 +193,11 @@ public class ProjectileBulletEntity extends AbstractHurtingProjectile {
 
 	@Override
 	protected void onHitEntity(EntityHitResult pResult) {
+		if(pResult.getLocation().distanceTo(initPos) >= this.maxDistance) {
+			this.discard();
+			return;
+		}
+
 		Entity entity = pResult.getEntity();
 		AABB boundingBox = HitboxHelper.getFixedBoundingBox(entity, this.getOwner());
 		Vec3 startVec = this.position();

@@ -1,16 +1,11 @@
 package mod.pbj.item;
 
+import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import mod.pbj.Config;
 import mod.pbj.Nameable;
 import mod.pbj.attachment.Attachment;
@@ -55,11 +50,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -67,10 +61,7 @@ import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.tooltip.BundleTooltip;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemUtils;
-import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.*;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -90,7 +81,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
-import software.bernie.geckolib.constant.DataTickets;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
@@ -100,6 +90,13 @@ import software.bernie.geckolib.core.keyframe.event.data.SoundKeyframeData;
 import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.GeckoLibUtil;
+
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class GunItem extends HurtingItem implements ScriptHolder, Craftable, AttachmentHost, Nameable, GeoItem,
 													LockableTarget.TargetLocker, Tradeable, SlotFeature.SlotHolder {
@@ -469,6 +466,17 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 		SingletonGeoAnimatable.registerSyncedAnimatable(this);
 	}
 
+	@Override
+	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot pEquipmentSlot, ItemStack stack) {
+		if(getFireModeInstance(stack) == null || !getFireModeInstance(stack).isMelee()) return super.getDefaultAttributeModifiers(pEquipmentSlot);
+		return pEquipmentSlot == EquipmentSlot.MAINHAND ? getFireModeInstance(stack).getCachedAttributes() : super.getDefaultAttributeModifiers(pEquipmentSlot);
+	}
+
+	@Override
+	public boolean hurtEnemy(ItemStack pStack, LivingEntity pTarget, LivingEntity pAttacker) {
+		return !getFireModeInstance(pStack).isMelee();
+	}
+
 	public String getName() {
 		return this.name;
 	}
@@ -737,8 +745,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 		return InteractionResult.SUCCESS;
 	}
 
-	public InteractionResult
-	interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {
+	public InteractionResult interactLivingEntity(ItemStack itemStack, Player player, LivingEntity entity, InteractionHand hand) {
 		invokeFunction("interactLivingEntity", itemStack, player, entity, hand);
 		return InteractionResult.SUCCESS;
 	}
@@ -747,14 +754,14 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 		if (hasFunction("onLeftClickEntity"))
 			return (boolean)invokeFunction("onLeftClickEntity", stack, player, entity);
 
-		return true;
+		return !getFireModeInstance(stack).isMelee();
 	}
 
 	public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
 		if (hasFunction("onEntitySwing"))
 			return (boolean)invokeFunction("onEntitySwing", stack, entity);
 
-		return true;
+		return !getFireModeInstance(stack).isMelee();
 	}
 
 	public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
@@ -1780,6 +1787,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 			boolean isSuccess = getFireModes(itemStack).contains(fireModeInstance);
 			if (isSuccess) {
 				setFireModeInstance(itemStack, fireModeInstance);
+				setAmmo(itemStack, fireModeInstance, getAmmo(itemStack, fireModeInstance));
 			}
 
 			Network.networkChannel.send(
@@ -1789,12 +1797,6 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 			Network.networkChannel.send(
 				PacketDistributor.PLAYER.with(() -> player),
 				new FireModeResponsePacket(stateId, slotIndex, correlationId, false, fireModeInstance));
-		}
-	}
-
-	public void processServerStateSyncResponse(
-		UUID stateId, int correlationId, boolean isSuccess, ItemStack itemStack, GunClientState gunClientState) {
-		if (isSuccess) {
 		}
 	}
 
@@ -1965,6 +1967,7 @@ public class GunItem extends HurtingItem implements ScriptHolder, Craftable, Att
 						"Requesting fire mode change from {} to {}",
 						currentFireMode.getDisplayName(),
 						nextFireMode.getDisplayName());
+					setAmmo(itemStack, nextFireMode, getAmmo(itemStack, nextFireMode));
 					Network.networkChannel.sendToServer(
 						new FireModeRequestPacket(getItemStackId(itemStack), activeSlot, nextFireMode));
 				}

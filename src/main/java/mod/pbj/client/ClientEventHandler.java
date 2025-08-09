@@ -5,12 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Either;
 import com.mojang.math.Axis;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import mod.pbj.Config;
 import mod.pbj.Config.AutoReload;
 import mod.pbj.Config.CrosshairType;
@@ -98,6 +92,13 @@ import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.util.ClientUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientEventHandler {
 	private static final Logger LOGGER = LogManager.getLogger("pointblank");
@@ -112,6 +113,7 @@ public class ClientEventHandler {
 	public static final Lazy<KeyMapping> SCOPE_SWITCH_KEY =
 		Lazy.of(() -> new KeyMapping("key.pointblack.scope_switch", Type.KEYSYM, 86, "key.categories.pointblank"));
 	private static final ReentrantLock mainLoopLock = new ReentrantLock();
+	private static ClientEventHandler INSTANCE = null;
 	private final InertiaController scopeInertiaController = new InertiaController(0.06, 0.2, 0.1);
 	private final InertiaController inertiaController = new InertiaController(0.01, 0.1, 1.2217305F);
 	public static InertiaController reticleInertiaController = new InertiaController(0.005, 0.05, 1.0F);
@@ -141,6 +143,7 @@ public class ClientEventHandler {
 	private final RealtimeLinearEaser bobbingYawValue = new RealtimeLinearEaser(200L);
 	private final RealtimeLinearEaser zoomValue = new RealtimeLinearEaser(200L);
 	private final RealtimeLinearEaser crossHairExp = new RealtimeLinearEaser(100L);
+	public final RealtimeLinearEaser crouchProg = new RealtimeLinearEaser(250L);
 	private final LockableTarget lockableTarget = new LockableTarget();
 	private static final PostPassEffectController postPassEffectController = new PostPassEffectController(2000L);
 	private static final ResourceLocation crossHairOverlay =
@@ -149,10 +152,15 @@ public class ClientEventHandler {
 		new FirstPersonWalkingAnimationHandler();
 
 	public ClientEventHandler() {
-		this.startTicker();
+		startTicker();
+		INSTANCE = this;
 	}
 
-	private void startTicker() {
+    public static ClientEventHandler getInstance() {
+        return INSTANCE;
+    }
+
+    private void startTicker() {
 		GunStateTicker gunStateTicker = new GunStateTicker(this);
 		Runtime.getRuntime().addShutdownHook(new Thread(gunStateTicker::shutdown));
 		gunStateTicker.start();
@@ -242,6 +250,9 @@ public class ClientEventHandler {
 				this.playerDeltaYRot = player.getYRot() - this.previousPlayerYRot;
 				this.previousPlayerXRot = player.getXRot();
 				this.previousPlayerYRot = player.getYRot();
+				if(player.isCrouching())
+					this.crouchProg.update(1.0f);
+				else this.crouchProg.update(0.0f);
 				ItemStack heldItem = player.getMainHandItem();
 				int activeSlot = player.getInventory().selected;
 				if (activeSlot != this.currentInventorySlot) {

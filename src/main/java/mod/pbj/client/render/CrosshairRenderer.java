@@ -3,8 +3,11 @@ package mod.pbj.client.render;
 import com.mojang.blaze3d.platform.GlStateManager.DestFactor;
 import com.mojang.blaze3d.platform.GlStateManager.SourceFactor;
 import com.mojang.blaze3d.systems.RenderSystem;
+import mod.pbj.item.GunItem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 public class CrosshairRenderer {
 	public static void renderCrosshairOverlay3(
@@ -50,6 +53,14 @@ public class CrosshairRenderer {
 			maxU,
 			uvOffset,
 			maxV);
+
+		ItemStack itemStack = Minecraft.getInstance().player.getMainHandItem();
+		if(itemStack.getItem() instanceof GunItem gun) {
+			if(GunItem.getFireModeInstance(itemStack).isMelee()) {
+				guiGraphics.fill((int) centerX - 10, (int) (centerY + 4) + 20, (int) ((int) centerX + (Minecraft.getInstance().player.getAttackStrengthScale(0.0F) * 20) - 10), (int) centerY + 20, -1);
+			}
+		}
+
 		RenderSystem.blendFuncSeparate(
 			SourceFactor.ONE_MINUS_DST_COLOR, DestFactor.ONE_MINUS_SRC_COLOR, SourceFactor.ONE, DestFactor.ZERO);
 		float minU = 0.0F;

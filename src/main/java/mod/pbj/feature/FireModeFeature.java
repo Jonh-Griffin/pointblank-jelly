@@ -4,12 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import mod.pbj.client.GunClientState;
 import mod.pbj.client.effect.EffectBuilder;
 import mod.pbj.item.*;
@@ -27,6 +21,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class FireModeFeature extends ConditionalFeature {
 	public static final int DEFAULT_RPM = -1;
@@ -316,6 +317,7 @@ public class FireModeFeature extends ConditionalFeature {
 			List<Pair<Supplier<EffectBuilder<? extends EffectBuilder<?, ?>, ?>>, Predicate<ConditionContext>>>>
 			effectBuilders,
 		float headshotMultiplier,
+		float attackSpeed,
 		Script script) {
 		public String name() {
 			return this.name;
@@ -420,6 +422,7 @@ public class FireModeFeature extends ConditionalFeature {
 					effectBuilders;
 			private Script script;
 			private float headshotMultiplier = 1.25f;
+			private float attackSpeed;
 
 			public Builder() {
 				this.type = FireMode.SINGLE;
@@ -568,11 +571,17 @@ public class FireModeFeature extends ConditionalFeature {
 					this.viewShakeDescriptor,
 					this.effectBuilders,
 					this.headshotMultiplier,
+					this.attackSpeed,
 					this.script);
 			}
 
 			public FireModeDescriptor.Builder withHeadshotMultiplier(float headshotMultiplier) {
 				this.headshotMultiplier = headshotMultiplier;
+				return this;
+			}
+
+			public Builder withAttackSpeed(float attackSpeed) {
+				this.attackSpeed = attackSpeed;
 				return this;
 			}
 		}
@@ -623,6 +632,8 @@ public class FireModeFeature extends ConditionalFeature {
 
 				fireModeBuilder.withAmmoSupplier(ammoSupplier);
 				fireModeBuilder.withRpm(JsonUtil.getJsonInt(fireModeObj, "rpm", -1));
+				//only used in the MELEE fire mode
+				fireModeBuilder.withAttackSpeed(JsonUtil.getJsonFloat(fireModeObj, "attackSpeed", 0.0F));
 				fireModeBuilder.withBurstShots(JsonUtil.getJsonInt(fireModeObj, "burstShots", -1));
 				// Rather than checking for just an int, we'll use GunItem's implementation of checking for infinite
 				// ammo
@@ -630,10 +641,8 @@ public class FireModeFeature extends ConditionalFeature {
 				if (jsonMaxAmmoCapacity != null) {
 					if (jsonMaxAmmoCapacity instanceof JsonPrimitive pri && pri.isString() &&
 						"infinite".equalsIgnoreCase(pri.getAsString())) {
-						// System.out.println("AMMO FOR THIS ITEM IS BEING SET TO INFINITE!!!");
 						fireModeBuilder.withMaxAmmoCapacity(Integer.MAX_VALUE);
 					} else {
-						// System.out.println("AMMO FOR THIS ITEM IS BEING SET TO WHATEVER IT IS IN ITS JSON FILE!!!");
 						fireModeBuilder.withMaxAmmoCapacity(
 							fireModeObj.getAsJsonPrimitive("maxAmmoCapacity").getAsInt());
 					}
@@ -659,7 +668,7 @@ public class FireModeFeature extends ConditionalFeature {
 
 				fireModeBuilder.withViewShakeDescriptor(viewShakeDescriptor);
 				fireModeBuilder.withDamage(JsonUtil.getJsonDouble(fireModeObj, "damage", 5.0F));
-				fireModeBuilder.withMaxShootingDistance(JsonUtil.getJsonInt(fireModeObj, "maxShootingDistance", 200));
+				fireModeBuilder.withMaxShootingDistance(JsonUtil.getJsonInt(fireModeObj, "maxShootingDistance", 2000));
 				String fireAnimationName = JsonUtil.getJsonString(fireModeObj, "animationName", null);
 				if (fireAnimationName != null) {
 					fireModeBuilder.withFireAnimationProvider(new AnimationProvider.Simple(fireAnimationName));
@@ -781,6 +790,7 @@ public class FireModeFeature extends ConditionalFeature {
 								info.pelletSpread,
 								info.isUsingDefaultMuzzle,
 								info.headshotMultiplier,
+								info.attackSpeed,
 								info.prepareFireAnimationProvider,
 								info.fireAnimationProvider,
 								info.completeFireAnimationProvider,

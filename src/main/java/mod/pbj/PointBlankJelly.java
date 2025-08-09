@@ -1,12 +1,5 @@
 package mod.pbj;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import mod.pbj.client.ClientEventHandler;
 import mod.pbj.client.GunClientState;
 import mod.pbj.crafting.PointBlankRecipeProvider;
@@ -20,10 +13,7 @@ import mod.pbj.network.ClientBoundPlayerDataSyncPacket;
 import mod.pbj.network.Network;
 import mod.pbj.registry.*;
 import mod.pbj.script.ScriptParser;
-import mod.pbj.util.InventoryUtils;
-import mod.pbj.util.MiscUtil;
-import mod.pbj.util.ServerTaskScheduler;
-import mod.pbj.util.Tradeable;
+import mod.pbj.util.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
@@ -74,6 +64,14 @@ import org.apache.logging.log4j.Logger;
 import software.bernie.geckolib.GeckoLib;
 import software.bernie.geckolib.core.molang.LazyVariable;
 import software.bernie.geckolib.core.molang.MolangParser;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static mod.pbj.Constants.*;
 
@@ -133,6 +131,8 @@ public class PointBlankJelly {
 		MolangParser.INSTANCE.register(new LazyVariable(HEADROTY, 0));
 		MolangParser.INSTANCE.register(new LazyVariable(CROUCHING, 0));
 		MolangParser.INSTANCE.register(new LazyVariable(CRAWLING, 0));
+		MolangParser.INSTANCE.functions.put("pbj.e_inoutquart", MolangFunctions.InOutQuart.class);
+
 	}
 
 	public static <E extends Event> void registerEvent(Consumer<E> event) {

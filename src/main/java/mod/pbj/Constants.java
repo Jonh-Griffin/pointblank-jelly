@@ -12,6 +12,6 @@ public class Constants {
 	public static final String HEADBOB = "pbj.headbob";
 	public static final String HEADROTX = "pbj.headrotx";
 	public static final String HEADROTY = "pbj.headroty";
-	public static final String CRAWLING = "pbj.headroty";
-	public static final String CROUCHING = "pbj.headroty";
+	public static final String CRAWLING = "pbj.crawl";
+	public static final String CROUCHING = "pbj.crouch";
 }
